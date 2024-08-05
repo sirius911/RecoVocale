@@ -1,0 +1,1 @@
+test du bon fonctionnement du serveur git.
