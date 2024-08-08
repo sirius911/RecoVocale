@@ -1,43 +1,23 @@
 import os
 from Mode import Mode
 import tkinter as tk
-from PIL import Image, ImageTk
-from info import *
+from utils_window import create_menus, create_buttons
+from info import ModeStyle
 
 
-BUTTON_WIDTH = 30
 
 class GrandFenetreMode(Mode):
     def enter(self):
+        self.mode = ModeStyle.BIG
         self.ui()
-        super().enter()
 
     def ui(self):
-        self.create_menus()
-
-        #--------------------------------BOUTON -------------------------------------
-        # Get the absolute path of the directory containing the script
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        
-        # Load, resize and convert images using Pillow
-        self.record_image = self.load_and_resize_image(os.path.join(script_dir, "Icons/pause.png"), (BUTTON_WIDTH, BUTTON_WIDTH))
-        self.pause_image = self.load_and_resize_image(os.path.join(script_dir, "Icons/rec.png"), (BUTTON_WIDTH, BUTTON_WIDTH))
-        
-        self.button_frame = tk.Frame(self.root)
-        self.button_frame.pack(pady=10)
-
-        self.rec_button = tk.Button(self.button_frame, image=self.record_image, command=self.toggle_record)
-        self.rec_button.pack(side=tk.RIGHT, padx=5, pady=10)
-
-        self.rec_canvas = tk.Canvas(self.button_frame, width=BUTTON_WIDTH, height=BUTTON_WIDTH)
-        self.rec_circle = self.rec_canvas.create_oval(2, 2, BUTTON_WIDTH - 2, BUTTON_WIDTH - 2, fill="grey")
-        self.rec_canvas.pack(side=tk.LEFT, padx=5)
-    
+        create_menus(self)
+        create_buttons(self)
+           
         self.valide_button = tk.Button(self.root, text=f"Validation", command=self.app.valid_transcriptions)
         self.valide_button.pack(side=tk.RIGHT,pady=10)
         #------------------------------------------------------------------------------
-
-
 
         self.simulate_keyboard_var = tk.BooleanVar()
         self.simulate_keyboard_check = tk.Checkbutton(self.root,
@@ -85,16 +65,16 @@ class GrandFenetreMode(Mode):
         # self.status_error = tk.Label(self.status_frame, text="", fg="red")
         # self.status_error.pack(side=tk.RIGHT, padx=(5, 0))
 
-    def toggle_record(self):
-        if self.app.recording:
-            self.app.pause()  # Call pause function
-        else:
-            self.app.unpause()  # Call unpause function
+    # def toggle_record(self):
+    #     if self.app.recording:
+    #         self.app.pause()  # Call pause function
+    #     else:
+    #         self.app.unpause()  # Call unpause function
 
-    def load_and_resize_image(self, path, size):
-        image = Image.open(path)
-        image = image.resize(size, Image.LANCZOS)  # Use LANCZOS for high-quality downsizing
-        return ImageTk.PhotoImage(image)
+    # def load_and_resize_image(self, path, size):
+    #     image = Image.open(path)
+    #     image = image.resize(size, Image.LANCZOS)  # Use LANCZOS for high-quality downsizing
+    #     return ImageTk.PhotoImage(image)
 
 
     def update_simulate_keyboard(self):
@@ -102,31 +82,15 @@ class GrandFenetreMode(Mode):
         if self.app.simulate_keyboard:
             self.app.simulator_keyboard.init()
 
-    def update_rec_circle(self):
-        fill = 'red' if self.app.recording else 'grey'
-        self.rec_canvas.itemconfig(self.rec_circle, fill=fill)
+    # def update_rec_circle(self):
+    #     fill = 'red' if self.app.recording else 'grey'
+    #     self.rec_canvas.itemconfig(self.rec_circle, fill=fill)
 
-    def update_image_button(self):
-        if self.app.recording:
-            self.rec_button.config(image=self.record_image)
-        else:
-            self.rec_button.config(image=self.pause_image)
-
-    def create_menus(self):
-        self.menu_bar = tk.Menu(self.root)
-        self.root.config(menu=self.menu_bar)
-
-        self.settings_menu = tk.Menu(self.menu_bar, tearoff=0)
-        self.menu_bar.add_cascade(label="Paramètres", menu=self.settings_menu)
-
-        self.micro_menu = tk.Menu(self.settings_menu, tearoff=0)
-        self.settings_menu.add_cascade(label="Micro", menu=self.micro_menu)
-
-        # self.update_micro_menu()
-
-        # self.settings_menu.add_command(label="Raccourci Clavier", command=self.app.change_shortcut)
-
-        self.settings_menu.add_command(label="Quitter", command=self.exit_app)
+    # def update_image_button(self):
+    #     if self.app.recording:
+    #         self.rec_button.config(image=self.record_image)
+    #     else:
+    #         self.rec_button.config(image=self.pause_image)
 
     # def update_micro_menu(self):
     #     self.micro_menu.delete(0, tk.END)
@@ -166,10 +130,10 @@ class GrandFenetreMode(Mode):
         self.app.simulator_keyboard.init()
         self.root.update()
 
-    # def exit(self):
-    #     # pour le switch mode
-    #     for widget in self.root.winfo_children():
-    #         widget.destroy()
+    def exit(self):
+        # pour le switch mode
+        for widget in self.root.winfo_children():
+            widget.destroy()
 
     # def update_monitoring(self):
     #     try:

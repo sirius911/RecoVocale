@@ -1,24 +1,22 @@
-import pystray
-from pystray import MenuItem as item
-from info import *
-from PIL import Image, ImageDraw
-
+# import pystray
+# from pystray import MenuItem as item
 
 class Mode:
     def __init__(self, app):
         self.app = app
         self.root = app.root
-        # print(f"Mode root reference: {hex(id(self.root))}")
+        # self.root.resizable(False, False)
         self.enter()
 
     def enter(self):
         pass
-        # print("enter classe mère")
         # self.create_systray_icon()
 
-    def exit(self):
-         # pour le switch mode
-        pass
+    # def exit(self):
+    #      # pour le switch mode
+    #     pass
+
+    
 
     def show_window(self, icon, item):
         self.simulate_keyboard_var.set(False)
@@ -39,6 +37,30 @@ class Mode:
     def exit_app(self):
         # self.icon.stop()
         self.app.on_closing()
+
+    def _update_rec_circle(self):
+        fill = 'red' if self.app.recording else 'grey'
+        self.rec_canvas.itemconfig(self.rec_circle, fill=fill)
+
+    def _update_image_button(self):
+        if self.app.recording:
+            self.rec_button.config(image=self.record_image)
+        else:
+            self.rec_button.config(image=self.pause_image)
+
+    def _toggle_record(self):
+        if self.app.recording:
+            self.app.pause()  # Call pause function
+        else:
+            self.app.unpause()  # Call unpause function
+
+    def update(self):
+        self._update_rec_circle()
+        self._update_image_button()
+    # def load_and_resize_image(self, path, size):
+    #     image = Image.open(path)
+    #     image = image.resize(size, Image.LANCZOS)  # Use LANCZOS for high-quality downsizing
+    #     return ImageTk.PhotoImage(image)
 
 #-----------------------------------------------------------------------
 #                                  MODE SYSTRAY

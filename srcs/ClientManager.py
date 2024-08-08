@@ -1,0 +1,101 @@
+from client import EnhancedTranscriptionClient
+from Correcteur import Correcteur
+import threading
+import asyncio
+
+class ClientManager:
+    def __init__(self, host, port, lang, model, translate, use_vad, save_output_recording, output_recording_filename, update_callback):
+        # print("Initializing ClientManager")
+        self.host = host
+        self.port = port
+        self.lang = lang
+        self.model = model
+        self.translate = translate
+        self.use_vad = use_vad
+        self.save_output_recording = save_output_recording
+        self.output_recording_filename = output_recording_filename
+        self.client = None
+        self.running = False
+        self.client_thread = None
+        self.display_task = None
+        self.loop = None
+        self.update_callback = update_callback
+        self.correcteur = Correcteur("../dist/corrections.json")
+
+    def start_client(self, loop):
+        # print("Starting client in ClientManager")
+        self.stop_client()  # Ensure any previous client is stopped before starting a new one
+
+        if self.client is None:
+            self.client = EnhancedTranscriptionClient(
+                self.host,
+                self.port,
+                lang=self.lang,
+                model=self.model,
+                translate=self.translate,
+                use_vad=self.use_vad,
+                save_output_recording=self.save_output_recording,
+                output_recording_filename=self.output_recording_filename
+            )
+
+        self.running = True
+        # print(f"Starting client, running: {self.running}")
+
+        self.loop = loop
+        # Run the client in a separate thread to avoid blocking the event loop
+        self.client_thread = threading.Thread(target=self.run_client_thread)
+        self.client_thread.start()
+
+        # print("Creating display task")
+        self.display_task = asyncio.run_coroutine_threadsafe(self.update_display(), self.loop)
+        # print("Display task started:", self.display_task)
+
+    def run_client_thread(self):
+        try:
+            # print("run_client()")
+            self.client()
+            # print("Client started")
+        except Exception as e:
+            print(f"Error running client: {e}")
+
+    async def update_display(self):
+        # print("update_display started")
+        while self.running:
+            # print("update_display running")
+            transcriptions, phrase_finished = self.client.get_transcriptions()
+            transcriptions = transcriptions if self.client else []
+            corrected_transcriptions = [self.correcteur.applique_corrections(line) for line in transcriptions]
+            # corrected_transcriptions = [line for line in transcriptions]
+            combined_text = ' '.join(corrected_transcriptions)
+            if combined_text != "":
+                # print("update_callback called with:", combined_text)
+                self.update_callback(combined_text)
+            # else:
+                # print("combined_text in ClientManager.update_display() -> empty")
+            await asyncio.sleep(0.5)
+
+    def stop_client(self):
+        if not self.running:
+            return
+
+        self.running = False
+        print("Stopping client")
+        if self.client:
+            self.client.stop()
+            self.client = None
+        if self.client_thread:
+            self.client_thread.join()
+            self.client_thread = None
+        if self.display_task:
+            self.display_task.cancel()
+            self.display_task = None
+
+    def pause(self):
+        print("pause client")
+        if self.client:
+            self.client.set_pause(True)
+
+    def unpause(self):
+        print("record")
+        if self.client:
+            self.client.set_pause(False)
