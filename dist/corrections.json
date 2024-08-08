@@ -1,0 +1,47 @@
+{
+  "corrections": [
+    {
+      "regex": [
+        "point à la ligne"
+      ],
+      "new": [
+        ".\n"
+      ],
+      "actions": [
+        ""
+      ]
+    },
+    {
+      "regex": [
+        "virgule"
+      ],
+      "new": [
+        ", "
+      ],
+      "actions": [
+        ""
+      ]
+    },
+    {
+      "regex": [
+        "à la ligne"
+      ],
+      "new": [
+        "\n"
+      ],
+      "actions": [
+        "del_prec_point"
+      ]
+    },
+    
+    {
+      "regex": [
+        "\\bcyril\\b"
+      ],
+      "new":["The Boss"],
+      "actions": [
+        ""
+      ]
+    }
+  ]
+}
