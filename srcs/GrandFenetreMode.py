@@ -10,6 +10,7 @@ class GrandFenetreMode(Mode):
     def enter(self):
         self.mode = ModeStyle.BIG
         self.ui()
+        self.root.geometry("940x709")
 
     def ui(self):
         create_menus(self)
@@ -26,6 +27,8 @@ class GrandFenetreMode(Mode):
                                                       command=self.update_simulate_keyboard
                                                       )
         self.simulate_keyboard_check.pack(pady=10)
+        # Synchronisation initiale avec la variable booléenne
+        self.simulate_keyboard_var.set(self.app.simulate_keyboard)
 
         self.text_box_frame = tk.Frame(self.root)
         self.text_box_frame.pack(pady=10, fill=tk.BOTH, expand=True)

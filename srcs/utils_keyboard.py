@@ -1,18 +1,22 @@
 import time
 from pynput.keyboard import Controller, Key
 
+TIME_WRITE = 0.02   #delay for typing speed of all Char 
+TIME_DELETE = 0.01  #delay for typing speed for backspace
 
 class Simulator:
-    def __init__(self):
+    def __init__(self, text=None):
         self.keyboard = Controller()
         self.previous_text = ""
         self.running = False
+        if text is not None:    # Permet d'appeler la classe de n'importe ou et de faire taper text
+            self.simule_key(text)
 
     def init(self):
         self.previous_text = ""
 
     def animate_typing (self, new_text:str):
-            print(f"On me demande d'écrire : [{new_text}]")
+            print(f"On me demande d'écrire : [{new_text}]") #debug
             print(f"j'ai en mémoire : [{self.previous_text}]")
             def find_common_prefix(s1, s2):
                 common_prefix_length = 0
@@ -26,16 +30,18 @@ class Simulator:
             for _ in range(len(self.previous_text) - common_prefix_length):
                 self.keyboard.press(Key.backspace)
                 self.keyboard.release(Key.backspace)
-                time.sleep(0.02)
+                time.sleep(TIME_DELETE)
 
             new_part = new_text[common_prefix_length:]
-            for char in new_part:
-                self.type_character(char)
-                time.sleep(0.02)  # Add a small delay to simulate typing speed
-            
+            self.simule_key(new_part) 
             self.previous_text = new_text
 
-    def type_character(self, char:str):
+    def simule_key(self, chaine):
+        for char in chaine:
+            self._type_character(char)
+            time.sleep(TIME_WRITE) # Add a small delay to simulate typing speed
+
+    def _type_character(self, char:str):
         if char == '\n':
             self.keyboard.press(Key.enter)
             self.keyboard.release(Key.enter)

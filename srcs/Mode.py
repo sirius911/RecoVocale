@@ -1,5 +1,7 @@
 # import pystray
 # from pystray import MenuItem as item
+from utils_socket import check_server_status
+from info import *
 
 class Mode:
     def __init__(self, app):
@@ -27,8 +29,8 @@ class Mode:
     #     self.update_icon()
     #     self.update_icon_image(self.create_error_image())
 
-    # def update_transcription(self, transcriptions):
-    #     return transcriptions
+    def update_transcription(self, transcriptions):
+        pass
 
     def hide_window(self):
         self.simulate_keyboard_var.set(True)
@@ -57,6 +59,17 @@ class Mode:
     def update(self):
         self._update_rec_circle()
         self._update_image_button()
+
+    def info(self):
+        #print info TODO: A mettre en fênetre
+        print(f"Version : v{VERSION}")
+        if check_server_status(SERVEUR_IP, PORT):
+            _serv = f"Connected @{SERVEUR_IP}:{PORT}"
+        else:
+            _serv = f"Not Connected @{SERVEUR_IP}:{PORT}"
+        print(f"Serveur : {_serv}")
+        print(f"Micro : {self.app.mic.micro_name}")
+        print(f"Mode = {self.mode} - Simulation Clavier: {self.app.simulate_keyboard}")
     # def load_and_resize_image(self, path, size):
     #     image = Image.open(path)
     #     image = image.resize(size, Image.LANCZOS)  # Use LANCZOS for high-quality downsizing

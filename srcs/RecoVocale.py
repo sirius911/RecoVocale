@@ -8,7 +8,7 @@ from GrandFenetreMode import GrandFenetreMode
 from ReduitMode import ReduitMode
 from utils_socket import check_server_status
 from utils_keyboard import Simulator
-from PhilipsMic import PhilipsMic  # Import the PhilipsMic class
+from Micro import Micro
 from info import *
 from ClientManager import ClientManager
 
@@ -22,16 +22,6 @@ class App:
         self.recording = False
         self.last_transcriptions = ""
         self.current_transcriptions = ""
-
-        #--------------- check micro -----------------
-        try:
-            self.audio = pyaudio.PyAudio()
-            self.selected_micro = self.audio.get_default_input_device_info()["index"]
-            self.check_micro = True
-        except OSError:
-            print("Pas de micro ...")
-            self.selected_micro = None
-            self.check_micro = False
     
         #-------------------check serveur-----------------------
         self.status_server = check_server_status(SERVEUR_IP, PORT)
@@ -44,9 +34,8 @@ class App:
         self.simulator_keyboard = Simulator()
         keyboard.add_hotkey(self.keyboard_shortcut, self.toggle_start_stop)
         #----------------------MODE----------------------------
-        # self.current_mode = GrandFenetreMode(self)
         self.current_mode = ReduitMode(self)
-
+        #----------------- Lien Client Whisper -----------------------
         self.client_manager = ClientManager(
             SERVEUR_IP,
             PORT,
@@ -68,11 +57,8 @@ class App:
         self.start_client()
 
         # #---------------------------MICRO----------------------------
-        # Initialize PhilipsMic with the asyncio loop
-        self.mic = PhilipsMic(loop, on_no_touch=self.pause,
-                              on_rec_push=self.unpause,
-                              on_play_push=self.valid_transcriptions,
-                              on_f1_push=None)
+        # Initialize the microphone 
+        self.mic = Micro(loop, app=self)
 
 
     def start_client(self):
@@ -122,9 +108,7 @@ class App:
 
     def update(self):
         if self.current_mode:
-            self.current_mode.update()
-            # self.current_mode.update_rec_circle()
-            # self.current_mode.update_image_button()    
+            self.current_mode.update() 
 
     def on_closing(self):
         self.stop_client()
@@ -167,10 +151,11 @@ def start_loop(loop):
 
 if __name__ == "__main__":
     root = tk.Tk()
-    # root.bind("<Configure>", on_resize)
+    root.resizable(False, False)
     # Create a new event loop
     new_loop = asyncio.new_event_loop()
     threading.Thread(target=start_loop, args=(new_loop,), daemon=True).start()
 
     app = App(root, new_loop)  # Pass the new loop to the app
+    # root.bind("<Configure>", on_resize)
     root.mainloop()

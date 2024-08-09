@@ -1,0 +1,44 @@
+{
+    "Philips": {
+        "vendor_id": "0x0911",
+        "product_id": "0x0c1c",
+        "actions" : {
+            "[0, 128, 0, 0, 0, 0, 0, 0, 0, 0]": {"class": "Pause"},
+            "[0, 128, 0, 0, 0, 0, 0, 0, 0, 1]": {"class": "Unpause"},
+            "[0, 128, 0, 0, 0, 0, 0, 0, 0, 4]": {"class": "ValidTranscriptions"},
+            "[0, 128, 0, 0, 0, 0, 0, 0, 0, 32]": {"class": "Keyboard", "arg":"\t"},
+            "[0, 128, 0, 0, 0, 0, 0, 0, 0, 64]": {"class": "NoAction"},
+            "[0, 128, 0, 0, 0, 0, 0, 0, 0, 16]": {"class": "NoAction"},
+            "[0, 128, 0, 0, 0, 0, 0, 0, 0, 8]": {"class": "NoAction"},
+            "[0, 128, 0, 0, 0, 0, 0, 0, 2, 0]": {"class": "NoAction"},
+            "[0, 128, 0, 0, 0, 0, 0, 0, 4, 0]": {"class": "NoAction"},
+            "[0, 128, 0, 0, 0, 0, 0, 0, 8, 0]": {"class": "NoAction"}
+        }
+    },
+    "Nuance": {
+        "vendor_id": "0x0554",
+        "product_id": "0x1001",
+        "actions": {
+            "[0, 0, 0, 0]": {"class": "Pause"},
+            "[0, 0, 4, 0]": {"class": "Unpause"},
+            "[0, 0, 1, 0]": {"class": "ValidTranscriptions"},
+            "[0, 0, 2, 0]": {"class": "NoAction"},
+            "[0, 0, 8, 0]": {"class": "NoAction"},
+            "[0, 0, 32, 0]": {"class": "NoAction"},
+            "[0, 0, 64, 0]": {"class": "NoAction"},
+            "[0, 0, 16, 0]": {"class": "NoAction"},
+            "[0, 0, 128, 0]": {"class": "NoAction"},
+            "[0, 0, 0, 1]": {"class": "NoAction"},
+            "[0, 0, 0, 2]": {"class": "NoAction"}
+        }
+    },
+    "Jabra": {
+        "vendor_id": "0x0b0e",
+        "product_id": "0x0422",
+        "actions": {
+            "[1, 0]": {"class": "NoAction"},
+            "[1, 1]": {"class": "NoAction"},
+            "[1, 2]": {"class": "NoAction"}
+        }
+    }
+}
