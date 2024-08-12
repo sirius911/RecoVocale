@@ -13,7 +13,7 @@
 | 0.4     | 2024-08-02 | - Mode tache de Fond                                               |
 |         |            | - Menu Pour choisir son micro                                      |
 |         |            | - Menu pour changer son Raccourci                                  |
-| 0.5     |            | - Refonte threading et async function                              |
+| 0.5     | 2024-08-12 | - Refonte threading et async function                              |
 |         |            | - plus de menu micro                                               |
 |         |            | - Fichier user_config.ini pou Ip, Port, Shortcut, Mode             |
 |         |            | - Gestion Micro Philips & Nuance avec Actions paramètrable par les |
@@ -21,14 +21,12 @@
 |         |            | - Mode GrandeFenêtre ou petite Fenêtre                             |
 |---------|------------|--------------------------------------------------------------------|
 
-Voici le texte corrigé :
-
 ## Comment utiliser
 
-1. Démarrez l'application.
+1. Dï¿½marrez l'application.
   
 
-En mode Petite fenêtre :
+En mode Petite fenètre :
    Le mode simulation d'écriture clavier est automatiquement activé.
    Tapez la commande Raccourci ou maintenez le bouton REC du microphone pour lancer la transcription et écrire le texte transcrit.
    Retapez sur le Raccourci pour arrêter la transcription ou lachez le bouton REC du microphone
