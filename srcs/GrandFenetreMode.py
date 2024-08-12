@@ -129,9 +129,9 @@ class GrandFenetreMode(Mode):
         """
         Clear the content of the text box.
         """
+        self.app.valid_transcriptions()
+        self.app.last_transcriptions = ""
         self.text_box.delete('1.0', tk.END)
-        self.app.last_transcription = ""
-        self.app.simulator_keyboard.init()
         self.root.update()
 
     def exit(self):

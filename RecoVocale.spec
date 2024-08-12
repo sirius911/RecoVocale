@@ -5,7 +5,7 @@ a = Analysis(
     ['srcs\\RecoVocale.py'],
     pathex=[],
     binaries=[],
-    datas=[],
+    datas=[('srcs/Icons', 'Icons'), ('srcs/config/micro_actions_config.json', 'config')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},

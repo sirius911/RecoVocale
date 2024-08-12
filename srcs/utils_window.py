@@ -1,9 +1,20 @@
 import os
+import sys
 import tkinter as tk
 from info import ModeStyle
 from PIL import Image, ImageTk
 from info import BUTTON_WIDTH_BIG, BUTTON_WIDTH_SMALL
 from ToolTip import ToolTip
+
+def resource_path(relative_path):
+    """Obtenir le chemin absolu d'une ressource, en tenant compte du fait qu'on est dans un exécutable ou non"""
+    try:
+        # PyInstaller crée un dossier temporaire et stocke le chemin dans _MEIPASS
+        base_path = sys._MEIPASS
+    except AttributeError:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
 
 def _load_and_resize_image(path, size):
      image = Image.open(path)
@@ -12,17 +23,15 @@ def _load_and_resize_image(path, size):
 
 def create_buttons(self):
      #--------------------------------BOUTON -------------------------------------
-     # Get the absolute path of the directory containing the script
-     script_dir = os.path.dirname(os.path.abspath(__file__))
 
      # Load, resize and convert images using Pillow
      if self.mode == ModeStyle.BIG:
           button_width = BUTTON_WIDTH_BIG
      else:
           button_width = BUTTON_WIDTH_SMALL
-     self.record_image = _load_and_resize_image(os.path.join(script_dir, "Icons/pause.png"), (button_width, button_width))
-     self.pause_image = _load_and_resize_image(os.path.join(script_dir, "Icons/rec.png"), (button_width, button_width))
-
+     self.record_image = _load_and_resize_image(resource_path("Icons/pause.png"), (button_width, button_width))
+     self.pause_image = _load_and_resize_image(resource_path("Icons/rec.png"), (button_width, button_width))
+     
      self.button_frame = tk.Frame(self.root)
      self.button_frame.pack(pady=10)
 
@@ -50,7 +59,7 @@ def create_menus(self):
      self.settings_menu.add_command(label="Raccourci Clavier", command=self.app.change_shortcut)
      self.mode_menu = tk.Menu(self.settings_menu, tearoff=0)
      self.settings_menu.add_cascade(label="Mode", menu=self.mode_menu)
-     self.mode_menu.add_radiobutton(label='Grand fenêtre',
+     self.mode_menu.add_radiobutton(label='Grande Fenêtre',
                                    command= lambda mode=ModeStyle.BIG: self.app.switch_mode(mode))
      self.mode_menu.add_radiobutton(label='Petite Fenêtre',
                                    command= lambda mode=ModeStyle.SMALL: self.app.switch_mode(mode))

@@ -64,7 +64,7 @@ class Mode:
         print(f"Serveur : {_serv}")
         print(f"Micro : {self.app.mic.micro_name if self.app.mic else None}")
         print(f"Mode = {self.name()} - Simulation Clavier: {self.app.simulate_keyboard}")
- 
+        print(f"Raccourci : {self.app.keyboard_shortcut}")
     def name(self):
         return self.mode.name
 #-----------------------------------------------------------------------

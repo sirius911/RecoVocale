@@ -3,7 +3,8 @@ import configparser
 
 class UserConfig:
     def __init__(self):
-        self.config_dir = "config"
+        # Définir le chemin du répertoire de configuration dans %APPDATA%\RecoVocale
+        self.config_dir = os.path.join(os.getenv('APPDATA'), 'RecoVocale')
         self.config_file = os.path.join(self.config_dir, "user_config.ini")
         
         # Valeurs par défaut
@@ -14,7 +15,7 @@ class UserConfig:
         self._x_window = "10"
         self._y_window = "10"
         
-        # Lire la configuration si le fichier existe
+        # Lire la configuration si le fichier existe, sinon la créer
         if os.path.exists(self.config_file):
             self.load_config()
         else:
@@ -59,7 +60,6 @@ class UserConfig:
     @server_ip.setter
     def server_ip(self, value):
         self._server_ip = value
-        self.save_config()
 
     @property
     def port(self):
@@ -68,7 +68,6 @@ class UserConfig:
     @port.setter
     def port(self, value):
         self._port = value
-        self.save_config()
     
     @property
     def shortcut(self):
@@ -77,7 +76,6 @@ class UserConfig:
     @shortcut.setter
     def shortcut(self, value):
         self._shortcut = value
-        self.save_config()
     
     @property
     def mode(self):
@@ -86,7 +84,6 @@ class UserConfig:
     @mode.setter
     def mode(self, value):
         self._mode = value
-        self.save_config()
 
     @property
     def x_window(self):
@@ -95,7 +92,6 @@ class UserConfig:
     @x_window.setter
     def x_window(self, value):
         self._x_window = value
-        self.save_config()
     
     @property
     def y_window(self):
@@ -104,11 +100,3 @@ class UserConfig:
     @y_window.setter
     def y_window(self, value):
         self._y_window = value
-        self.save_config()
-
-# Exemple d'utilisation
-# if __name__ == "__main__":
-#     config = UserConfig()
-#     print(config.server_ip)
-#     config.server_ip = "192.168.0.1"
-#     print(config.server_ip)

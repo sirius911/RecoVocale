@@ -1,6 +1,6 @@
 from enum import Enum, auto
 
-VERSION = "0.5"
+VERSION = "0.501L"
 
 BUTTON_WIDTH_BIG = 30
 BUTTON_WIDTH_SMALL = 15

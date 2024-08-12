@@ -124,9 +124,9 @@ class App:
         # sauvegarde userConfig
         self.config.shortcut = self.keyboard_shortcut
         self.config.mode = self.current_mode.name()
-        print(f"pos windows x = {self.root.winfo_rootx()} y = {self.root.winfo_rooty()}")
         self.config.x_window = self.root.winfo_rootx()
         self.config.y_window = self.root.winfo_rooty()
+        self.config.save_config()
         self.root.quit()
         self.loop.stop()
 

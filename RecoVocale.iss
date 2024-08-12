@@ -6,7 +6,7 @@ OutputDir=install
 OutputBaseFilename=install_v0.5
 SetupIconFile=reco.ico
 ; Nom de l'application
-AppName=reco
+AppName=RecoVocale
 ; Version de l'application
 AppVersion=0.5
 ; Répertoire par défaut d'installation
@@ -20,6 +20,9 @@ DefaultGroupName=RecoVocale
 ; Inclure le fichier exécutable et d'autres fichiers nécessaires
 Source: "dist\RecoVocale.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "dist\corrections.json"; DestDir: "{app}"; Flags: ignoreversion
+Source: "dist\config\user_config.ini"; DestDir: "{app}\config"; Flags: ignoreversion
+Source: "dist\config\micro_actions_config.json"; DestDir: "{localappdata}\RecoVocale"; Flags: ignoreversion
+
 
 [Icons]
 ; Ajouter une icône pour l'application dans le menu démarrer

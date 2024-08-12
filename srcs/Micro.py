@@ -3,6 +3,7 @@ import os
 import pywinusb.hid as hid
 import asyncio
 from Actions import *
+from utils_window import resource_path
 
 class BaseMic:
     def __init__(self, loop, vendor_id, product_id, actions, app, micro_name):
@@ -75,11 +76,29 @@ class BaseMic:
             await self.check_connection()
             await asyncio.sleep(1)
 
+def get_micro_config_path():
+    """Retourne le chemin du fichier de configuration du micro dans %APPDATA%"""
+    config_dir = os.path.join(os.getenv('APPDATA'), 'RecoVocale')
+    if not os.path.exists(config_dir):
+        os.makedirs(config_dir)
+    return os.path.join(config_dir, "micro_actions_config.json")
+
 def Micro(loop, app):
-    # Charger le fichier JSON
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    json_path = os.path.join(script_dir, "micro_actions_config.json")
-    with open(json_path, "r") as file:
+    # Charger le fichier JSON depuis le répertoire utilisateur
+    config_path = get_micro_config_path()
+    # Vérifier si le fichier de config existe dans %APPDATA%, sinon le copier depuis le package
+    if not os.path.exists(config_path):
+        default_config_path = resource_path("config/micro_actions_config.json")
+        print(f"Tentative de copie de la configuration par défaut depuis : {default_config_path}")
+        try:
+            with open(default_config_path, "r") as default_file:
+                with open(config_path, "w") as config_file:
+                    config_file.write(default_file.read())
+            print(f"Fichier de configuration copié dans {config_path}")
+        except FileNotFoundError:
+            print(f"Le fichier de configuration par défaut est introuvable : {default_config_path}")
+            raise
+    with open(config_path, "r") as file:
         config = json.load(file)
     for micro_name, micro_info in config.items():
         # Convertir les vendor_id et product_id hexadécimaux en entiers
