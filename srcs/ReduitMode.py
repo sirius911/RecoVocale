@@ -1,15 +1,15 @@
 from Mode import Mode
-import tkinter as tk
 from utils_window import create_menus, create_buttons
-from info import ModeStyle
-
+from info import *
 
 class ReduitMode(Mode):
     def enter(self):
         self.mode = ModeStyle.SMALL
+        # self.root.resizable(False, False)
         self.app.simulate_keyboard = True
         self.ui()
-        self.root.geometry("120x60")
+        self.root.geometry(f"{WINDOW_WIDTH_SMALL}x{WINDOW_HEIGHT_SMALL}+{self.app.config.x_window}+{self.app.config.y_window}")
+        # self.root.geometry("200x65")
 
     def ui(self):
         create_menus(self)

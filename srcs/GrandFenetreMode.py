@@ -1,16 +1,17 @@
-import os
 from Mode import Mode
 import tkinter as tk
 from utils_window import create_menus, create_buttons
-from info import ModeStyle
+from info import *
 
 
 
 class GrandFenetreMode(Mode):
     def enter(self):
         self.mode = ModeStyle.BIG
+        self.root.resizable(True, True)
         self.ui()
-        self.root.geometry("940x709")
+        self.root.geometry(f"{WINDOW_WIDTH_BIG}x{WINDOW_HEIGHT_BIG}+{self.app.config.x_window}+{self.app.config.y_window}")
+        # self.root.geometry("940x709")
 
     def ui(self):
         create_menus(self)
@@ -49,8 +50,8 @@ class GrandFenetreMode(Mode):
         # self.monitor_label = tk.Label(self.root, text="Monitoring du micro")
         # self.monitor_label.pack()
 
-        self.monitor_frame = tk.Frame(self.root)
-        self.monitor_frame.pack(pady=10)
+        # self.monitor_frame = tk.Frame(self.root)
+        # self.monitor_frame.pack(pady=10)
 
         # self.rec_canvas = tk.Canvas(self.monitor_frame, width=20, height=20)
         # self.rec_circle = self.rec_canvas.create_oval(2, 2, 18, 18, fill="grey")

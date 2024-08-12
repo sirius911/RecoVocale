@@ -1,9 +1,10 @@
 import tkinter as tk
+from tkinter import messagebox
 import asyncio
 import threading
 import keyboard
 
-import pyaudio
+from UserConfig import UserConfig
 from GrandFenetreMode import GrandFenetreMode
 from ReduitMode import ReduitMode
 from utils_socket import check_server_status
@@ -15,8 +16,9 @@ from ClientManager import ClientManager
 class App:
     def __init__(self, root, loop):
         print("Initializing App")
+        self.config = UserConfig()
         self.root = root
-        self.root.title(f"RecoVocale [{SERVEUR_IP}:{PORT}] (v{VERSION})")
+        self.root.title(f"RecoVocale [{self.config.server_ip}:{self.config.port}] (v{VERSION})")
         self.root.attributes("-topmost", True)  # Keep the window on top of others
 
         self.recording = False
@@ -24,21 +26,26 @@ class App:
         self.current_transcriptions = ""
     
         #-------------------check serveur-----------------------
-        self.status_server = check_server_status(SERVEUR_IP, PORT)
+        self.status_server = check_server_status(self.config.server_ip, self.config.port)
 
         #-----------------Shortcut------------------------------
-        self.keyboard_shortcut = SHORTCUT
+        self.keyboard_shortcut = self.config.shortcut
 
         # -------------simulate keyboard
         self.simulate_keyboard = False
         self.simulator_keyboard = Simulator()
         keyboard.add_hotkey(self.keyboard_shortcut, self.toggle_start_stop)
+
         #----------------------MODE----------------------------
-        self.current_mode = ReduitMode(self)
+        mode = self.config.mode
+        if mode == 'SMALL':
+            self.current_mode = ReduitMode(self)
+        else:
+            self.current_mode = GrandFenetreMode(self)
         #----------------- Lien Client Whisper -----------------------
         self.client_manager = ClientManager(
-            SERVEUR_IP,
-            PORT,
+            self.config.server_ip,
+            self.config.port,
             "fr",
             "small",
             False,
@@ -112,6 +119,14 @@ class App:
 
     def on_closing(self):
         self.stop_client()
+        if self.mic:
+            self.mic.disconnect()
+        # sauvegarde userConfig
+        self.config.shortcut = self.keyboard_shortcut
+        self.config.mode = self.current_mode.name()
+        print(f"pos windows x = {self.root.winfo_rootx()} y = {self.root.winfo_rooty()}")
+        self.config.x_window = self.root.winfo_rootx()
+        self.config.y_window = self.root.winfo_rooty()
         self.root.quit()
         self.loop.stop()
 
@@ -126,17 +141,104 @@ class App:
 
     def switch_mode(self, mode):
         print(f"switch_mode({mode.name})")
+        # print(f"Avant switch: {self.root.winfo_width()}x{self.root.winfo_height()}")
         if self.current_mode:
             if self.current_mode.mode != mode:
+                self.current_mode.exit()
+                self.current_mode = None
                 if mode == ModeStyle.BIG:
-                    self.current_mode.exit()
                     self.current_mode = GrandFenetreMode(self)
                 elif mode == ModeStyle.SMALL:
-                    self.current_mode.exit()
                     self.current_mode = ReduitMode(self)
                 else:
                     print("Erreur de Mode dans App")
+                # print(f"Après switch: {self.root.winfo_width()}x{self.root.winfo_height()}")
+
                 self.current_mode.update()
+                # Utiliser after_idle pour s'assurer que geometry est bien appliqué
+                self.root.after_idle(lambda: self.root.geometry("940x709" if mode == ModeStyle.BIG else "200x65"))
+                # print(f"Après after: {self.root.winfo_width()}x{self.root.winfo_height()}")
+
+    #---------------------------------------------------------------------------------------------------------------------
+#               Fenetre shorcut a détacher dans une autre class 
+    def change_shortcut(self):
+        self.root.attributes("-topmost", False)  # Désactiver l'attribut "toujours au-dessus"
+        self.shortcut_window = tk.Toplevel(self.root)
+        self.shortcut_window.title("Changer le raccourci clavier")
+        self.shortcut_window.attributes("-topmost", True)  # S'assurer que la fenêtre est au-dessus
+
+        tk.Label(self.shortcut_window, text="Appuyez sur une nouvelle combinaison de touches :").pack(pady=10)
+        self.shortcut_entry = tk.Entry(self.shortcut_window)
+        self.shortcut_entry.pack(pady=10)
+        self.shortcut_entry.bind('<KeyPress>', self.get_shortcut)
+        self.shortcut_entry.focus_set()
+
+        # Réinitialiser self.keyboard_shortcut
+        self.keyboard_shortcut = ''
+        self.shortcut_entry.delete(0, tk.END)
+
+        # Assurez-vous de réactiver "toujours au-dessus" lorsque la fenêtre est fermée
+        self.shortcut_window.protocol("WM_DELETE_WINDOW", self.on_close_shortcut_window)
+
+
+    def on_close_shortcut_window(self):
+        self.root.attributes("-topmost", True)  # Réactiver l'attribut "toujours au-dessus"
+        self.shortcut_window.destroy()
+
+    def get_shortcut(self, event):
+        key = self.map_key_name(event.keysym)
+
+        if key == 'Return':  # Ignore the Enter key itself
+            if self.is_valid_shortcut(self.keyboard_shortcut.split('+')):
+                keyboard.clear_all_hotkeys()
+                keyboard.add_hotkey(self.keyboard_shortcut, self.toggle_start_stop)
+                # self.start_button.config(text=f"Start ({self.keyboard_shortcut})")
+                # self.stop_button.config(text=f"Stop ({self.keyboard_shortcut})")
+                # self.icon.title = f"RecoVocale (v{VERSION})[{self.keyboard_shortcut}]"
+                self.on_close_shortcut_window()  # Fermer la fenêtre et réactiver "toujours au-dessus"
+            else:
+                messagebox.showerror("Raccourci invalide", "La combinaison de touches n'est pas valide.")
+                self.keyboard_shortcut = ''  # Reset the pressed keys
+                self.shortcut_entry.delete(0, tk.END)
+            return
+
+        current_keys = self.keyboard_shortcut.split('+') if self.keyboard_shortcut else []
+
+        if key not in current_keys:
+            current_keys.append(key)
+
+        self.keyboard_shortcut = '+'.join(current_keys)
+        self.shortcut_entry.delete(0, tk.END)
+        self.shortcut_entry.insert(0, self.keyboard_shortcut)
+
+        
+        
+    def is_valid_shortcut(self, keys):
+        if len(keys) == 1 and keys[0].startswith('F'):
+            return True  # Touche de fonction seule
+        if len(keys) == 2 and 'ctrl' in keys:
+            return True  # Ctrl+quelque chose
+        if len(keys) == 3 and 'ctrl' in keys and 'shift' in keys:
+            return True  # Ctrl+Shift+quelque chose
+        if len(keys) == 3 and 'ctrl' in keys and 'alt' in keys:
+            return True  # Alt+Ctrl+quelque chose
+        if len(keys) == 4 and 'ctrl' in keys and 'alt' in keys and 'shift' in keys:
+            return True  # Alt+Ctrl+Shift+quelque chose
+        return False
+
+
+    def map_key_name(self, key):
+        key_mapping = {
+            'Control_L': 'ctrl',
+            'Control_R': 'ctrl',
+            'Shift_L': 'shift',
+            'Shift_R': 'shift',
+            'Alt_L': 'alt',
+            'Alt_R': 'alt'
+            # Ajoutez d'autres mappages si nécessaire
+        }
+        return key_mapping.get(key, key)
+#---------------------------------------------------------------------------------------------------------------------
 
 
 def start_loop(loop):
@@ -151,7 +253,6 @@ def start_loop(loop):
 
 if __name__ == "__main__":
     root = tk.Tk()
-    root.resizable(False, False)
     # Create a new event loop
     new_loop = asyncio.new_event_loop()
     threading.Thread(target=start_loop, args=(new_loop,), daemon=True).start()

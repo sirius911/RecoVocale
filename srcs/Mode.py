@@ -7,17 +7,11 @@ class Mode:
     def __init__(self, app):
         self.app = app
         self.root = app.root
-        # self.root.resizable(False, False)
         self.enter()
 
     def enter(self):
         pass
         # self.create_systray_icon()
-
-    # def exit(self):
-    #      # pour le switch mode
-    #     pass
-
     
 
     def show_window(self, icon, item):
@@ -63,18 +57,16 @@ class Mode:
     def info(self):
         #print info TODO: A mettre en fênetre
         print(f"Version : v{VERSION}")
-        if check_server_status(SERVEUR_IP, PORT):
-            _serv = f"Connected @{SERVEUR_IP}:{PORT}"
+        if check_server_status(self.app.config.server_ip, self.app.config.port):
+            _serv = f"Connected @{self.app.config.server_ip}:{self.app.config.port}"
         else:
-            _serv = f"Not Connected @{SERVEUR_IP}:{PORT}"
+            _serv = f"Not Connected @{self.app.config.server_ip}:{self.app.config.port}"
         print(f"Serveur : {_serv}")
-        print(f"Micro : {self.app.mic.micro_name}")
-        print(f"Mode = {self.mode} - Simulation Clavier: {self.app.simulate_keyboard}")
-    # def load_and_resize_image(self, path, size):
-    #     image = Image.open(path)
-    #     image = image.resize(size, Image.LANCZOS)  # Use LANCZOS for high-quality downsizing
-    #     return ImageTk.PhotoImage(image)
-
+        print(f"Micro : {self.app.mic.micro_name if self.app.mic else None}")
+        print(f"Mode = {self.name()} - Simulation Clavier: {self.app.simulate_keyboard}")
+ 
+    def name(self):
+        return self.mode.name
 #-----------------------------------------------------------------------
 #                                  MODE SYSTRAY
 #-----------------------------------------------------------------------

@@ -13,7 +13,12 @@
 | 0.4     | 2024-08-02 | - Mode tache de Fond                                               |
 |         |            | - Menu Pour choisir son micro                                      |
 |         |            | - Menu pour changer son Raccourci                                  |
-| 0.5     |            | - Icons en arrière plan pour erreur & enregistrement plus mieux !  |
+| 0.5     |            | - Refonte threading et async function                              |
+|         |            | - plus de menu micro                                               |
+|         |            | - Fichier user_config.ini pou Ip, Port, Shortcut, Mode             |
+|         |            | - Gestion Micro Philips & Nuance avec Actions paramètrable par les |
+|         |            |   boutons (micro_actions_config.json)                              |
+|         |            | - Mode GrandeFenêtre ou petite Fenêtre                             |
 |---------|------------|--------------------------------------------------------------------|
 
 Voici le texte corrigé :
@@ -21,33 +26,31 @@ Voici le texte corrigé :
 ## Comment utiliser
 
 1. Démarrez l'application.
-   L'application démarre en tâche de fond.
-   Un petit carré blanc apparaît. (Il se remplit de bleu s'il y a un micro et du son)
-   En passant la souris sur le carré, on voit si on est connecté, la version, et la touche de raccourci.
-   Avec un clic droit, on accède à un menu pour ouvrir la fenêtre principale, changer le raccourci ou quitter.
+  
 
-En mode Arrière-plan :
+En mode Petite fenêtre :
    Le mode simulation d'écriture clavier est automatiquement activé.
-   Tapez la commande Raccourci pour lancer la transcription et écrire le texte transcrit.
-   Le carré peut se remplir de rouge en fonction du niveau sonore.
-   Retapez sur le Raccourci pour arrêter la transcription.
+   Tapez la commande Raccourci ou maintenez le bouton REC du microphone pour lancer la transcription et écrire le texte transcrit.
+   Retapez sur le Raccourci pour arrêter la transcription ou lachez le bouton REC du microphone
 
-En mode fenêtre : 
-- Cliquez sur les boutons Start et Stop pour démarrer ou arrêter la reconnaissance vocale.
+En mode Grande fenêtre : 
+- Cliquez sur le bouton REC / PAUSE pour démarrer ou arrêter la reconnaissance vocale.
+  Vous pouvez aussi maintenir le Bouton REC du Microphone (Philips ou Nuance).
+  Vous pouvez utiliser aussi le Raccourci Clavier pour lancer ou arrêter la transcription.
 - Utilisez l'option "Simule Keyboard" pour simuler la saisie dans une autre fenêtre.
-  Vous pouvez alors utiliser 'Le Raccourci clavier' pour démarrer ou arrêter la reconnaissance vocale en étant dans une autre fenêtre.
-- Le bouton Clear efface le contenu de la fenêtre (si la reconnaissance est en cours, le contexte est gardé et donc il peut réécrire ce qu'il a encore en mémoire.
-  Pour être sûr de conserver le texte, stoppez la reconnaissance avec le bouton Stop ou le raccourci clavier).
+- Le bouton Clear efface le contenu de la fenêtre.
 - Le bouton Copy permet de copier le contenu de la fenêtre dans le presse-papiers.
-- Le menu Paramètres permet de choisir un autre micro ou de changer de raccourci.
+- Le bouton Validation 'fige' le texte. Cela ferme et reouvre une session websocket. 
+- Le menu Paramètres permet de changer de raccourci.
 
 ## Fonctionnalités
 
 - Reconnaissance vocale en temps réel
 - Simulation de la saisie au clavier
 - Raccourci clavier global pour démarrer/arrêter
-- Choix du micro
-- Choix du raccourci Start/Stop
+- Bouton REC du Micro pour lancer la transcription
+- Bouton EOL (Philips) ou [T->] (Nuance) pour valider un texte.
+- Choix du raccourci Start/Stop 
 
 ## Contact
 
