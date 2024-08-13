@@ -106,7 +106,7 @@ class App:
         if not self.recording:
             self.client_manager.unpause()
             self.recording = True
-            self.update()
+        self.update()
 
     def running(self):
         return self.client_manager.running

@@ -5,7 +5,7 @@ from info import SMALL
 class ReduitMode(Mode):
     def enter(self):
         self.mode = SMALL
-        self.app.simulate_keyboard = True
+        self.app.simulate_keyboard = SMALL.simule_keyboard
         self.ui()
         super().enter()
 

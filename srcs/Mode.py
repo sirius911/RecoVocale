@@ -14,7 +14,6 @@ class Mode:
         self.root.attributes("-topmost", self.mode.topmost)
         self.root.geometry(f"{self.mode.window_width}x{self.mode.window_height}+{self.app.config.x_window}+{self.app.config.y_window}")
         # self.create_systray_icon()
-    
 
     def show_window(self, icon, item):
         self.simulate_keyboard_var.set(False)
