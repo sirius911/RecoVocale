@@ -5,7 +5,6 @@ import asyncio
 
 class ClientManager:
     def __init__(self, host, port, lang, model, translate, use_vad, save_output_recording, output_recording_filename, update_callback):
-        # print("Initializing ClientManager")
         self.host = host
         self.port = port
         self.lang = lang
@@ -20,7 +19,7 @@ class ClientManager:
         self.display_task = None
         self.loop = None
         self.update_callback = update_callback
-        self.correcteur = Correcteur("../dist/corrections.json")
+        self.correcteur = Correcteur()
 
     def start_client(self, loop):
         # print("Starting client in ClientManager")
@@ -39,39 +38,28 @@ class ClientManager:
             )
 
         self.running = True
-        # print(f"Starting client, running: {self.running}")
 
         self.loop = loop
         # Run the client in a separate thread to avoid blocking the event loop
         self.client_thread = threading.Thread(target=self.run_client_thread)
         self.client_thread.start()
 
-        # print("Creating display task")
         self.display_task = asyncio.run_coroutine_threadsafe(self.update_display(), self.loop)
-        # print("Display task started:", self.display_task)
 
     def run_client_thread(self):
         try:
-            # print("run_client()")
             self.client()
-            # print("Client started")
         except Exception as e:
             print(f"Error running client: {e}")
 
     async def update_display(self):
-        # print("update_display started")
         while self.running:
-            # print("update_display running")
-            transcriptions, phrase_finished = self.client.get_transcriptions()
+            transcriptions, _ = self.client.get_transcriptions()
             transcriptions = transcriptions if self.client else []
             corrected_transcriptions = [self.correcteur.applique_corrections(line) for line in transcriptions]
-            # corrected_transcriptions = [line for line in transcriptions]
-            combined_text = ' '.join(corrected_transcriptions)
+            combined_text = ''.join(corrected_transcriptions).lstrip()
             if combined_text != "":
-                # print("update_callback called with:", combined_text)
                 self.update_callback(combined_text)
-            # else:
-                # print("combined_text in ClientManager.update_display() -> empty")
             await asyncio.sleep(0.5)
 
     def stop_client(self):

@@ -3,7 +3,7 @@ import os
 import pywinusb.hid as hid
 import asyncio
 from Actions import *
-from utils_window import resource_path
+from utils_window import resource_path, get_config_path
 
 class BaseMic:
     def __init__(self, loop, vendor_id, product_id, actions, app, micro_name):
@@ -76,16 +76,9 @@ class BaseMic:
             await self.check_connection()
             await asyncio.sleep(1)
 
-def get_micro_config_path():
-    """Retourne le chemin du fichier de configuration du micro dans %APPDATA%"""
-    config_dir = os.path.join(os.getenv('APPDATA'), 'RecoVocale')
-    if not os.path.exists(config_dir):
-        os.makedirs(config_dir)
-    return os.path.join(config_dir, "micro_actions_config.json")
-
 def Micro(loop, app):
     # Charger le fichier JSON depuis le répertoire utilisateur
-    config_path = get_micro_config_path()
+    config_path = get_config_path("micro_actions_config.json")
     # Vérifier si le fichier de config existe dans %APPDATA%, sinon le copier depuis le package
     if not os.path.exists(config_path):
         default_config_path = resource_path("config/micro_actions_config.json")

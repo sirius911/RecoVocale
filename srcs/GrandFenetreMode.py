@@ -1,17 +1,15 @@
 from Mode import Mode
 import tkinter as tk
 from utils_window import create_menus, create_buttons
-from info import *
+from info import BIG
 
 
 
 class GrandFenetreMode(Mode):
     def enter(self):
-        self.mode = ModeStyle.BIG
-        self.root.resizable(True, True)
+        self.mode = BIG
         self.ui()
-        self.root.geometry(f"{WINDOW_WIDTH_BIG}x{WINDOW_HEIGHT_BIG}+{self.app.config.x_window}+{self.app.config.y_window}")
-        # self.root.geometry("940x709")
+        super().enter()
 
     def ui(self):
         create_menus(self)
@@ -69,32 +67,10 @@ class GrandFenetreMode(Mode):
         # self.status_error = tk.Label(self.status_frame, text="", fg="red")
         # self.status_error.pack(side=tk.RIGHT, padx=(5, 0))
 
-    # def toggle_record(self):
-    #     if self.app.recording:
-    #         self.app.pause()  # Call pause function
-    #     else:
-    #         self.app.unpause()  # Call unpause function
-
-    # def load_and_resize_image(self, path, size):
-    #     image = Image.open(path)
-    #     image = image.resize(size, Image.LANCZOS)  # Use LANCZOS for high-quality downsizing
-    #     return ImageTk.PhotoImage(image)
-
-
     def update_simulate_keyboard(self):
         self.app.simulate_keyboard = self.simulate_keyboard_var.get()
         if self.app.simulate_keyboard:
             self.app.simulator_keyboard.init()
-
-    # def update_rec_circle(self):
-    #     fill = 'red' if self.app.recording else 'grey'
-    #     self.rec_canvas.itemconfig(self.rec_circle, fill=fill)
-
-    # def update_image_button(self):
-    #     if self.app.recording:
-    #         self.rec_button.config(image=self.record_image)
-    #     else:
-    #         self.rec_button.config(image=self.pause_image)
 
     # def update_micro_menu(self):
     #     self.micro_menu.delete(0, tk.END)
@@ -161,12 +137,7 @@ class GrandFenetreMode(Mode):
 
     def update_transcription(self, transcriptions):
         # print(f"dans update_transcription({transcriptions})")
-
         self.text_box.delete('1.0', tk.END)
         self.text_box.insert(tk.END, self.app.last_transcriptions)
         self.text_box.insert(tk.END, transcriptions)
-        # for line in transcriptions:
-        #     self.text_box.insert(tk.END, line + '\n')
-        # Scroll to the end
         self.text_box.see(tk.END)
-        # return self.text_box.get('1.0', tk.END).strip()

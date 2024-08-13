@@ -1,16 +1,20 @@
-from enum import Enum, auto
+from types import SimpleNamespace
 
 VERSION = "0.501L"
 
-BUTTON_WIDTH_BIG = 30
-BUTTON_WIDTH_SMALL = 15
+#------------------------ M O D E S ----------------------
+BIG = SimpleNamespace()
+BIG.name = "BIG"
+BIG.resizable = True
+BIG.topmost = False
+BIG.window_width = 940
+BIG.window_height = 709
+BIG.button_width = 30
 
-class ModeStyle(Enum):
-    BIG =    auto()
-    SMALL =  auto()
-    REDUIT = auto()
-
-WINDOW_WIDTH_BIG = 940
-WINDOW_HEIGHT_BIG = 709
-WINDOW_WIDTH_SMALL = 200
-WINDOW_HEIGHT_SMALL = 65
+SMALL = SimpleNamespace()
+SMALL.name = "SMALL"
+SMALL.resizable = False
+SMALL.topmost = True
+SMALL.window_width = 200
+SMALL.window_height = 65
+SMALL.button_width = 15

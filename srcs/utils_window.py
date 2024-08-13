@@ -1,10 +1,16 @@
 import os
 import sys
 import tkinter as tk
-from info import ModeStyle
 from PIL import Image, ImageTk
-from info import BUTTON_WIDTH_BIG, BUTTON_WIDTH_SMALL
+from info import BIG, SMALL
 from ToolTip import ToolTip
+
+def get_config_path(file:str):
+    """Retourne le chemin du fichier de configuration du micro dans %APPDATA%"""
+    config_dir = os.path.join(os.getenv('APPDATA'), 'RecoVocale')
+    if not os.path.exists(config_dir):
+        os.makedirs(config_dir)
+    return os.path.join(config_dir, file)
 
 def resource_path(relative_path):
     """Obtenir le chemin absolu d'une ressource, en tenant compte du fait qu'on est dans un exécutable ou non"""
@@ -25,10 +31,7 @@ def create_buttons(self):
      #--------------------------------BOUTON -------------------------------------
 
      # Load, resize and convert images using Pillow
-     if self.mode == ModeStyle.BIG:
-          button_width = BUTTON_WIDTH_BIG
-     else:
-          button_width = BUTTON_WIDTH_SMALL
+     button_width = self.mode.button_width
      self.record_image = _load_and_resize_image(resource_path("Icons/pause.png"), (button_width, button_width))
      self.pause_image = _load_and_resize_image(resource_path("Icons/rec.png"), (button_width, button_width))
      
@@ -60,9 +63,9 @@ def create_menus(self):
      self.mode_menu = tk.Menu(self.settings_menu, tearoff=0)
      self.settings_menu.add_cascade(label="Mode", menu=self.mode_menu)
      self.mode_menu.add_radiobutton(label='Grande Fenêtre',
-                                   command= lambda mode=ModeStyle.BIG: self.app.switch_mode(mode))
+                                   command= lambda mode=BIG: self.app.switch_mode(mode))
      self.mode_menu.add_radiobutton(label='Petite Fenêtre',
-                                   command= lambda mode=ModeStyle.SMALL: self.app.switch_mode(mode))
+                                   command= lambda mode=SMALL: self.app.switch_mode(mode))
 
      self.settings_menu.add_separator()
      self.settings_menu.add_command(label="Info", command=self.info)

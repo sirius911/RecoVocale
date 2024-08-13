@@ -5,10 +5,10 @@ TIME_WRITE = 0.02   #delay for typing speed of all Char
 TIME_DELETE = 0.01  #delay for typing speed for backspace
 
 class Simulator:
-    def __init__(self, text=None):
+    def __init__(self, text=None, debug=False):
         self.keyboard = Controller()
         self.previous_text = ""
-        self.running = False
+        self.debug = debug
         if text is not None:    # Permet d'appeler la classe de n'importe ou et de faire taper text
             self.simule_key(text)
 
@@ -16,9 +16,11 @@ class Simulator:
         self.previous_text = ""
 
     def animate_typing (self, new_text:str):
-            print(f"On me demande d'écrire : [{new_text}]") #debug
-            print(f"j'ai en mémoire : [{self.previous_text}]")
+            if self.debug:
+                print(f"On me demande d'écrire : [{new_text}]") #debug
+                print(f"j'ai en mémoire : [{self.previous_text}]")
             def find_common_prefix(s1, s2):
+                #fonction renvoyant le nombre de caractère commun entre s1 et s2
                 common_prefix_length = 0
                 for c1, c2 in zip(s1, s2):
                     if c1 != c2:

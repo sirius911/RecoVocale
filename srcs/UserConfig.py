@@ -14,6 +14,7 @@ class UserConfig:
         self._mode = "SMALL"
         self._x_window = "10"
         self._y_window = "10"
+        self._debug = False
         
         # Lire la configuration si le fichier existe, sinon la créer
         if os.path.exists(self.config_file):
@@ -32,6 +33,7 @@ class UserConfig:
         self._mode = config.get('SETTINGS', 'MODE', fallback=self._mode)
         self._x_window = config.get('SETTINGS', 'X_WINDOW', fallback=self._x_window)
         self._y_window = config.get('SETTINGS', 'Y_WINDOW', fallback=self._y_window)
+        self._debug = config.get('SETTINGS', 'DEBUG', fallback=self._debug)
 
     def save_config(self):
         """Sauvegarde la configuration dans un fichier."""
@@ -45,7 +47,8 @@ class UserConfig:
             'SHORTCUT': self._shortcut,
             'MODE': self._mode,
             'X_WINDOW': self._x_window,
-            'Y_WINDOW': self._y_window
+            'Y_WINDOW': self._y_window,
+            'DEBUG': self._debug
         }
         print(f"Sauvegarde {self.config_file} ...", end =' ')
         with open(self.config_file, 'w') as configfile:
@@ -100,3 +103,11 @@ class UserConfig:
     @y_window.setter
     def y_window(self, value):
         self._y_window = value
+
+    @property
+    def debug(self):
+        return self._debug
+    
+    @debug.setter
+    def debug(self, value):
+        self._debug = value

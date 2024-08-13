@@ -33,7 +33,7 @@ class App:
 
         # -------------simulate keyboard
         self.simulate_keyboard = False
-        self.simulator_keyboard = Simulator()
+        self.simulator_keyboard = Simulator(text=None, debug=self.config.debug)
         keyboard.add_hotkey(self.keyboard_shortcut, self.toggle_start_stop)
 
         #----------------------MODE----------------------------
@@ -141,24 +141,22 @@ class App:
 
     def switch_mode(self, mode):
         print(f"switch_mode({mode.name})")
-        # print(f"Avant switch: {self.root.winfo_width()}x{self.root.winfo_height()}")
         if self.current_mode:
             if self.current_mode.mode != mode:
                 self.current_mode.exit()
                 self.current_mode = None
-                if mode == ModeStyle.BIG:
+                if mode == BIG:
                     self.current_mode = GrandFenetreMode(self)
-                elif mode == ModeStyle.SMALL:
+                elif mode == SMALL:
                     self.current_mode = ReduitMode(self)
                 else:
                     print("Erreur de Mode dans App")
-                # print(f"Après switch: {self.root.winfo_width()}x{self.root.winfo_height()}")
-
+               
                 self.current_mode.update()
                 # Utiliser after_idle pour s'assurer que geometry est bien appliqué
-                self.root.after_idle(lambda: self.root.geometry("940x709" if mode == ModeStyle.BIG else "200x65"))
-                # print(f"Après after: {self.root.winfo_width()}x{self.root.winfo_height()}")
-
+                self.root.after_idle(lambda: self.root.geometry(f"{self.current_mode.mode.window_width}x{self.current_mode.mode.window_height}+{self.config.x_window}+{self.config.y_window}"))
+                # self.root.after_idle(lambda: self.root.geometry("940x709" if mode == BIG else "200x65"))
+               
     #---------------------------------------------------------------------------------------------------------------------
 #               Fenetre shorcut a détacher dans une autre class 
     def change_shortcut(self):
@@ -182,7 +180,7 @@ class App:
 
 
     def on_close_shortcut_window(self):
-        self.root.attributes("-topmost", True)  # Réactiver l'attribut "toujours au-dessus"
+        self.root.attributes("-topmost", self.current_mode.mode.topmost)  # Réactiver l'attribut "toujours au-dessus"
         self.shortcut_window.destroy()
 
     def get_shortcut(self, event):

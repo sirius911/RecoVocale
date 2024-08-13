@@ -10,7 +10,9 @@ class Mode:
         self.enter()
 
     def enter(self):
-        pass
+        self.root.resizable(self.mode.resizable, self.mode.resizable)
+        self.root.attributes("-topmost", self.mode.topmost)
+        self.root.geometry(f"{self.mode.window_width}x{self.mode.window_height}+{self.app.config.x_window}+{self.app.config.y_window}")
         # self.create_systray_icon()
     
 
@@ -65,6 +67,8 @@ class Mode:
         print(f"Micro : {self.app.mic.micro_name if self.app.mic else None}")
         print(f"Mode = {self.name()} - Simulation Clavier: {self.app.simulate_keyboard}")
         print(f"Raccourci : {self.app.keyboard_shortcut}")
+        print(f"Debug : {self.app.config.debug}")
+
     def name(self):
         return self.mode.name
 #-----------------------------------------------------------------------

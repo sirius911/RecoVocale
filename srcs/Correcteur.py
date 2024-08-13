@@ -1,9 +1,10 @@
 import json
 import os
 import re
+from utils_window import get_config_path
 
 class Correcteur:
-    def __init__(self, corrections_file:str):
+    def __init__(self):
         """
         A class to apply text corrections based on a set of predefined rules.
 
@@ -11,11 +12,14 @@ class Correcteur:
             corrections (list): A list of correction rules loaded from a JSON file.
         """
         self.corrections = []
-        if corrections_file and os.path.exists(corrections_file):
-            with open(corrections_file, 'r', encoding='utf-8') as file:
+        config_path = get_config_path("corrections.json")
+        if os.path.exists(config_path):
+            with open(config_path, 'r', encoding='utf-8') as file:
                 data = json.load(file)
                 self.corrections = data.get("corrections", [])
-                print(f"Load correction : {len(self.corrections)}")
+                print(f"Load correction {config_path}: {len(self.corrections)}")
+        else:
+            print(f"No correction file : {config_path}")
 
     def applique_corrections(self, texte:str) -> str:
         """

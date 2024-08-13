@@ -12,7 +12,7 @@ if (-not $pyInstallerPath) {
 $iconPath = "reco.ico"
 $sourcePath = "srcs/RecoVocale.py"
 $iconsData = "srcs/Icons;Icons"
-$configData = "srcs/config/micro_actions_config.json;config"
+$configData = "srcs/config;config"
 $outputName = "RecoVocale"
 
 # Construire la commande PyInstaller avec plusieurs --add-data
