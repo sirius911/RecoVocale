@@ -69,12 +69,14 @@ class App:
 
 
     def start_client(self):
-        # print("Starting client in App")
+        if self.config.debug:
+            print("Starting client in App")
         self.client_manager.start_client(self.loop)
         self.pause()  # In pause 
 
     def stop_client(self):
-        # print("Stopping client in App")
+        if self.config.debug:
+            print("Stopping client in App")
         self.client_manager.stop_client()
         self.recording = False
         self.update()
@@ -91,14 +93,16 @@ class App:
         self.start_client()
 
     def pause(self):
-        print("Pausing client in App")
+        if self.config.debug:
+            print("Pausing client in App")
         self.client_manager.pause()
         self.recording = False
         self.current_transcriptions += '\n' 
         self.update()
 
     def unpause(self):
-        # print("Unpausing client in App")
+        if self.config.debug:
+            print("Unpausing client in App")
         if not self.recording:
             self.client_manager.unpause()
             self.recording = True

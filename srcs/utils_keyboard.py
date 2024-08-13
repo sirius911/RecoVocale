@@ -9,8 +9,20 @@ class Simulator:
         self.keyboard = Controller()
         self.previous_text = ""
         self.debug = debug
+        self.pressed_key = None # touche pressée et non relachée
+        self.special_keys_mapping = {
+            '\n': Key.enter,
+            ' ': Key.space,
+            '\t': Key.tab,
+            '\u0001': Key.ctrl,  # '\u0001' as a placeholder for Ctrl
+            '\u0002': Key.left,  # '\u0002' as a placeholder for Left Arrow
+            '\u0003': Key.right,  # '\u0003' as a placeholder for Right Arrow
+            '\u0004': Key.up,  # '\u0004' as a placeholder for Up Arrow
+            '\u0005': Key.down,  # '\u0005' as a placeholder for Down Arrow
+        }
         if text is not None:    # Permet d'appeler la classe de n'importe ou et de faire taper text
             self.simule_key(text)
+        
 
     def init(self):
         self.previous_text = ""
@@ -44,14 +56,15 @@ class Simulator:
             time.sleep(TIME_WRITE) # Add a small delay to simulate typing speed
 
     def _type_character(self, char:str):
-        if char == '\n':
-            self.keyboard.press(Key.enter)
-            self.keyboard.release(Key.enter)
-        elif char == ' ':
-            self.keyboard.press(Key.space)
-            self.keyboard.release(Key.space)
-        elif char == '\t':
-            self.keyboard.press(Key.tab)
-            self.keyboard.release(Key.tab)
+        if char in self.special_keys_mapping:
+            key = self.special_keys_mapping[char]
+            self.keyboard.press(key)
+            if key != Key.ctrl: # on relache si pas la touche Ctrl
+                self.keyboard.release(key)
+                if self.pressed_key:
+                    self.keyboard.release(self.pressed_key)
+                    self.pressed_key = None
+            else:
+                self.pressed_key = key
         else:
             self.keyboard.type(char)

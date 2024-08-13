@@ -62,8 +62,8 @@ class BaseMic:
             if ActionClass:
                 action = ActionClass(self.app)
                 # Vérifier si l'action a un argument
-                if "arg" in action_info:
-                    action.execute(action_info["arg"])
+                if "args" in action_info:
+                    action.execute(action_info["args"])
                 else:
                     action.execute()
             else:

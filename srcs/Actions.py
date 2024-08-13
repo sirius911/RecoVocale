@@ -25,4 +25,4 @@ class ValidTranscriptions(Action):
 
 class Keyboard(Action):
     def execute(self, text):
-        Simulator(text=text)
+        Simulator(text=text, debug=False)
