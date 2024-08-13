@@ -216,16 +216,22 @@ class App:
         
         
     def is_valid_shortcut(self, keys):
-        if len(keys) == 1 and keys[0].startswith('F'):
-            return True  # Touche de fonction seule
-        if len(keys) == 2 and 'ctrl' in keys:
-            return True  # Ctrl+quelque chose
+        if len(keys) == 1 and (keys[0].startswith('F') or keys[0] == 'fn'):
+            return True  # Touche de fonction seule ou Fn seule
+        if len(keys) == 2 and ('ctrl' in keys or 'fn' in keys):
+            return True  # Ctrl+quelque chose ou Fn+quelque chose
         if len(keys) == 3 and 'ctrl' in keys and 'shift' in keys:
             return True  # Ctrl+Shift+quelque chose
         if len(keys) == 3 and 'ctrl' in keys and 'alt' in keys:
             return True  # Alt+Ctrl+quelque chose
+        if len(keys) == 3 and 'fn' in keys and 'ctrl' in keys:
+            return True  # Fn+Ctrl+quelque chose
         if len(keys) == 4 and 'ctrl' in keys and 'alt' in keys and 'shift' in keys:
             return True  # Alt+Ctrl+Shift+quelque chose
+        if len(keys) == 4 and 'fn' in keys and 'ctrl' in keys and 'shift' in keys:
+            return True  # Fn+Ctrl+Shift+quelque chose
+        if len(keys) == 5 and 'fn' in keys and 'ctrl' in keys and 'alt' in keys and 'shift' in keys:
+            return True  # Fn+Alt+Ctrl+Shift+quelque chose
         return False
 
 
@@ -236,7 +242,9 @@ class App:
             'Shift_L': 'shift',
             'Shift_R': 'shift',
             'Alt_L': 'alt',
-            'Alt_R': 'alt'
+            'Alt_R': 'alt',
+            'Fn_L': 'fn',
+            'Fn_R': 'fn',
             # Ajoutez d'autres mappages si nécessaire
         }
         return key_mapping.get(key, key)
