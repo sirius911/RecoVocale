@@ -3,8 +3,6 @@ import tkinter as tk
 from utils_window import create_menus, create_buttons
 from info import BIG
 
-
-
 class GrandFenetreMode(Mode):
     def enter(self):
         self.mode = BIG
@@ -137,8 +135,9 @@ class GrandFenetreMode(Mode):
     #     self.status_label.config(text=text)
 
     def update_transcription(self, transcriptions):
-        if self.app.config.debug:
-            print(f"dans update_transcription({transcriptions})")
+        # if self.app.config.debug():
+        #     print(f"last transcription = ({self.app.last_transcriptions})")
+        #     print(f"dernière transcription = '{transcriptions}'")
         self.text_box.delete('1.0', tk.END)
         self.text_box.insert(tk.END, self.app.last_transcriptions)
         self.text_box.insert(tk.END, transcriptions)

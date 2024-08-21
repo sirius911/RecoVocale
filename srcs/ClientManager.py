@@ -1,7 +1,29 @@
 from client import EnhancedTranscriptionClient
-from Correcteur import Correcteur
+from Correcteur import Correcteur, intercept
 import threading
 import asyncio
+
+# def intercept(phrases):
+#     '''
+#     doit intercepter des mots clefs dans une liste de phrase
+#     '''
+#     expression_remplacement = {
+#         "deux points": ":",
+#         " 2 points": ":",
+#         "point d'interrogation": "?",
+#         "point d'exclamation": "!",
+#         "point virgule": ";",
+#         "à la ligne": "\n",
+#         "virgule": ",",
+#         " point": ".",
+#     }
+#     # Ponctuations à enlever
+#     ponctuations = ".,;:!?"
+
+#     phrase_sans_ponctuation = ''.join([char for char in phrases if char not in ponctuations])
+#     for seq_to_find, substitute in expression_remplacement.items():
+#         phrase_sans_ponctuation = phrase_sans_ponctuation.replace(seq_to_find, substitute)
+#     return phrase_sans_ponctuation
 
 class ClientManager:
     def __init__(self, host, port, lang, model, translate, use_vad, save_output_recording, output_recording_filename, update_callback):
@@ -56,8 +78,9 @@ class ClientManager:
         while self.running:
             transcriptions, _ = self.client.get_transcriptions()
             transcriptions = transcriptions if self.client else []
-            corrected_transcriptions = [self.correcteur.applique_corrections(line) for line in transcriptions]
-            combined_text = ''.join(corrected_transcriptions).lstrip()
+            # corrected_transcriptions = [self.correcteur.applique_corrections(line) for line in transcriptions]
+            
+            combined_text = intercept(''.join(transcriptions).lstrip())
             if combined_text != "":
                 self.update_callback(combined_text)
             await asyncio.sleep(0.5)

@@ -97,7 +97,7 @@ class App:
             print("Pausing client in App")
         self.client_manager.pause()
         self.recording = False
-        self.current_transcriptions += '\n' 
+        # self.current_transcriptions += '\n' 
         self.update()
 
     def unpause(self):

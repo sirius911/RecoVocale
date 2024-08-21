@@ -71,4 +71,8 @@ def create_menus(self):
      self.settings_menu.add_command(label="Info", command=self.info)
      self.settings_menu.add_separator()
 
+     self.settings_menu.add_command(label="Connecte", command=self.app.start_client)
+     self.settings_menu.add_command(label="Deconnect", command=self.app.stop_client)
+     self.settings_menu.add_separator()
+
      self.settings_menu.add_command(label="Quitter", command=self.exit_app)

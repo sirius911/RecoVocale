@@ -13,7 +13,8 @@ def print_transcript(text):
     """Prints formatted transcript text."""
     wrapper = textwrap.TextWrapper(width=60)
     for line in wrapper.wrap(text="".join(text)):
-        print(line)
+        pass
+        print(f"[{line}]")
 
 
 def format_time(s):
