@@ -14,3 +14,6 @@ class Transcription:
     def clear(self):
         self.en_cours = ""
         self.entier = ""
+    
+    def get(self) -> str :
+        return (f"{self.entier}{self.en_cours}")

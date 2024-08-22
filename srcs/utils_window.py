@@ -48,31 +48,37 @@ def create_buttons(self):
      self.rec_canvas.pack(side=tk.LEFT, padx=5)
 
 def create_menus(self):
-     self.menu_bar = tk.Menu(self.root)
-     self.root.config(menu=self.menu_bar)
+    self.menu_bar = tk.Menu(self.root)
+    self.root.config(menu=self.menu_bar)
 
-     self.settings_menu = tk.Menu(self.menu_bar, tearoff=0)
-     self.menu_bar.add_cascade(label="Paramètres", menu=self.settings_menu)
+    # Menu Paramètres
+    self.settings_menu = tk.Menu(self.menu_bar, tearoff=0)
+    self.menu_bar.add_cascade(label="Paramètres", menu=self.settings_menu)
 
-     # self.micro_menu = tk.Menu(self.settings_menu, tearoff=0)
-     # self.settings_menu.add_cascade(label="Micro", menu=self.micro_menu)
-
-     # self.update_micro_menu()
-
-     self.settings_menu.add_command(label="Raccourci Clavier", command=self.app.change_shortcut)
-     self.mode_menu = tk.Menu(self.settings_menu, tearoff=0)
-     self.settings_menu.add_cascade(label="Mode", menu=self.mode_menu)
-     self.mode_menu.add_radiobutton(label='Grande Fenêtre',
+    # Raccourci Clavier
+    self.settings_menu.add_command(label="Raccourci Clavier", command=self.app.change_shortcut)
+    
+    # Mode
+    self.mode_menu = tk.Menu(self.settings_menu, tearoff=0)
+    self.settings_menu.add_cascade(label="Mode", menu=self.mode_menu)
+    self.mode_menu.add_radiobutton(label='Grande Fenêtre',
                                    command= lambda mode=BIG: self.app.switch_mode(mode))
-     self.mode_menu.add_radiobutton(label='Petite Fenêtre',
+    self.mode_menu.add_radiobutton(label='Petite Fenêtre',
                                    command= lambda mode=SMALL: self.app.switch_mode(mode))
 
-     self.settings_menu.add_separator()
-     self.settings_menu.add_command(label="Info", command=self.info)
-     self.settings_menu.add_separator()
+    # Autres options du menu Paramètres
+    self.settings_menu.add_separator()
+    self.settings_menu.add_command(label="Info", command=self.info)
+    self.settings_menu.add_separator()
+    self.settings_menu.add_command(label="Connecte", command=self.app.start_client)
+    self.settings_menu.add_command(label="Deconnect", command=self.app.stop_client)
+    self.settings_menu.add_separator()
+    self.settings_menu.add_command(label="Quitter", command=self.exit_app)
 
-     self.settings_menu.add_command(label="Connecte", command=self.app.start_client)
-     self.settings_menu.add_command(label="Deconnect", command=self.app.stop_client)
-     self.settings_menu.add_separator()
+    # Nouveau menu Édition
+    self.edit_menu = tk.Menu(self.menu_bar, tearoff=0)
+    self.menu_bar.add_cascade(label="Édition", menu=self.edit_menu)
 
-     self.settings_menu.add_command(label="Quitter", command=self.exit_app)
+    # Options du menu Édition
+    self.edit_menu.add_command(label="Copier", command=self.app.copy_to_clipboard)
+    self.edit_menu.add_command(label="Coller", command=self.app.paste_from_clipboard)

@@ -27,6 +27,9 @@ class Mode:
     def update_transcription(self, transcriptions):
         pass
 
+    def get_selected_text(self):
+        return self.app.transcription.get()
+
     def hide_window(self):
         self.simulate_keyboard_var.set(True)
         self.is_hidden = True

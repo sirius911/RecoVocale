@@ -26,3 +26,7 @@ class ValidTranscriptions(Action):
 class Keyboard(Action):
     def execute(self, text):
         Simulator(text=text, debug=False)
+
+class Copie_clipboard(Action):
+    def execute(self):
+        self.app.copy_to_clipboard()

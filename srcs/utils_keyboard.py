@@ -56,15 +56,13 @@ class Simulator:
             time.sleep(TIME_WRITE) # Add a small delay to simulate typing speed
 
     def _type_character(self, char:str):
-        if char in self.special_keys_mapping:
-            key = self.special_keys_mapping[char]
-            self.keyboard.press(key)
-            if key != Key.ctrl: # on relache si pas la touche Ctrl
-                self.keyboard.release(key)
-                if self.pressed_key:
-                    self.keyboard.release(self.pressed_key)
-                    self.pressed_key = None
-            else:
-                self.pressed_key = key
+        key = self.special_keys_mapping.get(char, char)
+        self.keyboard.press(key)
+        #gestion des double touche avec Ctr-
+        if key != Key.ctrl: # on relache si pas la touche Ctrl
+            self.keyboard.release(key)
+            if self.pressed_key:
+                self.keyboard.release(self.pressed_key)
+                self.pressed_key = None
         else:
-            self.keyboard.type(char)
+            self.pressed_key = key

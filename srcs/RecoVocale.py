@@ -96,6 +96,15 @@ class App:
         self.stop_client()
         self.start_client()
 
+    def copy_to_clipboard(self):
+        if self.current_mode:
+            self.root.clipboard_clear()
+            self.root.clipboard_append(self.current_mode.get_selected_text())
+
+    def paste_from_clipboard(self):
+        Simulator('\u0001v')
+            
+        
     def pause(self):
         if self.config.debug:
             print("Pausing client in App")

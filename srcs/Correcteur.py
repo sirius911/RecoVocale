@@ -31,6 +31,7 @@ def intercept(phrases):
     '''
     doit intercepter des mots clefs dans une liste de phrase
     '''
+    print(f"intercepte '{phrases}'")
     expression_remplacement = {
         "deux points": ":",
         " 2 points": ":",
@@ -46,9 +47,10 @@ def intercept(phrases):
     # ponctuations = ".,;:!?"
 
     # Supprimer les ponctuations tout en conservant la casse
+    # soucis car les ponctuation déjà remplacées sont effacées aussi !
     # phrase_sans_ponctuation = ''.join([char for char in phrases if char not in ponctuations])
     phrase_sans_ponctuation = phrases
-    
+
     # Remplacement des expressions sans tenir compte de la casse
     for seq_to_find, substitute in expression_remplacement.items():
         phrase_sans_ponctuation = re.sub(
@@ -57,8 +59,17 @@ def intercept(phrases):
             phrase_sans_ponctuation, 
             flags=re.IGNORECASE
         )
+
+    print(f" avant regex : {phrase_sans_ponctuation}")
+    # Suppression des points précédés par '\n' ou un autre point '.'
+    phrases_sans_bad_point = re.sub(r'(?<=\n)[.,;:!?]|(?<=\.)[.,;:!?]|(?<=\,)[.,;:!?]', '',  phrase_sans_ponctuation)
     
-    return phrase_sans_ponctuation
+    # Suppression des espaces précédant '.', ',', ';', ':'
+    phrases_finale = re.sub(r' +(?=[.,;:])', '', phrases_sans_bad_point)
+
+    # Supprimer uniquement les espaces avant et après un '\n'
+    phrases_finale = re.sub(r' (?=\n)|(?<=\n) ', '', phrases_finale)
+    return phrases_finale
 
 
 class Correcteur:

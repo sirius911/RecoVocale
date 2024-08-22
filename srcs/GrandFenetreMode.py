@@ -22,7 +22,8 @@ class GrandFenetreMode(Mode):
         self.simulate_keyboard_check = tk.Checkbutton(self.root,
                                                       text="Simule Touches Clavier",
                                                       variable=self.simulate_keyboard_var,
-                                                      command=self.update_simulate_keyboard
+                                                      command=self.update_simulate_keyboard,
+                                                      
                                                       )
         self.simulate_keyboard_check.pack(pady=10)
         # Synchronisation initiale avec la variable booléenne
@@ -38,7 +39,7 @@ class GrandFenetreMode(Mode):
         self.text_box.pack(pady=10, fill=tk.BOTH, expand=True)
         
         self.text_box_scrollbar.config(command=self.text_box.yview)
-        self.copy_button = tk.Button(self.root, text="Copy", command=self.copy_to_clipboard)
+        self.copy_button = tk.Button(self.root, text="Copy", command=self.app.copy_to_clipboard)
         self.copy_button.pack(pady=10)
 
         self.clear_text_box_button = tk.Button(self.root, text="Clear", command=self.clear_text_box)
@@ -71,6 +72,21 @@ class GrandFenetreMode(Mode):
         if self.app.simulate_keyboard:
             self.app.simulator_keyboard.init()
 
+    def get_selected_text(self):
+        try:
+            # Vérifie s'il y a une sélection
+            if self.text_box.tag_ranges("sel"):
+                # Récupère le texte sélectionné
+                selected_text = self.text_box.get(tk.SEL_FIRST, tk.SEL_LAST)
+                return selected_text
+            else:
+                # si aucune selection on envoi la transcription complète
+                return self.app.transcription.get()
+        except tk.TclError:
+            # Gestion d'erreur si aucune sélection n'est faite
+            return self.app.transcription.get()
+
+
     # def update_micro_menu(self):
     #     self.micro_menu.delete(0, tk.END)
     #     self.micro_list = []
@@ -92,20 +108,22 @@ class GrandFenetreMode(Mode):
     #     self.selected_micro = idx
     #     # self.app.update_mic_stream()
 
-    def copy_to_clipboard(self):
-        """
-        Copy the content of the text box to the clipboard.
-        """
-        self.root.clipboard_clear()
-        self.root.clipboard_append(self.text_box.get("1.0", tk.END))
-        self.root.update()
+    # def copy_to_clipboard(self):  --> mis dans Recovocale
+    #     """
+    #     Copy the content of the text box to the clipboard.
+    #     """
+    #     self.app.to_clip_board()
+    #     self.root.clipboard_clear()
+    #     self.root.clipboard_append(self.text_box.get("1.0", tk.END))
+    #     self.root.update()
 
     def clear_text_box(self):
         """
         Clear the content of the text box.
         """
         self.app.valid_transcriptions()
-        self.app.last_transcriptions = ""
+        self.app.transcription.clear()
+
         self.text_box.delete('1.0', tk.END)
         self.root.update()
 
