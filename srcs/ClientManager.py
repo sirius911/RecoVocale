@@ -3,28 +3,6 @@ from Correcteur import Correcteur, intercept
 import threading
 import asyncio
 
-# def intercept(phrases):
-#     '''
-#     doit intercepter des mots clefs dans une liste de phrase
-#     '''
-#     expression_remplacement = {
-#         "deux points": ":",
-#         " 2 points": ":",
-#         "point d'interrogation": "?",
-#         "point d'exclamation": "!",
-#         "point virgule": ";",
-#         "à la ligne": "\n",
-#         "virgule": ",",
-#         " point": ".",
-#     }
-#     # Ponctuations à enlever
-#     ponctuations = ".,;:!?"
-
-#     phrase_sans_ponctuation = ''.join([char for char in phrases if char not in ponctuations])
-#     for seq_to_find, substitute in expression_remplacement.items():
-#         phrase_sans_ponctuation = phrase_sans_ponctuation.replace(seq_to_find, substitute)
-#     return phrase_sans_ponctuation
-
 class ClientManager:
     def __init__(self, host, port, lang, model, translate, use_vad, save_output_recording, output_recording_filename, update_callback):
         self.host = host

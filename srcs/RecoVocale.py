@@ -12,18 +12,21 @@ from utils_keyboard import Simulator
 from Micro import Micro
 from info import *
 from ClientManager import ClientManager
+from Transcription import Transcription
 
 class App:
     def __init__(self, root, loop):
-        print("Initializing App")
         self.config = UserConfig()
+        if self.config.debug:
+            print("Initializing App")
         self.root = root
         self.root.title(f"RecoVocale [{self.config.server_ip}:{self.config.port}] (v{VERSION})")
         self.root.attributes("-topmost", True)  # Keep the window on top of others
 
         self.recording = False
-        self.last_transcriptions = ""
-        self.current_transcriptions = ""
+        self.transcription = Transcription()
+        # self.last_transcriptions = ""
+        # self.current_transcriptions = ""
     
         #-------------------check serveur-----------------------
         self.status_server = check_server_status(self.config.server_ip, self.config.port)
@@ -52,7 +55,7 @@ class App:
             True,
             False,
             "",
-            self.display_message  # Pass the callback to ClientManager
+            self.update_transcriptions  # Pass the callback to ClientManager
         )
 
         # Use the provided asyncio event loop
@@ -83,12 +86,13 @@ class App:
 
     def valid_transcriptions(self):
         # on valide les transcription et sauvegarde
-        self.current_transcriptions += '\n'
-        self.last_transcriptions += self.current_transcriptions
-        if self.simulate_keyboard:
-            self.simulator_keyboard.animate_typing(self.current_transcriptions)
-            self.simulator_keyboard.init()
-        self.current_transcriptions = ""
+        self.transcription.validation()
+        # self.current_transcriptions += '\n'
+        # self.last_transcriptions += self.current_transcriptions
+        # if self.simulate_keyboard:
+        #     self.simulator_keyboard.animate_typing(self.current_transcriptions)
+        #     self.simulator_keyboard.init()
+        # self.current_transcriptions = ""
         self.stop_client()
         self.start_client()
 
@@ -111,9 +115,10 @@ class App:
     def running(self):
         return self.client_manager.running
 
-    def display_message(self, message):
-        self.current_transcriptions = message
-        self.current_mode.update_transcription(message)
+    def update_transcriptions(self, message):
+        self.transcription.update(message)
+        # self.current_transcriptions = message
+        self.current_mode.update_transcription()
         if self.simulate_keyboard and self.recording:
             self.simulator_keyboard.animate_typing(message)
 
@@ -262,11 +267,14 @@ def start_loop(loop):
 #         print(f"Ma fenêtre Tkinter - Dimensions: {width}x{height}")
 
 if __name__ == "__main__":
-    root = tk.Tk()
-    # Create a new event loop
-    new_loop = asyncio.new_event_loop()
-    threading.Thread(target=start_loop, args=(new_loop,), daemon=True).start()
+    try:
+        root = tk.Tk()
+        # Create a new event loop
+        new_loop = asyncio.new_event_loop()
+        threading.Thread(target=start_loop, args=(new_loop,), daemon=True).start()
 
-    app = App(root, new_loop)  # Pass the new loop to the app
-    # root.bind("<Configure>", on_resize)
-    root.mainloop()
+        app = App(root, new_loop)  # Pass the new loop to the app
+        # root.bind("<Configure>", on_resize)
+        root.mainloop()
+    except Exception as e:
+        print(e)

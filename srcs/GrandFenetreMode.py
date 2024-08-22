@@ -134,11 +134,15 @@ class GrandFenetreMode(Mode):
     #     text = 'Server status: Connected' if self.app.status_server else 'Server status: Not connected'
     #     self.status_label.config(text=text)
 
-    def update_transcription(self, transcriptions):
-        # if self.app.config.debug():
-        #     print(f"last transcription = ({self.app.last_transcriptions})")
-        #     print(f"dernière transcription = '{transcriptions}'")
+    def update_transcription(self):
+        # if self.app.config.debug:
+        #     print(f"transcription.encours = ({self.app.transcription.en_cours})")
+        #     print(f"transcription.entier = '{self.app.transcription.entier}'")
         self.text_box.delete('1.0', tk.END)
-        self.text_box.insert(tk.END, self.app.last_transcriptions)
-        self.text_box.insert(tk.END, transcriptions)
+        self.text_box.insert(tk.END, self.app.transcription.entier)
+        self.text_box.insert(tk.END, self.app.transcription.en_cours)
+        
+        # self.text_box.insert(tk.END, self.app.last_transcriptions)
+        # self.text_box.insert(tk.END, transcriptions)
+        
         self.text_box.see(tk.END)

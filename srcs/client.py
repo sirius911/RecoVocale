@@ -128,7 +128,8 @@ class Client:
             self.last_received_segment = segments[-1]["text"]
 
         # Truncate to last 3 entries for brevity.
-        text = text[-3:]
+        # text = text[-3:]
+
         self.transcripted = text
         
         utils.print_transcript(text)
