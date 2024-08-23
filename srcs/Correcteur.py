@@ -32,15 +32,33 @@ def intercept(phrases):
     doit intercepter des mots clefs dans une liste de phrase
     '''
     print(f"intercepte '{phrases}'")
+    # expression_remplacement = {
+    #     "entre parenthèse": "(",
+    #     "fermer la parenthèse": ")",
+    #     "deux points": ":",
+    #     " 2 points": ":",
+    #     "point d'interrogation": "?",
+    #     "point d'exclamation": "!",
+    #     "point virgule": ";",
+    #     "à la ligne": "\n",
+    #     "virgule": ",",
+    #     " point": ".",
+    # }
     expression_remplacement = {
-        "deux points": ":",
-        " 2 points": ":",
-        "point d'interrogation": "?",
-        "point d'exclamation": "!",
-        "point virgule": ";",
-        "à la ligne": "\n",
-        "virgule": ",",
-        " point": ".",
+        r"ouvre\w*\s+les guillemets[,.]*\s": "«",
+        r"entre guillemet?s[,. ]": "«",
+        r"[,.]\s+ferm\w*\s+les guillemets[,.]*" : "»",
+        r"ferm\w*\s+la parenthèse[,.]*": ")",
+        r"entre parenthèse?s[,. ]": "(",
+        r"ouvre\w*\s+la parenthèse[,.]*": "(",
+        r"deux points": ":",
+        r" 2 points": ":",
+        r"point d'interrogation": "?",
+        r"point d'exclamation": "!",
+        r"point virgule": ";",
+        r"à la ligne": "\n",
+        r"virgule": ",",
+        r" point": ".",
     }
     
     # Ponctuations à enlever
@@ -54,21 +72,33 @@ def intercept(phrases):
     # Remplacement des expressions sans tenir compte de la casse
     for seq_to_find, substitute in expression_remplacement.items():
         phrase_sans_ponctuation = re.sub(
-            re.escape(seq_to_find), 
+            seq_to_find, 
             lambda match: substitute, 
             phrase_sans_ponctuation, 
             flags=re.IGNORECASE
         )
+    # Remplacement des expressions sans tenir compte de la casse
+    # for seq_to_find, substitute in expression_remplacement.items():
+    #     phrase_sans_ponctuation = re.sub(
+    #         re.escape(seq_to_find), 
+    #         lambda match: substitute, 
+    #         phrase_sans_ponctuation, 
+    #         flags=re.IGNORECASE
+    #     )
 
-    print(f" avant regex : {phrase_sans_ponctuation}")
-    # Suppression des points précédés par '\n' ou un autre point '.'
-    phrases_sans_bad_point = re.sub(r'(?<=\n)[.,;:!?]|(?<=\.)[.,;:!?]|(?<=\,)[.,;:!?]', '',  phrase_sans_ponctuation)
-    
+    print(f" Avant regex : {phrase_sans_ponctuation}")
+    #supprimer la ponctuation après le \n
+    phrases_finale = re.sub(r'(?<=\n)[.,;:!?]', '',  phrase_sans_ponctuation)
+    # print(f" Après regex 1 : {phrases_finale}")
+    # capture deux signes de ponctuation consécutifs et ne garde que le dernier
+    phrases_finale = re.sub(r'([.,;:!?]){2}', lambda match: match.group(0)[-1], phrases_finale)
+    # print(f" Après regex 2 : {phrases_finale}")
     # Suppression des espaces précédant '.', ',', ';', ':'
-    phrases_finale = re.sub(r' +(?=[.,;:])', '', phrases_sans_bad_point)
-
+    phrases_finale = re.sub(r' +(?=[.,;:])', '', phrases_finale)
+    # print(f" Après regex 3 : {phrases_finale}")
     # Supprimer uniquement les espaces avant et après un '\n'
     phrases_finale = re.sub(r' (?=\n)|(?<=\n) ', '', phrases_finale)
+    # print(f" Après regex 4 : {phrases_finale}")
     return phrases_finale
 
 

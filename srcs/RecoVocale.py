@@ -25,8 +25,6 @@ class App:
 
         self.recording = False
         self.transcription = Transcription()
-        # self.last_transcriptions = ""
-        # self.current_transcriptions = ""
     
         #-------------------check serveur-----------------------
         self.status_server = check_server_status(self.config.server_ip, self.config.port)
@@ -78,6 +76,7 @@ class App:
         self.pause()  # In pause 
 
     def stop_client(self):
+        self.transcription.validation()
         if self.config.debug:
             print("Stopping client in App")
         self.client_manager.stop_client()
@@ -86,13 +85,10 @@ class App:
 
     def valid_transcriptions(self):
         # on valide les transcription et sauvegarde
-        self.transcription.validation()
-        # self.current_transcriptions += '\n'
-        # self.last_transcriptions += self.current_transcriptions
+        # self.transcription.validation()
         # if self.simulate_keyboard:
         #     self.simulator_keyboard.animate_typing(self.current_transcriptions)
         #     self.simulator_keyboard.init()
-        # self.current_transcriptions = ""
         self.stop_client()
         self.start_client()
 
@@ -110,7 +106,6 @@ class App:
             print("Pausing client in App")
         self.client_manager.pause()
         self.recording = False
-        # self.current_transcriptions += '\n' 
         self.update()
 
     def unpause(self):
@@ -126,10 +121,9 @@ class App:
 
     def update_transcriptions(self, message):
         self.transcription.update(message)
-        # self.current_transcriptions = message
         self.current_mode.update_transcription()
-        if self.simulate_keyboard and self.recording:
-            self.simulator_keyboard.animate_typing(message)
+        # if self.simulate_keyboard and self.recording:
+        #     self.simulator_keyboard.animate_typing(message)
 
     def update(self):
         if self.current_mode:
