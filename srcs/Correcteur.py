@@ -45,20 +45,19 @@ def intercept(phrases):
     #     " point": ".",
     # }
     expression_remplacement = {
-        r"ouvre\w*\s+les guillemets[,.]*\s": "«",
-        r"entre guillemet?s[,. ]": "«",
-        r"[,.]\s+ferm\w*\s+les guillemets[,.]*" : "»",
-        r"ferm\w*\s+la parenthèse[,.]*": ")",
-        r"entre parenthèse?s[,. ]": "(",
-        r"ouvre\w*\s+la parenthèse[,.]*": "(",
-        r"deux points": ":",
-        r" 2 points": ":",
-        r"point d'interrogation": "?",
-        r"point d'exclamation": "!",
-        r"point virgule": ";",
-        r"à la ligne": "\n",
-        r"virgule": ",",
-        r" point": ".",
+        r"[.,]*ouvr\w*\s+(les\s|le\s)?guillemet[s]?[., ]*": "«",
+        r"[.,]*ouvr\w*\s+(la\s|les\s)?parenthèse[s]?[,. ]*": "(",
+        r"[.,]*entre guillemet[s]?[,. ]*": "«",
+        r"[.,]*entre parenthèse[s]?[,. ]*": "(",
+        r"[., ]*ferm\w*\s+(les\s|le\s)?guillemet[s]?[,.]*": "»",
+        r"[., ]*ferm\w*\s+(les\s|la\s)?parenthèse[s]?[,.]*": ")",
+        r"[., ]*(de|deux|2)? point[s]?[,.]*": ":",
+        r"[., ]*point d'interrogation": "?",
+        r"[., ]*point d'exclamation": "!",
+        r"[., ]*point virgule": ";",
+        r"[., ]*à la ligne": "\n",
+        r"[., ]*virgule": ",",
+        r"[., ]*point": ".",
     }
     
     # Ponctuations à enlever
