@@ -70,6 +70,7 @@ class Mode:
         print(f"Mode = {self.name()} - Simulation Clavier: {self.app.simulate_keyboard}")
         print(f"Raccourci : {self.app.keyboard_shortcut}")
         print(f"Debug : {self.app.config.debug}")
+        print(f"Position actuelle de la fenêtre : x={self.app.root.winfo_x()}, y={self.app.root.winfo_y()}")
 
     def name(self):
         return self.mode.name

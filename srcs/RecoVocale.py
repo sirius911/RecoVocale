@@ -138,7 +138,7 @@ class App:
         self.config.mode = self.current_mode.name()
         self.config.x_window = self.root.winfo_rootx()
         self.config.y_window = self.root.winfo_rooty()
-        self.config.save_config()
+        self.config.save_config(self.root)
         self.root.quit()
         self.loop.stop()
 
@@ -167,7 +167,6 @@ class App:
                 self.current_mode.update()
                 # Utiliser after_idle pour s'assurer que geometry est bien appliqué
                 self.root.after_idle(lambda: self.root.geometry(f"{self.current_mode.mode.window_width}x{self.current_mode.mode.window_height}+{self.config.x_window}+{self.config.y_window}"))
-                # self.root.after_idle(lambda: self.root.geometry("940x709" if mode == BIG else "200x65"))
                
     #---------------------------------------------------------------------------------------------------------------------
 #               Fenetre shorcut a détacher dans une autre class 

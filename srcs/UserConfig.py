@@ -8,13 +8,13 @@ class UserConfig:
         self.config_file = os.path.join(self.config_dir, "user_config.ini")
         
         # Valeurs par défaut
-        self._server_ip = "10.1.11.215"
-        self._port = "9090"
+        self._server_ip = "10.1.147.12"
+        self._port = "30000"
         self._shortcut = "F3"
         self._mode = "SMALL"
-        self._x_window = "10"
-        self._y_window = "10"
-        self._debug = False
+        self.x_window = "10"
+        self.y_window = "10"
+        self.debug = False
         
         # Lire la configuration si le fichier existe, sinon la créer
         if os.path.exists(self.config_file):
@@ -31,11 +31,11 @@ class UserConfig:
         self._port = config.get('SETTINGS', 'PORT', fallback=self._port)
         self._shortcut = config.get('SETTINGS', 'SHORTCUT', fallback=self._shortcut)
         self._mode = config.get('SETTINGS', 'MODE', fallback=self._mode)
-        self._x_window = config.get('SETTINGS', 'X_WINDOW', fallback=self._x_window)
-        self._y_window = config.get('SETTINGS', 'Y_WINDOW', fallback=self._y_window)
-        self._debug = config.get('SETTINGS', 'DEBUG', fallback=self._debug)
-
-    def save_config(self):
+        self.x_window = config.get('SETTINGS', 'X_WINDOW', fallback=self.x_window)
+        self.y_window = config.get('SETTINGS', 'Y_WINDOW', fallback=self.y_window)
+        self.debug = config.get('SETTINGS', 'DEBUG', fallback=self.debug)
+        
+    def save_config(self, root):
         """Sauvegarde la configuration dans un fichier."""
         if not os.path.exists(self.config_dir):
             os.makedirs(self.config_dir)
@@ -46,11 +46,12 @@ class UserConfig:
             'PORT': self._port,
             'SHORTCUT': self._shortcut,
             'MODE': self._mode,
-            'X_WINDOW': self._x_window,
-            'Y_WINDOW': self._y_window,
-            'DEBUG': self._debug
+            'X_WINDOW': root.winfo_x(),
+            'Y_WINDOW': root.winfo_y(),
+            'DEBUG': self.debug
         }
         print(f"Sauvegarde {self.config_file} ...", end =' ')
+
         with open(self.config_file, 'w') as configfile:
             config.write(configfile)
         print("Ok")
@@ -87,27 +88,3 @@ class UserConfig:
     @mode.setter
     def mode(self, value):
         self._mode = value
-
-    @property
-    def x_window(self):
-        return self._x_window
-    
-    @x_window.setter
-    def x_window(self, value):
-        self._x_window = value
-    
-    @property
-    def y_window(self):
-        return self._y_window
-
-    @y_window.setter
-    def y_window(self, value):
-        self._y_window = value
-
-    @property
-    def debug(self):
-        return self._debug
-    
-    @debug.setter
-    def debug(self, value):
-        self._debug = value

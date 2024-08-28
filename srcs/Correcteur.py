@@ -31,7 +31,7 @@ def intercept(phrases):
     '''
     doit intercepter des mots clefs dans une liste de phrase
     '''
-    print(f"intercepte '{phrases}'")
+    # print(f"intercepte '{phrases}'")
 
     expression_remplacement = {
         r"[.,]*ouvr\w*\s+(les\s|le\s)?guillemet[s]?[., ]*": "«",
@@ -66,7 +66,7 @@ def intercept(phrases):
             flags=re.IGNORECASE
         )
 
-    print(f" Avant regex : {phrase_sans_ponctuation}")
+    # print(f" Avant regex : {phrase_sans_ponctuation}")
     #supprimer la ponctuation après le \n
     phrases_finale = re.sub(r'(?<=\n)[.,;:!?]', '',  phrase_sans_ponctuation)
     # print(f" Après regex 1 : {phrases_finale}")
