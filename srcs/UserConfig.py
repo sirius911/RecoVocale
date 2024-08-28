@@ -6,7 +6,7 @@ class UserConfig:
         # Définir le chemin du répertoire de configuration dans %APPDATA%\RecoVocale
         self.config_dir = os.path.join(os.getenv('APPDATA'), 'RecoVocale')
         self.config_file = os.path.join(self.config_dir, "user_config.ini")
-        
+        print(f"init avec {self.config_file}")
         # Valeurs par défaut
         self._server_ip = "10.1.147.12"
         self._port = "30000"
@@ -15,13 +15,12 @@ class UserConfig:
         self.x_window = "10"
         self.y_window = "10"
         self.debug = False
-        
         # Lire la configuration si le fichier existe, sinon la créer
         if os.path.exists(self.config_file):
             self.load_config()
         else:
             self.save_config()
-
+    
     def load_config(self):
         """Charge la configuration depuis le fichier."""
         config = configparser.ConfigParser()
@@ -33,7 +32,7 @@ class UserConfig:
         self._mode = config.get('SETTINGS', 'MODE', fallback=self._mode)
         self.x_window = config.get('SETTINGS', 'X_WINDOW', fallback=self.x_window)
         self.y_window = config.get('SETTINGS', 'Y_WINDOW', fallback=self.y_window)
-        self.debug = config.get('SETTINGS', 'DEBUG', fallback=self.debug)
+        self.debug = (config.get('SETTINGS', 'DEBUG', fallback=self.debug) == True)
         
     def save_config(self, root):
         """Sauvegarde la configuration dans un fichier."""

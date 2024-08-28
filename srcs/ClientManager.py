@@ -68,7 +68,6 @@ class ClientManager:
             return
 
         self.running = False
-        print("Stopping client")
         if self.client:
             self.client.stop()
             self.client = None
@@ -80,11 +79,9 @@ class ClientManager:
             self.display_task = None
 
     def pause(self):
-        print("pause client")
         if self.client:
             self.client.set_pause(True)
 
     def unpause(self):
-        print("record")
         if self.client:
             self.client.set_pause(False)

@@ -17,8 +17,6 @@ from Transcription import Transcription
 class App:
     def __init__(self, root, loop):
         self.config = UserConfig()
-        if self.config.debug:
-            print("Initializing App")
         self.root = root
         self.root.title(f"RecoVocale [{self.config.server_ip}:{self.config.port}] (v{VERSION})")
         self.root.attributes("-topmost", True)  # Keep the window on top of others
