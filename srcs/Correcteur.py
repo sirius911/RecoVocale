@@ -32,18 +32,7 @@ def intercept(phrases):
     doit intercepter des mots clefs dans une liste de phrase
     '''
     print(f"intercepte '{phrases}'")
-    # expression_remplacement = {
-    #     "entre parenthèse": "(",
-    #     "fermer la parenthèse": ")",
-    #     "deux points": ":",
-    #     " 2 points": ":",
-    #     "point d'interrogation": "?",
-    #     "point d'exclamation": "!",
-    #     "point virgule": ";",
-    #     "à la ligne": "\n",
-    #     "virgule": ",",
-    #     " point": ".",
-    # }
+
     expression_remplacement = {
         r"[.,]*ouvr\w*\s+(les\s|le\s)?guillemet[s]?[., ]*": "«",
         r"[.,]*ouvr\w*\s+(la\s|les\s)?parenthèse[s]?[,. ]*": "(",
@@ -51,13 +40,13 @@ def intercept(phrases):
         r"[.,]*entre parenthèse[s]?[,. ]*": "(",
         r"[., ]*ferm\w*\s+(les\s|le\s)?guillemet[s]?[,.]*": "»",
         r"[., ]*ferm\w*\s+(les\s|la\s)?parenthèse[s]?[,.]*": ")",
-        r"[., ]*(de|deux|2)? point[s]?[,.]*": ":",
-        r"[., ]*point d'interrogation": "?",
-        r"[., ]*point d'exclamation": "!",
+        r"[., ]*(de|deux|2) point[s]?[,.]*": ":",
+        r"[., ]*point d'interrogation[,.]*": "?",
+        r"[.,]*point d'exclamation[s]?[,.]*": "!",
         r"[., ]*point virgule": ";",
         r"[., ]*à la ligne": "\n",
-        r"[., ]*virgule": ",",
-        r"[., ]*point": ".",
+        r"[., ]*virgule[,. ]*": ",",
+        r"[., ]*point[,. ]*": ".",
     }
     
     # Ponctuations à enlever
@@ -76,14 +65,6 @@ def intercept(phrases):
             phrase_sans_ponctuation, 
             flags=re.IGNORECASE
         )
-    # Remplacement des expressions sans tenir compte de la casse
-    # for seq_to_find, substitute in expression_remplacement.items():
-    #     phrase_sans_ponctuation = re.sub(
-    #         re.escape(seq_to_find), 
-    #         lambda match: substitute, 
-    #         phrase_sans_ponctuation, 
-    #         flags=re.IGNORECASE
-    #     )
 
     print(f" Avant regex : {phrase_sans_ponctuation}")
     #supprimer la ponctuation après le \n
