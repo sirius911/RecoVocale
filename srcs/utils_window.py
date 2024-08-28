@@ -1,6 +1,7 @@
 import os
 import sys
 import tkinter as tk
+from tkinter import BooleanVar
 from PIL import Image, ImageTk
 from info import BIG, SMALL
 from ToolTip import ToolTip
@@ -72,6 +73,9 @@ def create_menus(self):
     self.settings_menu.add_separator()
     self.settings_menu.add_command(label="Connecte", command=self.app.start_client)
     self.settings_menu.add_command(label="Deconnect", command=self.app.stop_client)
+    self.debug_var = BooleanVar(value=self.app.config.debug)
+    self.settings_menu.add_checkbutton(label="Debug", variable=self.debug_var, 
+                                   command=lambda:setattr(self.app.config, 'debug', self.debug_var.get()))
     self.settings_menu.add_separator()
     self.settings_menu.add_command(label="Quitter", command=self.exit_app)
 

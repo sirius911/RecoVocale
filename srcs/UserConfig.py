@@ -32,7 +32,7 @@ class UserConfig:
         self._mode = config.get('SETTINGS', 'MODE', fallback=self._mode)
         self.x_window = config.get('SETTINGS', 'X_WINDOW', fallback=self.x_window)
         self.y_window = config.get('SETTINGS', 'Y_WINDOW', fallback=self.y_window)
-        self.debug = (config.get('SETTINGS', 'DEBUG', fallback=self.debug) == True)
+        self.debug = (config.get('SETTINGS', 'DEBUG', fallback=self.debug) == 'True')
         
     def save_config(self, root):
         """Sauvegarde la configuration dans un fichier."""
@@ -47,7 +47,7 @@ class UserConfig:
             'MODE': self._mode,
             'X_WINDOW': root.winfo_x(),
             'Y_WINDOW': root.winfo_y(),
-            'DEBUG': self.debug
+            'DEBUG': 'True' if self.debug else 'False'
         }
         print(f"Sauvegarde {self.config_file} ...", end =' ')
 
