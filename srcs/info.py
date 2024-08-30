@@ -1,6 +1,6 @@
 from types import SimpleNamespace
 
-VERSION = "0.67L"
+VERSION = "0.6"
 
 #------------------------ M O D E S ----------------------
 BIG = SimpleNamespace()
