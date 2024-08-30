@@ -7,8 +7,8 @@
             "0": {"class": "Pause"},                
             "1": {"class": "Unpause"},
             "4": {"class": "ValidTranscriptions"},
-            "32": {"class": "Keyboard", "arg":"\t"},
-            "64": {"class": "NoAction"},
+            "32": {"class": "Copie_clipboard"},
+            "64": {"class": "Keyboard", "arg":"\u0001v"},
             "16": {"class": "NoAction"},
             "8": {"class": "NoAction"},
             "512": {"class": "NoAction"},
@@ -24,8 +24,8 @@
             "0": {"class": "Pause"},
             "1": {"class": "Unpause"},
             "4": {"class": "ValidTranscriptions"},
-            "32": {"class": "Keyboard", "arg":"\t"},
-            "64": {"class": "NoAction"},
+            "32": {"class": "Copie_clipboard"},
+            "64": {"class": "Keyboard", "arg":"\u0001v"},
             "16": {"class": "NoAction"},
             "8": {"class": "NoAction"},
             "512": {"class": "NoAction"},
@@ -46,9 +46,9 @@
             "8192": {"class": "NoAction"},
             "16384": {"class": "NoAction"},
             "4096": {"class": "NoAction"},
-            "32768": {"class": "NoAction"},
-            "1": {"class": "NoAction"},
-            "2": {"class": "NoAction"}
+            "32768": {"class": "Copie_clipboard"},
+            "1": {"class": "ValidTranscriptions"},
+            "2": {"class": "Keyboard", "arg":"\u0001v"}
         }
     },
     "Jabra": {
