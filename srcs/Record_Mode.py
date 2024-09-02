@@ -1,12 +1,12 @@
 from Mode import Mode
 from utils_window import create_menus, create_buttons
-from info import SMALL
+from info import RECORD
 
-class ReduitMode(Mode):
+class Record_Mode(Mode):
     def enter(self):
-        self.mode = SMALL
-        # self.app.simulate_keyboard = SMALL.simule_keyboard
-        self.mod_var.set(SMALL)
+        self.mode = RECORD
+        # self.app.simulate_keyboard = RECORD.simule_keyboard
+        self.mod_var.set(RECORD)
         self.ui()
         self.client_manager = None
         super().enter()

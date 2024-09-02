@@ -1,14 +1,14 @@
 from Mode import Mode
 import tkinter as tk
 from utils_window import create_menus, create_buttons
-from info import BIG
+from info import DIRECT
 from ClientManager import ClientManager
 
-class GrandFenetreMode(Mode):
+class Direct_Mode(Mode):
     def enter(self):
-        self.mode = BIG
-        # self.app.simulate_keyboard = BIG.simule_keyboard
-        self.mod_var.set(BIG)
+        self.mode = DIRECT
+        # self.app.simulate_keyboard = DIRECT.simule_keyboard
+        self.mod_var.set(DIRECT)
         self.ui()
         #----------------- Lien Client Whisper -----------------------
         self.client_manager = ClientManager(

@@ -3,7 +3,7 @@ import sys
 import tkinter as tk
 from tkinter import BooleanVar
 from PIL import Image, ImageTk
-from info import BIG, SMALL
+from info import DIRECT, RECORD
 from ToolTip import ToolTip
 
 def get_config_path(file:str):
@@ -63,14 +63,14 @@ def create_menus(self):
     self.mode_menu = tk.Menu(self.settings_menu, tearoff=0)
     # self.mod_var = tk.StringVar()
     self.settings_menu.add_cascade(label="Mode", menu=self.mode_menu)
-    self.mode_menu.add_radiobutton(label='Grande Fenêtre',
+    self.mode_menu.add_radiobutton(label='Direct',
                                    variable=self.mod_var,
-                                   value=BIG,
-                                   command= lambda: self.app.switch_mode(BIG))
-    self.mode_menu.add_radiobutton(label='Petite Fenêtre',
+                                   value=DIRECT,
+                                   command= lambda: self.app.switch_mode(DIRECT))
+    self.mode_menu.add_radiobutton(label='Enregistrement',
                                    variable=self.mod_var,
-                                   value=SMALL,
-                                   command= lambda: self.app.switch_mode(SMALL))
+                                   value=RECORD,
+                                   command= lambda: self.app.switch_mode(RECORD))
 
     # Autres options du menu Paramètres
     self.settings_menu.add_separator()

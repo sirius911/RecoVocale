@@ -5,8 +5,8 @@ import threading
 import keyboard
 
 from UserConfig import UserConfig
-from GrandFenetreMode import GrandFenetreMode
-from ReduitMode import ReduitMode
+from Direct_Mode import Direct_Mode
+from Record_Mode import Record_Mode
 from utils_socket import check_server_status
 from utils_keyboard import Simulator
 from Micro import Micro
@@ -31,10 +31,10 @@ class App:
         #----------------------MODE----------------------------
        
         if mode == 'SMALL':
-            self.current_mode = ReduitMode(self)
+            self.current_mode = Record_Mode(self)
             # self.client_manager = None
         else:
-            self.current_mode = GrandFenetreMode(self)
+            self.current_mode = Direct_Mode(self)
 
         self.simulate_keyboard = False
         self.simulator_keyboard = Simulator(text=None, debug=self.config.debug)
@@ -82,10 +82,10 @@ class App:
                 self.current_mode.stop()
                 self.current_mode.exit()
                 self.current_mode = None
-                if mode == BIG:
-                    self.current_mode = GrandFenetreMode(self)
-                elif mode == SMALL:
-                    self.current_mode = ReduitMode(self)
+                if mode == DIRECT:
+                    self.current_mode = Direct_Mode(self)
+                elif mode == RECORD:
+                    self.current_mode = Record_Mode(self)
                 else:
                     print("Erreur de Mode dans App")
                     self.on_closing()
@@ -94,6 +94,8 @@ class App:
                 # Utiliser after_idle pour s'assurer que geometry est bien appliqué
                 self.root.after_idle(lambda: self.root.geometry(f"{self.current_mode.mode.window_width}x{self.current_mode.mode.window_height}+{self.config.x_window}+{self.config.y_window}"))
                 self.mic.change_mode(self.current_mode)
+                keyboard.clear_all_hotkeys()
+                keyboard.add_hotkey(self.keyboard_shortcut, self.current_mode.toggle_start_stop)
     #---------------------------------------------------------------------------------------------------------------------
 #               Fenetre shorcut a détacher dans une autre class 
     def change_shortcut(self):
