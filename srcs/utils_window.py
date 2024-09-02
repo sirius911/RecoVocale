@@ -39,7 +39,7 @@ def create_buttons(self):
      self.button_frame = tk.Frame(self.root)
      self.button_frame.pack(pady=10)
 
-     self.rec_button = tk.Button(self.button_frame, image=self.record_image, command=self._toggle_record)
+     self.rec_button = tk.Button(self.button_frame, image=self.record_image, command=self.toggle_start_stop)
      self.rec_button.pack(side=tk.RIGHT, padx=5, pady=10)
 
      ToolTip(self.rec_button, f"({self.app.keyboard_shortcut})")
@@ -61,18 +61,23 @@ def create_menus(self):
     
     # Mode
     self.mode_menu = tk.Menu(self.settings_menu, tearoff=0)
+    # self.mod_var = tk.StringVar()
     self.settings_menu.add_cascade(label="Mode", menu=self.mode_menu)
     self.mode_menu.add_radiobutton(label='Grande Fenêtre',
-                                   command= lambda mode=BIG: self.app.switch_mode(mode))
+                                   variable=self.mod_var,
+                                   value=BIG,
+                                   command= lambda: self.app.switch_mode(BIG))
     self.mode_menu.add_radiobutton(label='Petite Fenêtre',
-                                   command= lambda mode=SMALL: self.app.switch_mode(mode))
+                                   variable=self.mod_var,
+                                   value=SMALL,
+                                   command= lambda: self.app.switch_mode(SMALL))
 
     # Autres options du menu Paramètres
     self.settings_menu.add_separator()
     self.settings_menu.add_command(label="Info", command=self.info)
     self.settings_menu.add_separator()
-    self.settings_menu.add_command(label="Connecte", command=self.app.start_client)
-    self.settings_menu.add_command(label="Deconnect", command=self.app.stop_client)
+    self.settings_menu.add_command(label="Connecte", command=self.start_client)
+    self.settings_menu.add_command(label="Deconnect", command=self.stop_client)
     self.debug_var = BooleanVar(value=self.app.config.debug)
     self.settings_menu.add_checkbutton(label="Debug", variable=self.debug_var, 
                                    command=lambda:setattr(self.app.config, 'debug', self.debug_var.get()))
@@ -84,5 +89,5 @@ def create_menus(self):
     self.menu_bar.add_cascade(label="Édition", menu=self.edit_menu)
 
     # Options du menu Édition
-    self.edit_menu.add_command(label="Copier", command=self.app.copy_to_clipboard)
+    self.edit_menu.add_command(label="Copier", command=self.copy_to_clipboard)
     self.edit_menu.add_command(label="Coller", command=self.app.paste_from_clipboard)

@@ -11,124 +11,59 @@ from utils_socket import check_server_status
 from utils_keyboard import Simulator
 from Micro import Micro
 from info import *
-from ClientManager import ClientManager
-from Transcription import Transcription
+# from ClientManager import ClientManager
+# from Transcription import Transcription
 
 class App:
     def __init__(self, root, loop):
         self.config = UserConfig()
+        mode = self.config.mode
         self.root = root
-        self.root.title(f"RecoVocale [{self.config.server_ip}:{self.config.port}] (v{VERSION})")
-        self.root.attributes("-topmost", True)  # Keep the window on top of others
-
         self.recording = False
-        self.transcription = Transcription()
-    
+        # self.root.title(f"RecoVocale [{self.config.server_ip}:{self.config.port}] (v{VERSION})")
+        self.root.attributes("-topmost", True)  # Keep the window on top of others
+ 
         #-------------------check serveur-----------------------
         self.status_server = check_server_status(self.config.server_ip, self.config.port)
-
+        self.root.title(f"RecoVocale [{self.config.server_ip}:{self.config.port}] (v{VERSION}) {"" if self.status_server else "not"} connected")
         #-----------------Shortcut------------------------------
         self.keyboard_shortcut = self.config.shortcut
-
-        # -------------simulate keyboard
-        self.simulate_keyboard = False
-        self.simulator_keyboard = Simulator(text=None, debug=self.config.debug)
-        keyboard.add_hotkey(self.keyboard_shortcut, self.toggle_start_stop)
-
         #----------------------MODE----------------------------
-        mode = self.config.mode
+       
         if mode == 'SMALL':
             self.current_mode = ReduitMode(self)
+            # self.client_manager = None
         else:
             self.current_mode = GrandFenetreMode(self)
-        #----------------- Lien Client Whisper -----------------------
-        self.client_manager = ClientManager(
-            self.config.server_ip,
-            self.config.port,
-            "fr",
-            "small",
-            False,
-            True,
-            False,
-            "",
-            self.update_transcriptions  # Pass the callback to ClientManager
-        )
+
+        self.simulate_keyboard = False
+        self.simulator_keyboard = Simulator(text=None, debug=self.config.debug)
+        keyboard.add_hotkey(self.keyboard_shortcut, self.current_mode.toggle_start_stop)
 
         # Use the provided asyncio event loop
         self.loop = loop
 
         self.root.protocol("WM_DELETE_WINDOW", self.current_mode.exit_app)
 
-        # Start the client automatically on launch
-        self.start_client()
-
         # #---------------------------MICRO----------------------------
         # Initialize the microphone 
-        self.mic = Micro(loop, app=self)
+        self.mic = Micro(loop, app=self.current_mode)
 
-
-    def start_client(self):
-        if self.config.debug:
-            print("Starting client in App")
-        self.client_manager.start_client(self.loop)
-        self.pause()  # In pause 
-
-    def stop_client(self):
-        self.transcription.validation()
-        if self.config.debug:
-            print("Stopping client in App")
-        self.client_manager.stop_client()
-        self.recording = False
-        self.update()
-
-    def valid_transcriptions(self):
-        # on valide les transcription et sauvegarde
-        # self.transcription.validation()
-        # if self.simulate_keyboard:
-        #     self.simulator_keyboard.animate_typing(self.current_transcriptions)
-        #     self.simulator_keyboard.init()
-        self.stop_client()
-        self.start_client()
-
-    def copy_to_clipboard(self):
-        if self.current_mode:
-            self.root.clipboard_clear()
-            self.root.clipboard_append(self.current_mode.get_selected_text())
+        self.current_mode.start()
 
     def paste_from_clipboard(self):
         Simulator('\u0001v')
             
-        
-    def pause(self):
-        if self.config.debug:
-            print("Pausing client in App")
-        self.client_manager.pause()
-        self.recording = False
-        self.update()
-
-    def unpause(self):
-        if self.config.debug:
-            print("Unpausing client in App")
-        if not self.recording:
-            self.client_manager.unpause()
-            self.recording = True
-        self.update()
-
     def running(self):
         return self.client_manager.running
-
-    def update_transcriptions(self, message):
-        self.transcription.update(message)
-        self.current_mode.update_transcription()
-        # if self.simulate_keyboard and self.recording:
-        #     self.simulator_keyboard.animate_typing(message)
 
     def update(self):
         if self.current_mode:
             self.current_mode.update() 
 
     def on_closing(self):
-        self.stop_client()
+        self.current_mode.stop()
+        # self.stop_client()
         if self.mic:
             self.mic.disconnect()
         # sauvegarde userConfig
@@ -140,19 +75,11 @@ class App:
         self.root.quit()
         self.loop.stop()
 
-    def toggle_start_stop(self):
-        """
-        Toggle the start/stop state of the transcription client.
-        """
-        if self.recording:
-            self.pause()
-        else:
-            self.unpause()
-
     def switch_mode(self, mode):
         print(f"switch_mode({mode.name})")
         if self.current_mode:
             if self.current_mode.mode != mode:
+                self.current_mode.stop()
                 self.current_mode.exit()
                 self.current_mode = None
                 if mode == BIG:
@@ -161,11 +88,12 @@ class App:
                     self.current_mode = ReduitMode(self)
                 else:
                     print("Erreur de Mode dans App")
-               
-                self.current_mode.update()
+                    self.on_closing()
+                self.current_mode.start()
+                # self.current_mode.update()
                 # Utiliser after_idle pour s'assurer que geometry est bien appliqué
                 self.root.after_idle(lambda: self.root.geometry(f"{self.current_mode.mode.window_width}x{self.current_mode.mode.window_height}+{self.config.x_window}+{self.config.y_window}"))
-               
+                self.mic.change_mode(self.current_mode)
     #---------------------------------------------------------------------------------------------------------------------
 #               Fenetre shorcut a détacher dans une autre class 
     def change_shortcut(self):
@@ -198,7 +126,7 @@ class App:
         if key == 'Return':  # Ignore the Enter key itself
             if self.is_valid_shortcut(self.keyboard_shortcut.split('+')):
                 keyboard.clear_all_hotkeys()
-                keyboard.add_hotkey(self.keyboard_shortcut, self.toggle_start_stop)
+                keyboard.add_hotkey(self.keyboard_shortcut, self.current_mode.toggle_start_stop)
                 # self.start_button.config(text=f"Start ({self.keyboard_shortcut})")
                 # self.stop_button.config(text=f"Stop ({self.keyboard_shortcut})")
                 # self.icon.title = f"RecoVocale (v{VERSION})[{self.keyboard_shortcut}]"

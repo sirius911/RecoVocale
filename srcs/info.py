@@ -1,6 +1,6 @@
 from types import SimpleNamespace
 
-VERSION = "0.6"
+VERSION = "0.6R01"
 
 #------------------------ M O D E S ----------------------
 BIG = SimpleNamespace()
@@ -14,9 +14,9 @@ BIG.simule_keyboard = False
 
 SMALL = SimpleNamespace()
 SMALL.name = "SMALL"
-SMALL.resizable = False
-SMALL.topmost = True
-SMALL.window_width = 200
-SMALL.window_height = 65
-SMALL.button_width = 15
-SMALL.simule_keyboard = True
+SMALL.resizable = True
+SMALL.topmost = False
+SMALL.window_width = 940
+SMALL.window_height = 709
+SMALL.button_width = 30
+SMALL.simule_keyboard = False

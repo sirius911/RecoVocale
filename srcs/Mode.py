@@ -2,11 +2,15 @@
 # from pystray import MenuItem as item
 from utils_socket import check_server_status
 from info import *
+from Transcription import Transcription
+import tkinter as tk
 
 class Mode:
     def __init__(self, app):
         self.app = app
         self.root = app.root
+        self.mod_var = tk.StringVar()
+        self.transcription = Transcription()
         self.enter()
 
     def enter(self):
@@ -16,7 +20,7 @@ class Mode:
         # self.create_systray_icon()
 
     def show_window(self, icon, item):
-        self.simulate_keyboard_var.set(False)
+        # self.simulate_keyboard_var.set(False)
         self.root.deiconify()
         self.is_hidden = False
 
@@ -28,7 +32,17 @@ class Mode:
         pass
 
     def get_selected_text(self):
-        return self.app.transcription.get()
+        return self.transcription.get()
+    
+    def start_client(self):
+        pass
+    
+    def stop_client(self):
+        pass
+
+    def copy_to_clipboard(self):
+        self.root.clipboard_clear()
+        self.root.clipboard_append(self.transcription.get())
 
     def hide_window(self):
         self.simulate_keyboard_var.set(True)
@@ -47,12 +61,6 @@ class Mode:
             self.rec_button.config(image=self.record_image)
         else:
             self.rec_button.config(image=self.pause_image)
-
-    def _toggle_record(self):
-        if self.app.recording:
-            self.app.pause()  # Call pause function
-        else:
-            self.app.unpause()  # Call unpause function
 
     def update(self):
         self._update_rec_circle()
@@ -74,6 +82,20 @@ class Mode:
 
     def name(self):
         return self.mode.name
+    
+    def toggle_start_stop(self):
+        """
+        Toggle the start/stop state of the transcription client.
+        """
+        print(f"mode = {self.name()}")
+        if self.app.recording:
+            self.pause()
+        else:
+            self.unpause()
+
+    def exit(self):
+        for widget in self.root.winfo_children():
+            widget.destroy()
 #-----------------------------------------------------------------------
 #                                  MODE SYSTRAY
 #-----------------------------------------------------------------------
