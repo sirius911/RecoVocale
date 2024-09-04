@@ -29,8 +29,8 @@ class App:
         #-----------------Shortcut------------------------------
         self.keyboard_shortcut = self.config.shortcut
         #----------------------MODE----------------------------
-       
-        if mode == 'SMALL':
+        print(f"mode = {mode}")
+        if mode == "RECORD":
             self.current_mode = Record_Mode(self)
             # self.client_manager = None
         else:

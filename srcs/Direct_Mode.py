@@ -172,11 +172,6 @@ class Direct_Mode(Mode):
         self.text_box.delete('1.0', tk.END)
         self.root.update()
 
-    # def exit(self):
-    #     # pour le switch mode
-    #     for widget in self.root.winfo_children():
-    #         widget.destroy()
-
     # def update_monitoring(self):
     #     try:
     #         data = self.app.stream.read(1024, exception_on_overflow=False)
