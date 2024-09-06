@@ -8,7 +8,7 @@ class UserConfig:
         self.config_file = os.path.join(self.config_dir, "user_config.ini")
         print(f"init avec {self.config_file}")
         # Valeurs par défaut
-        self._server_ip = "10.1.147.12"
+        self.server_ip = "10.1.147.12"
         self._port = "30000"
         self._shortcut = "F3"
         self._mode = "SMALL"
@@ -26,7 +26,8 @@ class UserConfig:
         config = configparser.ConfigParser()
         config.read(self.config_file)
         
-        self._server_ip = config.get('SETTINGS', 'SERVEUR_IP', fallback=self._server_ip)
+        self.server_ip = config.get('SETTINGS', 'SERVEUR_IP', fallback=self.server_ip)
+        print(self.server_ip)
         self._port = config.get('SETTINGS', 'PORT', fallback=self._port)
         self._shortcut = config.get('SETTINGS', 'SHORTCUT', fallback=self._shortcut)
         self._mode = config.get('SETTINGS', 'MODE', fallback=self._mode)
@@ -41,7 +42,7 @@ class UserConfig:
         
         config = configparser.ConfigParser()
         config['SETTINGS'] = {
-            'SERVEUR_IP': self._server_ip,
+            'SERVEUR_IP': self.server_ip,
             'PORT': self._port,
             'SHORTCUT': self._shortcut,
             'MODE': self._mode,
@@ -56,14 +57,6 @@ class UserConfig:
         print("Ok")
         
     # Getters et Setters
-    @property
-    def server_ip(self):
-        return self._server_ip
-    
-    @server_ip.setter
-    def server_ip(self, value):
-        self._server_ip = value
-
     @property
     def port(self):
         return self._port

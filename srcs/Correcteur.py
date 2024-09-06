@@ -30,6 +30,7 @@ import re
 def intercept(phrases):
     '''
     doit intercepter des mots clefs dans une liste de phrase
+    Slash
     '''
     # print(f"intercepte '{phrases}'")
 
@@ -45,8 +46,9 @@ def intercept(phrases):
         r"[.,]*point d'exclamation[s]?[,.]*": "!",
         r"[., ]*point virgule": ";",
         r"[., ]*à la ligne": "\n",
-        r"[., ]*virgule[,. ]*": ",",
+        r"[., ]*v[i|e]rgule[,. ]*": ",",
         r"[., ]*point[,. ]*": ".",
+        r"[., ]*sla[s|c]h[e]?[,. ]*": "/",
     }
     
     # Ponctuations à enlever
