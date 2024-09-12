@@ -27,6 +27,53 @@ from utils_window import get_config_path
 
 import re
 
+CHAMBRE="""
+Patient en décubitus dorsal.
+
+Les bras le long du corps.
+
+Anesthésie locale Xylocaïne 1 %.
+
+Incision au niveau du sillon deltopectoral droit
+
+Dissection d'une belle veine céphalique au niveau du sillon deltopectoral droit.
+
+"""
+
+# Dictionnaire avec des regex comme clés et des chaînes de remplacement comme valeurs
+dico_insertion = {
+    r"chambre[s]?": CHAMBRE,
+    r"document (1|un)": "\nla on insert un document etc...\n",
+    r"facteur de risque[s]?": "\nvoici la liste des facteurs de risques : \n - 1 : fait pas dodo\n - 2 : ne mange pas sa soupe\n"
+}
+
+def remplacer_avec_dictionnaire(texte, pattern, dico_insertion):
+    def remplacement(match):
+        # Capture le texte après "insérer" (ce qui inclut plusieurs mots possibles)
+        texte_suivant = match.group(2).strip()
+        print(f"[Insérer] [{texte_suivant}]", end="")
+
+        # Vérifie chaque regex du dictionnaire pour voir si elle correspond à une partie du texte suivant
+        for regex, remplacement in dico_insertion.items():
+            if re.search(regex, texte_suivant, flags=re.IGNORECASE):
+                print(f" -> trouvé [{remplacement}]")
+                return remplacement
+        
+        # Si aucune correspondance, on laisse tel quel
+        print(f" -> non trouvé")
+        return match.group(0)
+    
+    # Utilise re.sub pour remplacer les occurrences du pattern
+    return re.sub(pattern, remplacement, texte, flags=re.IGNORECASE)
+
+def insertion(phrase):
+    pattern = r"\bins[éèêe]r(é|ez|er|ée|ées|és)[,. ]+([\w\s]+)"
+    
+    # match = re.search(pattern, phrase)
+    nouveau_texte = remplacer_avec_dictionnaire(phrase, pattern, dico_insertion)
+    print(f"nouvelle phrase = {nouveau_texte}")
+    return nouveau_texte
+
 def intercept(phrases):
     '''
     doit intercepter des mots clefs dans une liste de phrase
@@ -41,14 +88,14 @@ def intercept(phrases):
         r"[.,]*entre parenthèse[s]?[,. ]*": "(",
         r"[., ]*ferm\w*\s+(les\s|le\s)?guillemet[s]?[,.]*": "»",
         r"[., ]*ferm\w*\s+(les\s|la\s)?parenthèse[s]?[,.]*": ")",
-        r"[., ]*(de|deux|2) point[s]?[,.]*": ":",
+        r"[., ]*\b(deux|de|2)\b point[s]?[,.]*": ":",
         r"[., ]*point d'interrogation[,.]*": "?",
         r"[.,]*point d'exclamation[s]?[,.]*": "!",
         r"[., ]*point virgule": ";",
         r"[., ]*à la ligne": "\n",
-        r"[., ]*v[i|e]rgule[,. ]*": ",",
+        r"[., ]*v[ieè]rgule[,. ]*": ",",
         r"[., ]*point[,. ]*": ".",
-        r"[., ]*sla[s|c]h[e]?[,. ]*": "/",
+        r"[., ]*sl[aâ][sc]h[e]?[,. ]*": "/",
     }
     
     # Ponctuations à enlever
@@ -81,7 +128,9 @@ def intercept(phrases):
     # Supprimer uniquement les espaces avant et après un '\n'
     phrases_finale = re.sub(r' (?=\n)|(?<=\n) ', '', phrases_finale)
     # print(f" Après regex 4 : {phrases_finale}")
-    return phrases_finale
+
+    phrase_renvoyee = insertion(phrases_finale)
+    return phrase_renvoyee
 
 
 class Correcteur:

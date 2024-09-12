@@ -27,7 +27,6 @@ class UserConfig:
         config.read(self.config_file)
         
         self.server_ip = config.get('SETTINGS', 'SERVEUR_IP', fallback=self.server_ip)
-        print(self.server_ip)
         self._port = config.get('SETTINGS', 'PORT', fallback=self._port)
         self._shortcut = config.get('SETTINGS', 'SHORTCUT', fallback=self._shortcut)
         self._mode = config.get('SETTINGS', 'MODE', fallback=self._mode)
