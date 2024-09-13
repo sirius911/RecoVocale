@@ -99,9 +99,12 @@ class Direct_Mode(Mode):
 
     def unpause(self):
         # if self.config.debug:
-        print("Unpausing client in App")
+        print(f"Unpausing client in App")
         if not self.app.recording:
-            self.client_manager.unpause()
+            if self.client_manager.client:
+                self.client_manager.client.set_pause(False)
+            else:
+                self.client_manager.start_client(self.app.loop)
             self.app.recording = True
         self.update()
 
@@ -193,8 +196,11 @@ class Direct_Mode(Mode):
     #     self.status_label.config(text=text)
 
 
-    def update_transcriptions(self, message):
+    def update_transcriptions(self, message, ending):
+        print(f"dans update_transcription ending = {ending}")
         self.transcription.update(message)
+        if ending:
+            self.transcription.validation()
         # if self.app.config.debug:
         #     print(f"transcription.encours = ({self.app.transcription.en_cours})")
         #     print(f"transcription.entier = '{self.app.transcription.entier}'")

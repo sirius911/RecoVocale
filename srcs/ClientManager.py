@@ -2,6 +2,7 @@ from client import EnhancedTranscriptionClient
 from Correcteur import Correcteur, intercept
 import threading
 import asyncio
+import traceback
 
 class ClientManager:
     def __init__(self, host, port, lang, model, translate, use_vad, save_output_recording, output_recording_filename, update_callback):
@@ -53,15 +54,24 @@ class ClientManager:
             print(f"Error running client: {e}")
 
     async def update_display(self):
-        while self.running:
-            transcriptions, _ = self.client.get_transcriptions()
-            transcriptions = transcriptions if self.client else []
-            # corrected_transcriptions = [self.correcteur.applique_corrections(line) for line in transcriptions]
-            
-            combined_text = intercept(''.join(transcriptions).lstrip())
-            if combined_text != "":
-                self.update_callback(combined_text)
-            await asyncio.sleep(0.5)
+        print(f"running = {self.running}")
+        try:
+            while self.running:
+                transcriptions, _ = self.client.get_transcriptions()
+                transcriptions = transcriptions if self.client else []
+                # corrected_transcriptions = [self.correcteur.applique_corrections(line) for line in transcriptions]
+                
+                combined_text, ending = intercept(''.join(transcriptions).lstrip())
+                if combined_text != "":
+                    self.update_callback(combined_text, ending)
+                if ending:
+                    print("Fin de transcription demandée")
+                    self.stop_client()
+                await asyncio.sleep(0.5)
+        except Exception as e:
+            print(e)
+            traceback.print_exc()
+        print("sortie du while")
 
     def stop_client(self):
         if not self.running:
@@ -82,6 +92,7 @@ class ClientManager:
         if self.client:
             self.client.set_pause(True)
 
-    def unpause(self):
-        if self.client:
-            self.client.set_pause(False)
+    # def unpause(self):
+    #     print(f"Unpausing clientManager={self.running}")
+    #     if self.client:
+    #         self.client.set_pause(False)
