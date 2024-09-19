@@ -20,8 +20,8 @@ DefaultGroupName=RecoVocale
 ; Inclure le fichier exécutable et d'autres fichiers nécessaires
 Source: "dist\RecoVocale.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "dist\corrections.json"; DestDir: "{localappdata}\RecoVocale"; Flags: ignoreversion
-Source: "dist\config\user_config.ini"; DestDir: "{app}\config"; Flags: ignoreversion
-Source: "dist\config\micro_actions_config.json"; DestDir: "{localappdata}\RecoVocale"; Flags: ignoreversion
+Source: "dist\config\user_config.ini"; DestDir: "{localappdata}\RecoVocale"; Flags: ignoreversion
+Source: "srcs\config\micro_actions_config.json"; DestDir: "{localappdata}\RecoVocale"; Flags: ignoreversion
 
 
 [Icons]

@@ -19,4 +19,5 @@ class Transcription:
         str = ""
         for phrase in self.entier:
             str += f"{phrase}"
+        print (f"str = '{str}'")
         return (str)

@@ -206,6 +206,6 @@ class Direct_Mode(Mode):
         #     print(f"transcription.encours = ({self.app.transcription.en_cours})")
         #     print(f"transcription.entier = '{self.app.transcription.entier}'")
         self.text_box.delete('1.0', tk.END)
-        self.text_box.insert(tk.END, self.transcription.entier)
+        self.text_box.insert(tk.END, self.transcription.get())
         self.text_box.insert(tk.END, self.transcription.en_cours)
         self.text_box.see(tk.END)
