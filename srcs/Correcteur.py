@@ -56,7 +56,7 @@ def intercept(phrases):
         
         r"[.,]*point d'exclamation[s]?[,.]*": "!",
         r"[., ]*point virgule": ";",
-        r"[., ]*à la ligne": "\n",
+        r"[., ]*[àa] la ligne": "\n",
         r"[., ]*v[ieè]rgule[,. ]*": ",",
         r"[., ]*point[,. ]*": ".",
         r"[., ]*sl[aâ][sc]h[e]?[,. ]*": "/",

@@ -49,7 +49,7 @@ class App:
         # Initialize the microphone 
         self.mic = Micro(loop, app=self.current_mode)
 
-        self.current_mode.start()
+        # self.current_mode.start()
 
     def paste_from_clipboard(self):
         Simulator('\u0001v')
@@ -89,7 +89,7 @@ class App:
                 else:
                     print("Erreur de Mode dans App")
                     self.on_closing()
-                self.current_mode.start()
+                # self.current_mode.start()
                 # self.current_mode.update()
                 # Utiliser after_idle pour s'assurer que geometry est bien appliqué
                 self.root.after_idle(lambda: self.root.geometry(f"{self.current_mode.mode.window_width}x{self.current_mode.mode.window_height}+{self.config.x_window}+{self.config.y_window}"))

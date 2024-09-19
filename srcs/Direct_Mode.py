@@ -81,14 +81,15 @@ class Direct_Mode(Mode):
         # self.status_error = tk.Label(self.status_frame, text="", fg="red")
         # self.status_error.pack(side=tk.RIGHT, padx=(5, 0))
 
-    def start(self):
-        self.start_client()
+    # def start(self):
+    #     self.start_client()
 
-    def start_client(self):
+    # def start_client(self):
+    #     pass
         # if self.config.debug:
         #     print("Starting client in App")
-        self.client_manager.start_client(self.app.loop)
-        self.pause()  # In pause 
+        # self.client_manager.start_client(self.app.loop)
+        # self.pause()  # In pause 
 
     def pause(self):
         # if self.config.debug:
@@ -127,7 +128,7 @@ class Direct_Mode(Mode):
 
     def valid_transcriptions(self):
         self.stop_client()
-        self.start_client()
+        # self.start_client()
 
     def get_selected_text(self):
         try:
@@ -197,7 +198,7 @@ class Direct_Mode(Mode):
 
 
     def update_transcriptions(self, message, ending):
-        print(f"dans update_transcription ending = {ending}")
+        # print(f"dans update_transcription ending = {ending}")
         self.transcription.update(message)
         if ending:
             self.transcription.validation()

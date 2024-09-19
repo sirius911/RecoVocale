@@ -2,10 +2,10 @@ class Transcription:
 
     def __init__(self):
         self.en_cours = ""
-        self.entier = ""
+        self.entier = []
 
     def validation(self):
-        self.entier += self.en_cours
+        self.entier.append(self.en_cours)
         self.en_cours = ""
 
     def update(self, message):
@@ -13,7 +13,10 @@ class Transcription:
 
     def clear(self):
         self.en_cours = ""
-        self.entier = ""
+        self.entier = []
     
     def get(self) -> str :
-        return (f"{self.entier}{self.en_cours}")
+        str = ""
+        for phrase in self.entier:
+            str += f"{phrase}"
+        return (str)

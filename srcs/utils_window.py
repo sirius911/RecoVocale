@@ -76,7 +76,7 @@ def create_menus(self):
     self.settings_menu.add_separator()
     self.settings_menu.add_command(label="Info", command=self.info)
     self.settings_menu.add_separator()
-    self.settings_menu.add_command(label="Connecte", command=self.start_client)
+    # self.settings_menu.add_command(label="Connecte", command=self.start_client)
     self.settings_menu.add_command(label="Deconnect", command=self.stop_client)
     self.debug_var = BooleanVar(value=self.app.config.debug)
     self.settings_menu.add_checkbutton(label="Debug", variable=self.debug_var, 

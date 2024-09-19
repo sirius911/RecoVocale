@@ -28,7 +28,8 @@ Faire réaliser, à domicile si nécessaire, une prise de sang avec :
 - ACE
 - CA 19. 9
 - CA 125
-- Alpha-fœtoprotéine"""
+- Alpha-fœtoprotéine
+"""
 
 FACTEUR="""
 Hypertension artérielle : [Pas d'hypertension artérielle | depuis]
@@ -66,5 +67,6 @@ dico_insertion = {
     r"Ordonnance[s]? p[ae]nsement[s]?": ORDONNANCE,
     r"facteur de risque[s]?": FACTEUR,
     r"ordonnance soin[s]? IDE": ORDONNANCE_IDE,
-    r"bilan biologique": BILAN_BIO
+    r"bilan biologique": BILAN_BIO,
+    r"signature": "\n\nCordialement\n\t\t\tCyrille LORIN\n"
 }

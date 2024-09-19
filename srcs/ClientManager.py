@@ -23,7 +23,7 @@ class ClientManager:
         self.correcteur = Correcteur()
 
     def start_client(self, loop):
-        # print("Starting client in ClientManager")
+        print("Starting client in ClientManager")
         self.stop_client()  # Ensure any previous client is stopped before starting a new one
 
         if self.client is None:
@@ -37,15 +37,14 @@ class ClientManager:
                 save_output_recording=self.save_output_recording,
                 output_recording_filename=self.output_recording_filename
             )
-
+        self.client.set_pause(False)
         self.running = True
-
+        self.client
         self.loop = loop
         # Run the client in a separate thread to avoid blocking the event loop
         self.client_thread = threading.Thread(target=self.run_client_thread)
         self.client_thread.start()
-
-        self.display_task = asyncio.run_coroutine_threadsafe(self.update_display(), self.loop)
+        self.display_task = asyncio.run_coroutine_threadsafe(self.update_transcription(0), self.loop)
 
     def run_client_thread(self):
         try:
@@ -53,15 +52,25 @@ class ClientManager:
         except Exception as e:
             print(f"Error running client: {e}")
 
-    async def update_display(self):
-        print(f"running = {self.running}")
+    async def update_transcription(self, compteur):
+        ancienne_transcription = ""
         try:
             while self.running:
+                
                 transcriptions, _ = self.client.get_transcriptions()
                 transcriptions = transcriptions if self.client else []
                 # corrected_transcriptions = [self.correcteur.applique_corrections(line) for line in transcriptions]
                 
                 combined_text, ending = intercept(''.join(transcriptions).lstrip())
+                
+                if combined_text.lstrip() != '' and combined_text == ancienne_transcription and self.client.is_pause():
+                    compteur += 1
+                else:
+                    ancienne_transcription = combined_text
+                    compteur = 0
+
+                # print(f"compteur = {compteur} et client.is_pause = {self.client.is_pause()}")
+                ending = ending or (compteur > 1) # fin demandé par intercept() ou 2 fois le meme text en mode pause
                 if combined_text != "":
                     self.update_callback(combined_text, ending)
                 if ending:
@@ -91,8 +100,3 @@ class ClientManager:
     def pause(self):
         if self.client:
             self.client.set_pause(True)
-
-    # def unpause(self):
-    #     print(f"Unpausing clientManager={self.running}")
-    #     if self.client:
-    #         self.client.set_pause(False)
