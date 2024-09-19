@@ -54,6 +54,7 @@ class Client:
         self.disconnect_if_no_response_for = 15
         self.language = lang
         self.model = model
+        self.model_path = ""
         self.server_error = False
         self.srt_file_path = srt_file_path
         self.use_vad = use_vad
@@ -165,7 +166,9 @@ class Client:
             self.last_response_received = time.time()
             self.recording = True
             self.server_backend = message["backend"]
-            print(f"[INFO]: Server Running with backend {self.server_backend}")
+            self.model_path=message["model"]
+
+            print(f"[INFO]: Server Running with backend {self.server_backend} with model = {self.model_path}")
             return
 
         if "language" in message.keys():
@@ -619,7 +622,7 @@ class TranscriptionTeeClient:
         except KeyboardInterrupt:
             self.finalize_recording(n_audio_file)
 
-    #-------------------------------------------------------------------
+    #--------------------------NOT USED---------------------------------
     def reset_transcription_context(self):
         for client in self.clients:
             client.reset_transcription_context()
@@ -682,6 +685,12 @@ class TranscriptionTeeClient:
         if os.path.exists("chunks"):
             shutil.rmtree("chunks")
 
+    def get_model_path(self):
+        for client in self.clients:
+            if client.model_path != "":
+                return client.model_path
+        return None 
+
     @staticmethod
     def bytes_to_float_array(audio_bytes):
         """
@@ -742,10 +751,12 @@ class TranscriptionClient(TranscriptionTeeClient):
 class EnhancedTranscriptionClient(TranscriptionClient):
     def __init__(self, host, port, lang=None, model="small",translate=False, use_vad=True, save_output_recording=False, output_recording_filename="./output_recording.wav", output_transcription_path="./output.srt"):
         super().__init__(host=host,port=port, lang=lang, model=model, translate=translate, use_vad=use_vad, save_output_recording=save_output_recording, output_recording_filename=output_recording_filename, output_transcription_path=output_transcription_path)
-    
+        self.pause = True
+
     def stop(self):
         self.client.close_websocket()
         self.client.recording = False
+        self.pause = True
         self.client.transcripted = []
 
     def get_transcriptions(self):
@@ -757,3 +768,7 @@ class EnhancedTranscriptionClient(TranscriptionClient):
     def set_pause(self, flag):
         for client in self.clients:
             client.set_pause(flag)
+        self.pause = flag
+    
+    def is_pause(self):
+        return self.pause

@@ -56,6 +56,9 @@ class BaseMic:
             self.connected = False
             print(f"{self.micro_name} déconnecté")
 
+    def change_mode(self, mode):
+        self.app = mode
+
     def on_data_handler(self, data):
         if data != self.prev_data:
             self.prev_data = data

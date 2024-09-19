@@ -2,53 +2,13 @@ import json
 import os
 import re
 from utils_window import get_config_path
-
-# def intercept(phrases):
-#     '''
-#     doit intercepter des mots clefs dans une liste de phrase
-#     '''
-#     expression_remplacement = {
-#         "deux points": ":",
-#         " 2 points": ":",
-#         "point d'interrogation": "?",
-#         "point d'exclamation": "!",
-#         "point virgule": ";",
-#         "à la ligne": "\n",
-#         "virgule": ",",
-#         " point": ".",
-#     }
-#     # Ponctuations à enlever
-#     ponctuations = ".,;:!?"
-
-#     phrase_sans_ponctuation = ''.join([char for char in phrases if char not in ponctuations])
-#     for seq_to_find, substitute in expression_remplacement.items():
-#         phrase_sans_ponctuation = phrase_sans_ponctuation.replace(seq_to_find, substitute)
-#     return phrase_sans_ponctuation
-
 import re
-
-CHAMBRE="""
-Patient en décubitus dorsal.
-
-Les bras le long du corps.
-
-Anesthésie locale Xylocaïne 1 %.
-
-Incision au niveau du sillon deltopectoral droit
-
-Dissection d'une belle veine céphalique au niveau du sillon deltopectoral droit.
-
-"""
-
-# Dictionnaire avec des regex comme clés et des chaînes de remplacement comme valeurs
-dico_insertion = {
-    r"chambre[s]?": CHAMBRE,
-    r"document (1|un)": "\nla on insert un document etc...\n",
-    r"facteur de risque[s]?": "\nvoici la liste des facteurs de risques : \n - 1 : fait pas dodo\n - 2 : ne mange pas sa soupe\n"
-}
+from insertions import dico_insertion
 
 def remplacer_avec_dictionnaire(texte, pattern, dico_insertion):
+    insertion = False
     def remplacement(match):
+        nonlocal insertion  # Permet de modifier la variable `insertion` dans la fonction englobante
         # Capture le texte après "insérer" (ce qui inclut plusieurs mots possibles)
         texte_suivant = match.group(2).strip()
         print(f"[Insérer] [{texte_suivant}]", end="")
@@ -57,6 +17,7 @@ def remplacer_avec_dictionnaire(texte, pattern, dico_insertion):
         for regex, remplacement in dico_insertion.items():
             if re.search(regex, texte_suivant, flags=re.IGNORECASE):
                 print(f" -> trouvé [{remplacement}]")
+                insertion = True
                 return remplacement
         
         # Si aucune correspondance, on laisse tel quel
@@ -64,20 +25,22 @@ def remplacer_avec_dictionnaire(texte, pattern, dico_insertion):
         return match.group(0)
     
     # Utilise re.sub pour remplacer les occurrences du pattern
-    return re.sub(pattern, remplacement, texte, flags=re.IGNORECASE)
+    return re.sub(pattern, remplacement, texte, flags=re.IGNORECASE), insertion
 
 def insertion(phrase):
+
     pattern = r"\bins[éèêe]r(é|ez|er|ée|ées|és)[,. ]+([\w\s]+)"
     
     # match = re.search(pattern, phrase)
-    nouveau_texte = remplacer_avec_dictionnaire(phrase, pattern, dico_insertion)
-    print(f"nouvelle phrase = {nouveau_texte}")
-    return nouveau_texte
+    nouveau_texte, ending = remplacer_avec_dictionnaire(phrase, pattern, dico_insertion)
+    # print(f"nouvelle phrase = {nouveau_texte}")
+    return nouveau_texte, ending
 
 def intercept(phrases):
     '''
     doit intercepter des mots clefs dans une liste de phrase
     Slash
+    renvoi la phrase corrigée et un flag ending indiquand si on doit terminé la transcription
     '''
     # print(f"intercepte '{phrases}'")
 
@@ -90,9 +53,10 @@ def intercept(phrases):
         r"[., ]*ferm\w*\s+(les\s|la\s)?parenthèse[s]?[,.]*": ")",
         r"[., ]*\b(deux|de|2)\b point[s]?[,.]*": ":",
         r"[., ]*point d'interrogation[,.]*": "?",
+        
         r"[.,]*point d'exclamation[s]?[,.]*": "!",
         r"[., ]*point virgule": ";",
-        r"[., ]*à la ligne": "\n",
+        r"[., ]*[àa] la ligne": "\n",
         r"[., ]*v[ieè]rgule[,. ]*": ",",
         r"[., ]*point[,. ]*": ".",
         r"[., ]*sl[aâ][sc]h[e]?[,. ]*": "/",
@@ -129,8 +93,8 @@ def intercept(phrases):
     phrases_finale = re.sub(r' (?=\n)|(?<=\n) ', '', phrases_finale)
     # print(f" Après regex 4 : {phrases_finale}")
 
-    phrase_renvoyee = insertion(phrases_finale)
-    return phrase_renvoyee
+    phrase_renvoyee, ending = insertion(phrases_finale)
+    return phrase_renvoyee, ending
 
 
 class Correcteur:

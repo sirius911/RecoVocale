@@ -1,33 +1,47 @@
 from Mode import Mode
 import tkinter as tk
 from utils_window import create_menus, create_buttons
-from info import BIG
+from info import DIRECT
+from ClientManager import ClientManager
 
-class GrandFenetreMode(Mode):
+class Direct_Mode(Mode):
     def enter(self):
-        self.mode = BIG
-        self.app.simulate_keyboard = BIG.simule_keyboard
+        self.mode = DIRECT
+        # self.app.simulate_keyboard = DIRECT.simule_keyboard
+        self.mod_var.set(DIRECT)
         self.ui()
+        #----------------- Lien Client Whisper -----------------------
+        self.client_manager = ClientManager(
+            self.app.config.server_ip,
+            self.app.config.port,
+            "fr",
+            "small",
+            False,
+            True,
+            False,
+            "",
+            self.update_transcriptions  # Pass the callback to ClientManager
+        )
         super().enter()
 
     def ui(self):
         create_menus(self)
         create_buttons(self)
-           
-        self.valide_button = tk.Button(self.root, text=f"Validation", command=self.app.valid_transcriptions)
+
+        self.valide_button = tk.Button(self.root, text=f"Validation", command=self.valid_transcriptions)
         self.valide_button.pack(side=tk.RIGHT,pady=10)
         #------------------------------------------------------------------------------
 
-        self.simulate_keyboard_var = tk.BooleanVar()
-        self.simulate_keyboard_check = tk.Checkbutton(self.root,
-                                                      text="Simule Touches Clavier",
-                                                      variable=self.simulate_keyboard_var,
-                                                      command=self.update_simulate_keyboard,
+        # self.simulate_keyboard_var = tk.BooleanVar()
+        # self.simulate_keyboard_check = tk.Checkbutton(self.root,
+        #                                               text="Simule Touches Clavier",
+        #                                               variable=self.simulate_keyboard_var,
+        #                                               command=self.update_simulate_keyboard,
                                                       
-                                                      )
-        self.simulate_keyboard_check.pack(pady=10)
-        # Synchronisation initiale avec la variable booléenne
-        self.simulate_keyboard_var.set(self.app.simulate_keyboard)
+        #                                               )
+        # self.simulate_keyboard_check.pack(pady=10)
+        # # Synchronisation initiale avec la variable booléenne
+        # self.simulate_keyboard_var.set(self.app.simulate_keyboard)
 
         self.text_box_frame = tk.Frame(self.root)
         self.text_box_frame.pack(pady=10, fill=tk.BOTH, expand=True)
@@ -39,7 +53,7 @@ class GrandFenetreMode(Mode):
         self.text_box.pack(pady=10, fill=tk.BOTH, expand=True)
         
         self.text_box_scrollbar.config(command=self.text_box.yview)
-        self.copy_button = tk.Button(self.root, text="Copy", command=self.app.copy_to_clipboard)
+        self.copy_button = tk.Button(self.root, text="Copy", command=self.copy_to_clipboard)
         self.copy_button.pack(pady=10)
 
         self.clear_text_box_button = tk.Button(self.root, text="Clear", command=self.clear_text_box)
@@ -67,10 +81,54 @@ class GrandFenetreMode(Mode):
         # self.status_error = tk.Label(self.status_frame, text="", fg="red")
         # self.status_error.pack(side=tk.RIGHT, padx=(5, 0))
 
+    # def start(self):
+    #     self.start_client()
+
+    # def start_client(self):
+    #     pass
+        # if self.config.debug:
+        #     print("Starting client in App")
+        # self.client_manager.start_client(self.app.loop)
+        # self.pause()  # In pause 
+
+    def pause(self):
+        # if self.config.debug:
+        print("Pausing client in App")
+        self.client_manager.pause()
+        self.app.recording = False
+        self.update()
+
+    def unpause(self):
+        # if self.config.debug:
+        print(f"Unpausing client in App")
+        if not self.app.recording:
+            if self.client_manager.client:
+                self.client_manager.client.set_pause(False)
+            else:
+                self.client_manager.start_client(self.app.loop)
+            self.app.recording = True
+        self.update()
+
+    def stop_client(self):
+        self.transcription.validation()
+        # if self.config.debug:
+        #     print("Stopping client in App")
+        if self.client_manager:
+            self.client_manager.stop_client()
+        self.app.recording = False
+        self.update()
+
+    def stop(self):
+        self.stop_client()
+
     def update_simulate_keyboard(self):
         self.app.simulate_keyboard = self.simulate_keyboard_var.get()
         if self.app.simulate_keyboard:
             self.app.simulator_keyboard.init()
+
+    def valid_transcriptions(self):
+        self.stop_client()
+        # self.start_client()
 
     def get_selected_text(self):
         try:
@@ -81,10 +139,10 @@ class GrandFenetreMode(Mode):
                 return selected_text
             else:
                 # si aucune selection on envoi la transcription complète
-                return self.app.transcription.get()
+                return self.transcription.get()
         except tk.TclError:
             # Gestion d'erreur si aucune sélection n'est faite
-            return self.app.transcription.get()
+            return self.transcription.get()
 
 
     # def update_micro_menu(self):
@@ -108,29 +166,15 @@ class GrandFenetreMode(Mode):
     #     self.selected_micro = idx
     #     # self.app.update_mic_stream()
 
-    # def copy_to_clipboard(self):  --> mis dans Recovocale
-    #     """
-    #     Copy the content of the text box to the clipboard.
-    #     """
-    #     self.app.to_clip_board()
-    #     self.root.clipboard_clear()
-    #     self.root.clipboard_append(self.text_box.get("1.0", tk.END))
-    #     self.root.update()
-
     def clear_text_box(self):
         """
         Clear the content of the text box.
         """
-        self.app.valid_transcriptions()
-        self.app.transcription.clear()
+        self.valid_transcriptions()
+        self.transcription.clear()
 
         self.text_box.delete('1.0', tk.END)
         self.root.update()
-
-    def exit(self):
-        # pour le switch mode
-        for widget in self.root.winfo_children():
-            widget.destroy()
 
     # def update_monitoring(self):
     #     try:
@@ -152,15 +196,16 @@ class GrandFenetreMode(Mode):
     #     text = 'Server status: Connected' if self.app.status_server else 'Server status: Not connected'
     #     self.status_label.config(text=text)
 
-    def update_transcription(self):
+
+    def update_transcriptions(self, message, ending):
+        # print(f"dans update_transcription ending = {ending}")
+        self.transcription.update(message)
+        if ending:
+            self.transcription.validation()
         # if self.app.config.debug:
         #     print(f"transcription.encours = ({self.app.transcription.en_cours})")
         #     print(f"transcription.entier = '{self.app.transcription.entier}'")
         self.text_box.delete('1.0', tk.END)
-        self.text_box.insert(tk.END, self.app.transcription.entier)
-        self.text_box.insert(tk.END, self.app.transcription.en_cours)
-        
-        # self.text_box.insert(tk.END, self.app.last_transcriptions)
-        # self.text_box.insert(tk.END, transcriptions)
-        
+        self.text_box.insert(tk.END, self.transcription.entier)
+        self.text_box.insert(tk.END, self.transcription.en_cours)
         self.text_box.see(tk.END)
