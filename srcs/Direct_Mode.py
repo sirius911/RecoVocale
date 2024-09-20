@@ -4,6 +4,44 @@ from utils_window import create_menus, create_buttons
 from info import DIRECT
 from ClientManager import ClientManager
 
+def trouver_bornes_mot_tk(phrase, curseur, direction='left'):
+    # Si le curseur est à la fin, on le place au dernier caractère
+    if curseur == -1:
+        curseur = len(phrase) - 1
+
+    # Assurer que le curseur est dans les bornes de la phrase
+    curseur = max(0, min(len(phrase) - 1, curseur))
+    
+    if direction == 'left':
+        # Trouver le début du mot à left
+        debut = curseur
+        while debut > 0 and phrase[debut].isspace():
+            debut -= 1
+        while debut > 0 and not phrase[debut - 1].isspace():
+            debut -= 1
+        
+        # Trouver la fin du mot
+        fin = curseur
+        while fin < len(phrase) and not phrase[fin].isspace():
+            fin += 1
+        return debut, fin - 1
+    
+    elif direction == 'right':
+        # Trouver le début du mot à right
+        debut = curseur
+        while debut < len(phrase) and phrase[debut].isspace():
+            debut += 1
+        
+        fin = debut
+        while fin < len(phrase) and not phrase[fin].isspace():
+            fin += 1
+        
+        return debut, fin - 1
+    
+    else:
+        raise ValueError("La direction doit être 'left' ou 'right'.")
+
+
 class Direct_Mode(Mode):
     def enter(self):
         self.mode = DIRECT
@@ -51,6 +89,8 @@ class Direct_Mode(Mode):
         
         self.text_box = tk.Text(self.text_box_frame, yscrollcommand=self.text_box_scrollbar.set)
         self.text_box.pack(pady=10, fill=tk.BOTH, expand=True)
+
+        self.text_box.tag_configure("sel", background="yellow", foreground="black")
         
         self.text_box_scrollbar.config(command=self.text_box.yview)
         self.copy_button = tk.Button(self.root, text="Copy", command=self.copy_to_clipboard)
@@ -208,4 +248,46 @@ class Direct_Mode(Mode):
         self.text_box.delete('1.0', tk.END)
         self.text_box.insert(tk.END, self.transcription.get())
         self.text_box.insert(tk.END, self.transcription.en_cours)
+        self.text_box.mark_set(tk.INSERT, tk.END)
         self.text_box.see(tk.END)
+
+
+    def select_text_box(self, dir = "left"):
+        self.text_box.focus_set()
+        # Effacer la sélection actuelle (retirer la surbrillance)
+        self.text_box.tag_remove("sel", "1.0", tk.END)
+
+
+        # Récupérer la position du curseur dans la text_box
+        cursor_index = self.text_box.index(tk.INSERT)
+       
+
+        # Convertir cet index en offset numérique (compter les caractères depuis le début)
+        line, column = map(int, cursor_index.split('.'))
+        # print(f"cursor_index = ({line},{column})")
+        if dir == "left":
+            column -= 1
+        else:
+            column += 1
+        # print(f"next cursor index = ({line},{column})")    
+        current_position = int(self.text_box.index(f"{line}.0+{column}c").split('.')[1])
+
+        # Récupérer tout le texte du text_box
+        full_text =self.text_box.get("1.0", tk.END)
+        
+        # Trouver les bornes du mot à left ou à right
+        start_pos, end_pos = trouver_bornes_mot_tk(full_text, current_position, dir)
+        
+        # Convertir ces bornes en indices Tkinter
+        start_index = f"{line}.0+{start_pos}c"
+        end_index = f"{line}.0+{end_pos + 1}c"  # Incrémenter pour inclure la dernière lettre
+        # print(f"start_index = {start_index}, end_index = {end_index}")
+        # Sélectionner le mot dans la text_box
+        self.text_box.tag_add("sel", start_index, end_index)
+
+        # Mettre le curseur à la fin ou au début  de la sélection
+        if dir == "left":
+            self.text_box.mark_set(tk.INSERT, start_index)
+        else:
+            self.text_box.mark_set(tk.INSERT, end_index)
+        self.text_box.see(tk.INSERT)  # Faire défiler jusqu'au curseur

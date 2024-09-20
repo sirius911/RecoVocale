@@ -37,8 +37,8 @@ class Mode:
     # def start_client(self):
     #     pass
     
-    # def stop_client(self):
-    #     pass
+    def stop_client(self):
+        pass
 
     def copy_to_clipboard(self):
         self.root.clipboard_clear()
