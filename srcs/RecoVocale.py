@@ -11,8 +11,12 @@ from utils_socket import check_server_status
 from utils_keyboard import Simulator
 from Micro import Micro
 from info import *
-# from ClientManager import ClientManager
-# from Transcription import Transcription
+import sys
+import os
+
+sys.stdout = open(os.devnull, 'w')  # Enregistre les sorties dans un fichier log
+sys.stderr = open(os.devnull, 'w')   # Enregistre les erreurs dans un fichier log
+
 
 class App:
     def __init__(self, root, loop):

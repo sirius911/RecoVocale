@@ -19,7 +19,7 @@ class UserConfig:
         if os.path.exists(self.config_file):
             self.load_config()
         else:
-            self.save_config()
+            self.save_config(None)
     
     def load_config(self):
         """Charge la configuration depuis le fichier."""
@@ -45,8 +45,8 @@ class UserConfig:
             'PORT': self._port,
             'SHORTCUT': self._shortcut,
             'MODE': self.mode,
-            'X_WINDOW': root.winfo_x(),
-            'Y_WINDOW': root.winfo_y(),
+            'X_WINDOW': root.winfo_x() if root else 0,
+            'Y_WINDOW': root.winfo_y() if root else 0,
             'DEBUG': 'True' if self.debug else 'False'
         }
         print(f"Sauvegarde {self.config_file} ...", end =' ')

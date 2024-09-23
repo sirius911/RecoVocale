@@ -1,6 +1,7 @@
 from utils_keyboard import Simulator
 import tkinter as tk
 
+
 class Action:
     def __init__(self, app):
         self.app = app
