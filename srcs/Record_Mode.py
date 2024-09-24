@@ -2,7 +2,7 @@ import asyncio
 import numpy as np
 import threading
 import sounddevice as sd
-from scipy.io.wavfile import write
+# from scipy.io.wavfile import write
 from Mode import Mode
 from utils_window import create_menus, create_buttons
 from info import RECORD
@@ -52,7 +52,7 @@ class AudioManager:
         # Sauvegarder les données audio
         if self.audio_data:
             audio_array = np.concatenate(self.audio_data, axis=0)
-            write('enregistrement.wav', self.fs, audio_array)
+            # write('enregistrement.wav', self.fs, audio_array)
             print("Enregistrement sauvegardé en tant que 'enregistrement.wav'")
 
     def pause_recording(self):
