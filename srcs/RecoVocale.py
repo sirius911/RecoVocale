@@ -1,3 +1,4 @@
+import signal
 import tkinter as tk
 from tkinter import messagebox
 import asyncio
@@ -201,6 +202,16 @@ def start_loop(loop):
 #         print(f"Ma fenêtre Tkinter - Dimensions: {width}x{height}")
 
 if __name__ == "__main__":
+     # Récupérer l'ID du processus du splash screen passé en argument
+    if len(sys.argv) > 1:
+        splash_pid = sys.argv[1]
+        try:
+            os.kill(int(splash_pid), signal.SIGTERM)
+            (f"Splash screen (PID {splash_pid}) fermé avec succès.")
+        except Exception as e:
+            print(f"Erreur lors de la fermeture du splash screen : {e}")
+            pass
+
     try:
         root = tk.Tk()
         # Create a new event loop
