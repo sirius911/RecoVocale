@@ -1,40 +1,60 @@
 {
-    "Philips": {
+    "Philips (3.81)": {
         "vendor_id": "0x0911",
         "product_id": "0x0c1c",
+        "firmware": "0x381",
         "actions" : {
-            "[0, 128, 0, 0, 0, 0, 0, 0, 0, 0]": {"class": "Pause"},
-            "[0, 128, 0, 0, 0, 0, 0, 0, 0, 1]": {"class": "Unpause"},
-            "[0, 128, 0, 0, 0, 0, 0, 0, 0, 4]": {"class": "ValidTranscriptions"},
-            "[0, 128, 0, 0, 0, 0, 0, 0, 0, 32]": {"class": "Keyboard", "arg":"\t"},
-            "[0, 128, 0, 0, 0, 0, 0, 0, 0, 64]": {"class": "NoAction"},
-            "[0, 128, 0, 0, 0, 0, 0, 0, 0, 16]": {"class": "NoAction"},
-            "[0, 128, 0, 0, 0, 0, 0, 0, 0, 8]": {"class": "NoAction"},
-            "[0, 128, 0, 0, 0, 0, 0, 0, 2, 0]": {"class": "NoAction"},
-            "[0, 128, 0, 0, 0, 0, 0, 0, 4, 0]": {"class": "NoAction"},
-            "[0, 128, 0, 0, 0, 0, 0, 0, 8, 0]": {"class": "NoAction"}
+            "0": {"class": "Pause"},                
+            "1": {"class": "Unpause"},
+            "4": {"class": "ValidTranscriptions"},
+            "32": {"class": "Copie_clipboard"},
+            "64": {"class": "Keyboard", "arg":"\u0001v"},
+            "16": {"class": "NoAction"},
+            "8": {"class": "NoAction"},
+            "512": {"class": "NoAction"},
+            "1024": {"class": "NoAction"},
+            "2048": {"class": "NoAction"}
+        }
+    },
+    "Philips (2.60)": {
+        "vendor_id": "0x0911",
+        "product_id": "0x0c1c",
+        "firmware": "0x0260",
+        "actions" : {
+            "0": {"class": "Pause"},
+            "1": {"class": "Unpause"},
+            "4": {"class": "ValidTranscriptions"},
+            "32": {"class": "Copie_clipboard"},
+            "64": {"class": "Keyboard", "arg":"\u0001v"},
+            "16": {"class": "Selection", "arg":"left"},
+            "8": {"class": "NoAction"},
+            "512": {"class": "NoAction"},
+            "1024": {"class": "NoAction"},
+            "2048": {"class": "NoAction"}
         }
     },
     "Nuance": {
         "vendor_id": "0x0554",
         "product_id": "0x1001",
+        "firmware": "0x203",
         "actions": {
-            "[0, 0, 0, 0]": {"class": "Pause"},
-            "[0, 0, 4, 0]": {"class": "Unpause"},
-            "[0, 0, 1, 0]": {"class": "ValidTranscriptions"},
-            "[0, 0, 2, 0]": {"class": "NoAction"},
-            "[0, 0, 8, 0]": {"class": "NoAction"},
-            "[0, 0, 32, 0]": {"class": "NoAction"},
-            "[0, 0, 64, 0]": {"class": "NoAction"},
-            "[0, 0, 16, 0]": {"class": "NoAction"},
-            "[0, 0, 128, 0]": {"class": "NoAction"},
-            "[0, 0, 0, 1]": {"class": "NoAction"},
-            "[0, 0, 0, 2]": {"class": "NoAction"}
+            "0": {"class": "Pause"},
+            "1024": {"class": "Unpause"},
+            "256": {"class": "ValidTranscriptions"},
+            "512": {"class": "NoAction"},
+            "2048": {"class": "NoAction"},
+            "8192": {"class": "NoAction"},
+            "16384": {"class": "NoAction"},
+            "4096": {"class": "NoAction"},
+            "32768": {"class": "Copie_clipboard"},
+            "1": {"class": "ValidTranscriptions"},
+            "2": {"class": "Keyboard", "arg":"\u0001v"}
         }
     },
     "Jabra": {
         "vendor_id": "0x0b0e",
         "product_id": "0x0422",
+        "firmware": "0x0",
         "actions": {
             "[1, 0]": {"class": "NoAction"},
             "[1, 1]": {"class": "NoAction"},

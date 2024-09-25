@@ -1,7 +1,8 @@
 from client import EnhancedTranscriptionClient
-from Correcteur import Correcteur
+from Correcteur import Correcteur, intercept
 import threading
 import asyncio
+import traceback
 
 class ClientManager:
     def __init__(self, host, port, lang, model, translate, use_vad, save_output_recording, output_recording_filename, update_callback):
@@ -22,7 +23,7 @@ class ClientManager:
         self.correcteur = Correcteur()
 
     def start_client(self, loop):
-        # print("Starting client in ClientManager")
+        print("Starting client in ClientManager")
         self.stop_client()  # Ensure any previous client is stopped before starting a new one
 
         if self.client is None:
@@ -36,15 +37,14 @@ class ClientManager:
                 save_output_recording=self.save_output_recording,
                 output_recording_filename=self.output_recording_filename
             )
-
+        self.client.set_pause(False)
         self.running = True
-
+        self.client
         self.loop = loop
         # Run the client in a separate thread to avoid blocking the event loop
         self.client_thread = threading.Thread(target=self.run_client_thread)
         self.client_thread.start()
-
-        self.display_task = asyncio.run_coroutine_threadsafe(self.update_display(), self.loop)
+        self.display_task = asyncio.run_coroutine_threadsafe(self.update_transcription(0), self.loop)
 
     def run_client_thread(self):
         try:
@@ -52,22 +52,41 @@ class ClientManager:
         except Exception as e:
             print(f"Error running client: {e}")
 
-    async def update_display(self):
-        while self.running:
-            transcriptions, _ = self.client.get_transcriptions()
-            transcriptions = transcriptions if self.client else []
-            corrected_transcriptions = [self.correcteur.applique_corrections(line) for line in transcriptions]
-            combined_text = ''.join(corrected_transcriptions).lstrip()
-            if combined_text != "":
-                self.update_callback(combined_text)
-            await asyncio.sleep(0.5)
+    async def update_transcription(self, compteur):
+        ancienne_transcription = ""
+        try:
+            while self.running:
+                
+                transcriptions, _ = self.client.get_transcriptions()
+                transcriptions = transcriptions if self.client else []
+                # corrected_transcriptions = [self.correcteur.applique_corrections(line) for line in transcriptions]
+                
+                combined_text, ending = intercept(''.join(transcriptions).lstrip())
+                
+                if combined_text.lstrip() != '' and combined_text == ancienne_transcription and self.client.is_pause():
+                    compteur += 1
+                else:
+                    ancienne_transcription = combined_text
+                    compteur = 0
+
+                # print(f"compteur = {compteur} et client.is_pause = {self.client.is_pause()}")
+                ending = ending or (compteur > 1) # fin demandé par intercept() ou 2 fois le meme text en mode pause
+                if combined_text != "":
+                    self.update_callback(combined_text, ending)
+                if ending:
+                    print("Fin de transcription demandée")
+                    self.stop_client()
+                await asyncio.sleep(0.5)
+        except Exception as e:
+            print(e)
+            traceback.print_exc()
+        print("sortie du while")
 
     def stop_client(self):
         if not self.running:
             return
 
         self.running = False
-        print("Stopping client")
         if self.client:
             self.client.stop()
             self.client = None
@@ -79,11 +98,5 @@ class ClientManager:
             self.display_task = None
 
     def pause(self):
-        print("pause client")
         if self.client:
             self.client.set_pause(True)
-
-    def unpause(self):
-        print("record")
-        if self.client:
-            self.client.set_pause(False)

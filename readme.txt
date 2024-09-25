@@ -13,10 +13,10 @@
 | 0.4     | 2024-08-02 | - Mode tache de Fond                                               |
 |         |            | - Menu Pour choisir son micro                                      |
 |         |            | - Menu pour changer son Raccourci                                  |
-| 0.5     | 2024-08-12 | - Refonte threading et async function                              |
+| 0.5     | 2024-08-20 | - Refonte threading et async function                              |
 |         |            | - plus de menu micro                                               |
 |         |            | - Fichier user_config.ini pou Ip, Port, Shortcut, Mode             |
-|         |            | - Gestion Micro Philips & Nuance avec Actions paramètrable par les |
+|         |            | - Gestion Micro Philips & Nuance avec Actions paramêtrable par les |
 |         |            |   boutons (micro_actions_config.json)                              |
 |         |            | - Mode GrandeFenêtre ou petite Fenêtre                             |
 |---------|------------|--------------------------------------------------------------------|
@@ -26,22 +26,22 @@
 1. Dï¿½marrez l'application.
   
 
-En mode Petite fenètre :
-   Le mode simulation d'écriture clavier est automatiquement activé.
+En mode Petite Fenêtre :
+   Le mode simulation d'écriture clavier est automatiquement activï¿½.
    Tapez la commande Raccourci ou maintenez le bouton REC du microphone pour lancer la transcription et écrire le texte transcrit.
    Retapez sur le Raccourci pour arrêter la transcription ou lachez le bouton REC du microphone
 
-En mode Grande fenêtre : 
+En mode Grande Fenêtre : 
 - Cliquez sur le bouton REC / PAUSE pour démarrer ou arrêter la reconnaissance vocale.
   Vous pouvez aussi maintenir le Bouton REC du Microphone (Philips ou Nuance).
   Vous pouvez utiliser aussi le Raccourci Clavier pour lancer ou arrêter la transcription.
-- Utilisez l'option "Simule Keyboard" pour simuler la saisie dans une autre fenêtre.
-- Le bouton Clear efface le contenu de la fenêtre.
-- Le bouton Copy permet de copier le contenu de la fenêtre dans le presse-papiers.
+- Utilisez l'option "Simule Keyboard" pour simuler la saisie dans une autre Fenêtre.
+- Le bouton Clear efface le contenu de la Fenêtre.
+- Le bouton Copy permet de copier le contenu de la Fenêtre dans le presse-papiers.
 - Le bouton Validation 'fige' le texte. Cela ferme et reouvre une session websocket. 
 - Le menu Paramètres permet de changer de raccourci.
 
-## Fonctionnalités
+## Fonctionnalitï¿½s
 
 - Reconnaissance vocale en temps réel
 - Simulation de la saisie au clavier

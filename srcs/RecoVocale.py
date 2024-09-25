@@ -5,124 +5,69 @@ import threading
 import keyboard
 
 from UserConfig import UserConfig
-from GrandFenetreMode import GrandFenetreMode
-from ReduitMode import ReduitMode
+from Direct_Mode import Direct_Mode
+from Record_Mode import Record_Mode
 from utils_socket import check_server_status
 from utils_keyboard import Simulator
 from Micro import Micro
 from info import *
-from ClientManager import ClientManager
+import sys
+import os
+
+sys.stdout = open(os.devnull, 'w')  # Enregistre les sorties dans un fichier log
+sys.stderr = open(os.devnull, 'w')   # Enregistre les erreurs dans un fichier log
+
 
 class App:
     def __init__(self, root, loop):
-        print("Initializing App")
         self.config = UserConfig()
+        mode = self.config.mode
         self.root = root
-        self.root.title(f"RecoVocale [{self.config.server_ip}:{self.config.port}] (v{VERSION})")
-        self.root.attributes("-topmost", True)  # Keep the window on top of others
-
         self.recording = False
-        self.last_transcriptions = ""
-        self.current_transcriptions = ""
-    
+        # self.root.title(f"RecoVocale [{self.config.server_ip}:{self.config.port}] (v{VERSION})")
+        self.root.attributes("-topmost", True)  # Keep the window on top of others
+ 
         #-------------------check serveur-----------------------
         self.status_server = check_server_status(self.config.server_ip, self.config.port)
-
+        self.root.title(f"RecoVocale [{self.config.server_ip}:{self.config.port}] (v{VERSION}) {"" if self.status_server else "not"} connected")
         #-----------------Shortcut------------------------------
         self.keyboard_shortcut = self.config.shortcut
+        #----------------------MODE----------------------------
+        print(f"mode = {mode}")
+        if mode == "RECORD":
+            self.current_mode = Record_Mode(self)
+            # self.client_manager = None
+        else:
+            self.current_mode = Direct_Mode(self)
 
-        # -------------simulate keyboard
         self.simulate_keyboard = False
         self.simulator_keyboard = Simulator(text=None, debug=self.config.debug)
-        keyboard.add_hotkey(self.keyboard_shortcut, self.toggle_start_stop)
-
-        #----------------------MODE----------------------------
-        mode = self.config.mode
-        if mode == 'SMALL':
-            self.current_mode = ReduitMode(self)
-        else:
-            self.current_mode = GrandFenetreMode(self)
-        #----------------- Lien Client Whisper -----------------------
-        self.client_manager = ClientManager(
-            self.config.server_ip,
-            self.config.port,
-            "fr",
-            "small",
-            False,
-            True,
-            False,
-            "",
-            self.display_message  # Pass the callback to ClientManager
-        )
+        keyboard.add_hotkey(self.keyboard_shortcut, self.current_mode.toggle_start_stop)
 
         # Use the provided asyncio event loop
         self.loop = loop
 
         self.root.protocol("WM_DELETE_WINDOW", self.current_mode.exit_app)
 
-        # Start the client automatically on launch
-        self.start_client()
-
         # #---------------------------MICRO----------------------------
         # Initialize the microphone 
-        self.mic = Micro(loop, app=self)
+        self.mic = Micro(loop, app=self.current_mode)
 
+        # self.current_mode.start()
 
-    def start_client(self):
-        if self.config.debug:
-            print("Starting client in App")
-        self.client_manager.start_client(self.loop)
-        self.pause()  # In pause 
-
-    def stop_client(self):
-        if self.config.debug:
-            print("Stopping client in App")
-        self.client_manager.stop_client()
-        self.recording = False
-        self.update()
-
-    def valid_transcriptions(self):
-        # on valide les transcription et sauvegarde
-        self.current_transcriptions += '\n'
-        self.last_transcriptions += self.current_transcriptions
-        if self.simulate_keyboard:
-            self.simulator_keyboard.animate_typing(self.current_transcriptions)
-            self.simulator_keyboard.init()
-        self.current_transcriptions = ""
-        self.stop_client()
-        self.start_client()
-
-    def pause(self):
-        if self.config.debug:
-            print("Pausing client in App")
-        self.client_manager.pause()
-        self.recording = False
-        self.current_transcriptions += '\n' 
-        self.update()
-
-    def unpause(self):
-        if self.config.debug:
-            print("Unpausing client in App")
-        if not self.recording:
-            self.client_manager.unpause()
-            self.recording = True
-        self.update()
-
+    def paste_from_clipboard(self):
+        Simulator('\u0001v')
+            
     def running(self):
         return self.client_manager.running
-
-    def display_message(self, message):
-        self.current_transcriptions = message
-        self.current_mode.update_transcription(message)
-        if self.simulate_keyboard and self.recording:
-            self.simulator_keyboard.animate_typing(message)
 
     def update(self):
         if self.current_mode:
             self.current_mode.update() 
 
     def on_closing(self):
-        self.stop_client()
+        self.current_mode.stop()
+        # self.stop_client()
         if self.mic:
             self.mic.disconnect()
         # sauvegarde userConfig
@@ -130,37 +75,31 @@ class App:
         self.config.mode = self.current_mode.name()
         self.config.x_window = self.root.winfo_rootx()
         self.config.y_window = self.root.winfo_rooty()
-        self.config.save_config()
+        self.config.save_config(self.root)
         self.root.quit()
         self.loop.stop()
-
-    def toggle_start_stop(self):
-        """
-        Toggle the start/stop state of the transcription client.
-        """
-        if self.recording:
-            self.pause()
-        else:
-            self.unpause()
 
     def switch_mode(self, mode):
         print(f"switch_mode({mode.name})")
         if self.current_mode:
             if self.current_mode.mode != mode:
+                self.current_mode.stop()
                 self.current_mode.exit()
                 self.current_mode = None
-                if mode == BIG:
-                    self.current_mode = GrandFenetreMode(self)
-                elif mode == SMALL:
-                    self.current_mode = ReduitMode(self)
+                if mode == DIRECT:
+                    self.current_mode = Direct_Mode(self)
+                elif mode == RECORD:
+                    self.current_mode = Record_Mode(self)
                 else:
                     print("Erreur de Mode dans App")
-               
-                self.current_mode.update()
+                    self.on_closing()
+                # self.current_mode.start()
+                # self.current_mode.update()
                 # Utiliser after_idle pour s'assurer que geometry est bien appliqué
                 self.root.after_idle(lambda: self.root.geometry(f"{self.current_mode.mode.window_width}x{self.current_mode.mode.window_height}+{self.config.x_window}+{self.config.y_window}"))
-                # self.root.after_idle(lambda: self.root.geometry("940x709" if mode == BIG else "200x65"))
-               
+                self.mic.change_mode(self.current_mode)
+                keyboard.clear_all_hotkeys()
+                keyboard.add_hotkey(self.keyboard_shortcut, self.current_mode.toggle_start_stop)
     #---------------------------------------------------------------------------------------------------------------------
 #               Fenetre shorcut a détacher dans une autre class 
     def change_shortcut(self):
@@ -193,7 +132,7 @@ class App:
         if key == 'Return':  # Ignore the Enter key itself
             if self.is_valid_shortcut(self.keyboard_shortcut.split('+')):
                 keyboard.clear_all_hotkeys()
-                keyboard.add_hotkey(self.keyboard_shortcut, self.toggle_start_stop)
+                keyboard.add_hotkey(self.keyboard_shortcut, self.current_mode.toggle_start_stop)
                 # self.start_button.config(text=f"Start ({self.keyboard_shortcut})")
                 # self.stop_button.config(text=f"Stop ({self.keyboard_shortcut})")
                 # self.icon.title = f"RecoVocale (v{VERSION})[{self.keyboard_shortcut}]"
@@ -262,11 +201,14 @@ def start_loop(loop):
 #         print(f"Ma fenêtre Tkinter - Dimensions: {width}x{height}")
 
 if __name__ == "__main__":
-    root = tk.Tk()
-    # Create a new event loop
-    new_loop = asyncio.new_event_loop()
-    threading.Thread(target=start_loop, args=(new_loop,), daemon=True).start()
+    try:
+        root = tk.Tk()
+        # Create a new event loop
+        new_loop = asyncio.new_event_loop()
+        threading.Thread(target=start_loop, args=(new_loop,), daemon=True).start()
 
-    app = App(root, new_loop)  # Pass the new loop to the app
-    # root.bind("<Configure>", on_resize)
-    root.mainloop()
+        app = App(root, new_loop)  # Pass the new loop to the app
+        # root.bind("<Configure>", on_resize)
+        root.mainloop()
+    except Exception as e:
+        print(e)

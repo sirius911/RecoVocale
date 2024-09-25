@@ -1,22 +1,22 @@
 from types import SimpleNamespace
 
-VERSION = "0.502L"
+VERSION = "0.6R05"
 
 #------------------------ M O D E S ----------------------
-BIG = SimpleNamespace()
-BIG.name = "BIG"
-BIG.resizable = True
-BIG.topmost = False
-BIG.window_width = 940
-BIG.window_height = 709
-BIG.button_width = 30
-BIG.simule_keyboard = False
+DIRECT = SimpleNamespace()
+DIRECT.name = "DIRECT"
+DIRECT.resizable = True
+DIRECT.topmost = False
+DIRECT.window_width = 940
+DIRECT.window_height = 709
+DIRECT.button_width = 30
+DIRECT.simule_keyboard = False
 
-SMALL = SimpleNamespace()
-SMALL.name = "SMALL"
-SMALL.resizable = False
-SMALL.topmost = True
-SMALL.window_width = 200
-SMALL.window_height = 65
-SMALL.button_width = 15
-SMALL.simule_keyboard = True
+RECORD = SimpleNamespace()
+RECORD.name = "RECORD"
+RECORD.resizable = True
+RECORD.topmost = False
+RECORD.window_width = 940
+RECORD.window_height = 709
+RECORD.button_width = 30
+RECORD.simule_keyboard = False

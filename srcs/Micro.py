@@ -5,10 +5,20 @@ import asyncio
 from Actions import *
 from utils_window import resource_path, get_config_path
 
+def hash_code(data):
+    if len(data) < 2:
+        raise ValueError(f"Bad hash_code: {data}")
+    
+    avant_dernier = data[-2]
+    dernier = data[-1]
+    hash_code = avant_dernier*256 + dernier
+    return hash_code
+
 class BaseMic:
-    def __init__(self, loop, vendor_id, product_id, actions, app, micro_name):
+    def __init__(self, loop, vendor_id, product_id, firmware, actions, app, micro_name):
         self.vendor_id = vendor_id
         self.product_id = product_id
+        self.version = firmware
         self.actions = actions
         self.app = app
         self.loop = loop
@@ -21,7 +31,7 @@ class BaseMic:
         asyncio.run_coroutine_threadsafe(self.monitor(), self.loop)
 
     async def check_connection(self):
-        all_hids = hid.HidDeviceFilter(vendor_id=self.vendor_id, product_id=self.product_id).get_devices()
+        all_hids = hid.HidDeviceFilter(vendor_id=self.vendor_id, product_id=self.product_id, version_number=self.version).get_devices()
         if all_hids:
             if not self.connected:
                 self.device = all_hids[0]
@@ -46,15 +56,19 @@ class BaseMic:
             self.connected = False
             print(f"{self.micro_name} déconnecté")
 
+    def change_mode(self, mode):
+        self.app = mode
+
     def on_data_handler(self, data):
         if data != self.prev_data:
             self.prev_data = data
             self.handle_data(data)
 
     def handle_data(self, data):
-        data_str = str(data)
-        if data_str in self.actions:
-            action_info = self.actions[data_str]
+        hascode = str(hash_code(data))
+        if hascode in self.actions:
+            
+            action_info = self.actions[hascode]
             action_class = action_info["class"]
             
             # Instancier dynamiquement la classe d'action
@@ -62,14 +76,14 @@ class BaseMic:
             if ActionClass:
                 action = ActionClass(self.app)
                 # Vérifier si l'action a un argument
-                if "args" in action_info:
-                    action.execute(action_info["args"])
+                if "arg" in action_info:
+                    action.execute(action_info["arg"])
                 else:
                     action.execute()
             else:
-                print(f"Classe d'action {action_class} introuvable pour {data_str}")
+                print(f"Classe d'action {action_class} introuvable pour {str(data)} ({hascode})")
         else:
-            print(f"No action found for data: {data_str}")
+            print(f"No action found for data: {str(data)} ({hascode})")
 
     async def monitor(self):
         while True:
@@ -94,13 +108,17 @@ def Micro(loop, app):
     with open(config_path, "r") as file:
         config = json.load(file)
     for micro_name, micro_info in config.items():
-        # Convertir les vendor_id et product_id hexadécimaux en entiers
-        vendor_id = int(micro_info["vendor_id"], 16)
-        product_id = int(micro_info["product_id"], 16)
-        actions = micro_info["actions"]
-
-        temp_mic = BaseMic(loop, vendor_id, product_id, actions, app, micro_name)
-        all_hids = hid.HidDeviceFilter(vendor_id=vendor_id, product_id=product_id).get_devices()
+        # Convertir les vendor_id, product_id et firmwarehexadécimaux en entiers
+        try:
+            vendor_id = int(micro_info["vendor_id"], 16)
+            product_id = int(micro_info["product_id"], 16)
+            firmware_revision = int(micro_info["firmware"], 16)
+            actions = micro_info["actions"]
+        except Exception as e:
+            print(f"Erreur dans la lecture du fichier [{file}]\n{e}\n Il faut mettre à jour le fichier json !")
+            return None
+        temp_mic = BaseMic(loop, vendor_id, product_id, firmware_revision, actions, app, micro_name)
+        all_hids = hid.HidDeviceFilter(vendor_id=vendor_id, product_id=product_id, version_number=firmware_revision).get_devices()
         if all_hids:
             return temp_mic  # Retourne l'instance de la classe détectée
 

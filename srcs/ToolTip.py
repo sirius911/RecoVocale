@@ -34,22 +34,3 @@ class ToolTip:
         if self.tooltip_window:
             self.tooltip_window.destroy()
             self.tooltip_window = None
-
-# Exemple d'utilisation avec un bouton
-# root = tk.Tk()
-
-# # Image fictive pour l'exemple
-# record_image = tk.PhotoImage(width=50, height=50)  # Utilisez votre propre image
-
-# # Création d'un cadre pour les boutons
-# button_frame = tk.Frame(root)
-# button_frame.pack(pady=20)
-
-# # Bouton avec une image
-# rec_button = tk.Button(button_frame, image=record_image, command=lambda: print("Recording..."))
-# rec_button.pack(side=tk.LEFT, padx=10)
-
-# # Ajouter une bulle d'information (tooltip) au bouton
-# ToolTip(rec_button, "Démarrer/Arrêter l'enregistrement")
-
-# root.mainloop()
