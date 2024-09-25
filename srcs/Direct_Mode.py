@@ -66,21 +66,6 @@ class Direct_Mode(Mode):
         create_menus(self)
         create_buttons(self)
 
-        self.valide_button = tk.Button(self.root, text=f"Validation", command=self.valid_transcriptions)
-        self.valide_button.pack(side=tk.RIGHT,pady=10)
-        #------------------------------------------------------------------------------
-
-        # self.simulate_keyboard_var = tk.BooleanVar()
-        # self.simulate_keyboard_check = tk.Checkbutton(self.root,
-        #                                               text="Simule Touches Clavier",
-        #                                               variable=self.simulate_keyboard_var,
-        #                                               command=self.update_simulate_keyboard,
-                                                      
-        #                                               )
-        # self.simulate_keyboard_check.pack(pady=10)
-        # # Synchronisation initiale avec la variable booléenne
-        # self.simulate_keyboard_var.set(self.app.simulate_keyboard)
-
         self.text_box_frame = tk.Frame(self.root)
         self.text_box_frame.pack(pady=10, fill=tk.BOTH, expand=True)
         
@@ -93,11 +78,17 @@ class Direct_Mode(Mode):
         self.text_box.tag_configure("sel", background="yellow", foreground="black")
         
         self.text_box_scrollbar.config(command=self.text_box.yview)
-        self.copy_button = tk.Button(self.root, text="Copy", command=self.copy_to_clipboard)
-        self.copy_button.pack(pady=10)
 
-        self.clear_text_box_button = tk.Button(self.root, text="Clear", command=self.clear_text_box)
-        self.clear_text_box_button.pack(pady=10)
+        # Barre d'information en bas de la fenêtre
+        self.status_bar = tk.Label(self.root, text="Bienvenue dans l'application", bd=1, relief=tk.SUNKEN, anchor=tk.W)
+        self.status_bar.pack(side=tk.BOTTOM, fill=tk.X)
+
+
+        # self.copy_button = tk.Button(self.root, text="Copy", command=self.copy_to_clipboard)
+        # self.copy_button.pack(pady=10)
+
+        # self.clear_text_box_button = tk.Button(self.root, text="Clear", command=self.clear_text_box)
+        # self.clear_text_box_button.pack(pady=10)
 
         # self.monitor_label = tk.Label(self.root, text="Monitoring du micro")
         # self.monitor_label.pack()
@@ -141,12 +132,13 @@ class Direct_Mode(Mode):
     def unpause(self):
         # if self.config.debug:
         print(f"Unpausing client in App")
-        if not self.app.recording:
-            if self.client_manager.client:
-                self.client_manager.client.set_pause(False)
-            else:
-                self.client_manager.start_client(self.app.loop)
-            self.app.recording = True
+        if self.app.status_server == True:
+            if not self.app.recording:
+                if self.client_manager.client:
+                    self.client_manager.client.set_pause(False)
+                else:
+                    self.client_manager.start_client(self.app.loop)
+                self.app.recording = True
         self.update()
 
     def stop_client(self):

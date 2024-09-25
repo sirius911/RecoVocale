@@ -29,24 +29,33 @@ def _load_and_resize_image(path, size):
      return ImageTk.PhotoImage(image)
 
 def create_buttons(self):
-     #--------------------------------BOUTON -------------------------------------
+    #--------------------------------BOUTON -------------------------------------
 
-     # Load, resize and convert images using Pillow
-     button_width = self.mode.button_width
-     self.record_image = _load_and_resize_image(resource_path("Icons/pause.png"), (button_width, button_width))
-     self.pause_image = _load_and_resize_image(resource_path("Icons/rec.png"), (button_width, button_width))
-     
-     self.button_frame = tk.Frame(self.root)
-     self.button_frame.pack(pady=10)
+    # Load, resize and convert images using Pillow
+    button_width = self.mode.button_width
+    self.record_image = _load_and_resize_image(resource_path("Icons/pause.png"), (button_width, button_width))
+    self.pause_image = _load_and_resize_image(resource_path("Icons/rec.png"), (button_width, button_width))
+    self.trash_image = _load_and_resize_image(resource_path("Icons/trash.png"), (button_width, button_width))
+    
+    # Create a frame to hold the buttons
+    self.button_frame = tk.Frame(self.root)
+    self.button_frame.pack(pady=10)
 
-     self.rec_button = tk.Button(self.button_frame, image=self.record_image, command=self.toggle_start_stop)
-     self.rec_button.pack(side=tk.RIGHT, padx=5, pady=10)
+    # Create buttons and canvas in the same frame, aligning them side by side
+    self.rec_button = tk.Button(self.button_frame, image=self.pause_image, command=self.toggle_start_stop, state=tk.DISABLED)
+    self.rec_button.grid(row=0, column=0, padx=5)
+    if self.app.status_server == True:
+        self.rec_button.config(state=tk.NORMAL)
 
-     ToolTip(self.rec_button, f"({self.app.keyboard_shortcut})")
+    ToolTip(self.rec_button, f"({self.app.keyboard_shortcut})")
 
-     self.rec_canvas = tk.Canvas(self.button_frame, width=button_width, height=button_width)
-     self.rec_circle = self.rec_canvas.create_oval(2, 2, button_width, button_width, fill="grey")
-     self.rec_canvas.pack(side=tk.LEFT, padx=5)
+    self.rec_canvas = tk.Canvas(self.button_frame, width=button_width, height=button_width)
+    self.rec_circle = self.rec_canvas.create_oval(2, 2, button_width, button_width, fill="grey")
+    self.rec_canvas.grid(row=0, column=1, padx=5)
+
+    self.trash_button = tk.Button(self.button_frame, image=self.trash_image, command=self.clear_text_box)
+    self.trash_button.grid(row=0, column=2, padx=5)
+
 
 def create_menus(self):
     self.menu_bar = tk.Menu(self.root)
@@ -61,23 +70,24 @@ def create_menus(self):
     
     # Mode
     self.mode_menu = tk.Menu(self.settings_menu, tearoff=0)
-    # self.mod_var = tk.StringVar()
+
     self.settings_menu.add_cascade(label="Mode", menu=self.mode_menu)
     self.mode_menu.add_radiobutton(label='Direct',
                                    variable=self.mod_var,
                                    value=DIRECT,
-                                   command= lambda: self.app.switch_mode(DIRECT))
+                                   command= lambda: self.app.switch_mode(DIRECT)) 
+
     self.mode_menu.add_radiobutton(label='Enregistrement',
                                    variable=self.mod_var,
                                    value=RECORD,
                                    command= lambda: self.app.switch_mode(RECORD))
+    self.mode_menu.entryconfig('Enregistrement', state=tk.DISABLED) #
 
     # Autres options du menu Paramètres
     self.settings_menu.add_separator()
     self.settings_menu.add_command(label="Info", command=self.info)
     self.settings_menu.add_separator()
-    # self.settings_menu.add_command(label="Connecte", command=self.start_client)
-    self.settings_menu.add_command(label="Deconnect", command=self.stop_client)
+
     self.debug_var = BooleanVar(value=self.app.config.debug)
     self.settings_menu.add_checkbutton(label="Debug", variable=self.debug_var, 
                                    command=lambda:setattr(self.app.config, 'debug', self.debug_var.get()))

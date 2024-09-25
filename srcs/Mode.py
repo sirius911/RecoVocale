@@ -19,10 +19,10 @@ class Mode:
         self.root.geometry(f"{self.mode.window_width}x{self.mode.window_height}+{self.app.config.x_window}+{self.app.config.y_window}")
         # self.create_systray_icon()
 
-    def show_window(self, icon, item):
-        # self.simulate_keyboard_var.set(False)
-        self.root.deiconify()
-        self.is_hidden = False
+    # def show_window(self, icon, item):
+    #     # self.simulate_keyboard_var.set(False)
+    #     self.root.deiconify()
+    #     self.is_hidden = False
 
     # def update_status(self):
     #     self.update_icon()
@@ -44,9 +44,9 @@ class Mode:
         self.root.clipboard_clear()
         self.root.clipboard_append(self.transcription.get())
 
-    def hide_window(self):
-        self.simulate_keyboard_var.set(True)
-        self.is_hidden = True
+    # def hide_window(self):
+    #     self.simulate_keyboard_var.set(True)
+    #     self.is_hidden = True
     
     def exit_app(self):
         # self.icon.stop()
@@ -62,9 +62,23 @@ class Mode:
         else:
             self.rec_button.config(image=self.pause_image)
 
+    def _update_barre_status(self):
+        if self.app.recording:
+            message = "RECORDING ..."
+        else:
+            message = f"RecoVocale [{self.app.config.server_ip}:{self.app.config.port}] (v{VERSION}) {"" if self.app.status_server else "not"} connected"
+
+        if self.app.status_server == False:
+            self.status_bar.config(text=message, fg='red', anchor=tk.W)
+        elif self.app.recording:
+            self.status_bar.config(text=message, fg='black', bg='red', anchor=tk.CENTER)
+        else:
+            self.status_bar.config(text=message, bg='lightblue', fg='darkblue', anchor=tk.W)
+
     def update(self):
         self._update_rec_circle()
         self._update_image_button()
+        self._update_barre_status()
 
     def info(self):
         #print info TODO: A mettre en fênetre

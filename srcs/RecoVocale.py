@@ -15,8 +15,8 @@ from info import *
 import sys
 import os
 
-sys.stdout = open(os.devnull, 'w')  # Enregistre les sorties dans un fichier log
-sys.stderr = open(os.devnull, 'w')   # Enregistre les erreurs dans un fichier log
+# sys.stdout = open(os.devnull, 'w')  # Enregistre les sorties dans un fichier log
+# sys.stderr = open(os.devnull, 'w')   # Enregistre les erreurs dans un fichier log
 
 
 class App:
@@ -37,12 +37,12 @@ class App:
         print(f"mode = {mode}")
         if mode == "RECORD":
             self.current_mode = Record_Mode(self)
-            # self.client_manager = None
         else:
             self.current_mode = Direct_Mode(self)
 
         self.simulate_keyboard = False
         self.simulator_keyboard = Simulator(text=None, debug=self.config.debug)
+        #TODO Verifier le raccourcis qui peut planter
         keyboard.add_hotkey(self.keyboard_shortcut, self.current_mode.toggle_start_stop)
 
         # Use the provided asyncio event loop
@@ -203,14 +203,14 @@ def start_loop(loop):
 
 if __name__ == "__main__":
      # Récupérer l'ID du processus du splash screen passé en argument
-    if len(sys.argv) > 1:
-        splash_pid = sys.argv[1]
-        try:
-            os.kill(int(splash_pid), signal.SIGTERM)
-            (f"Splash screen (PID {splash_pid}) fermé avec succès.")
-        except Exception as e:
-            print(f"Erreur lors de la fermeture du splash screen : {e}")
-            pass
+    # if len(sys.argv) > 1:
+    #     splash_pid = sys.argv[1]
+    #     try:
+    #         os.kill(int(splash_pid), signal.SIGTERM)
+    #         print(f"Splash screen (PID {splash_pid}) fermé avec succès.")
+    #     except Exception as e:
+    #         print(f"Erreur lors de la fermeture du splash screen : {e}")
+    #         pass
 
     try:
         root = tk.Tk()
