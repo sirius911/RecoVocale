@@ -16,7 +16,7 @@ $configData = "srcs/config;config"
 $outputName = "RecoVocale"
 
 # Construire la commande PyInstaller avec plusieurs --add-data
-$pyinstallerCommand = "pyinstaller --onefile --clean --icon=`"$iconPath`" --add-data `"$iconsData`" --add-data `"$configData`" `"$sourcePath`" --name `"$outputName`""
+$pyinstallerCommand = "pyinstaller --onefile --clean --icon=`"$iconPath`" --add-data `"$iconsData`" --add-data `"$configData`" `"$sourcePath`" --name `"$outputName`" --noconsole"
 
 # Exécuter la commande
 Write-Host "Running PyInstaller..."
