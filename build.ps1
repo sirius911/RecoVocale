@@ -79,4 +79,9 @@ $specContent = $specContent -replace 'filevers=\([\d, ]+\)', "filevers=($($versi
 $specContent = $specContent -replace 'prodvers=\([\d, ]+\)', "prodvers=($($versionParts[0]), $($versionParts[1]), 0, 0)"
 $specContent | Set-Content "RecoVocale.spec"
 
+# Mettre à jour la version dans info.py
+$infoContent = Get-Content "srcs/info.py"
+$infoContent = $infoContent -replace 'VERSION = ".*"', "VERSION = '$version'"
+$infoContent | Set-Content "srcs/info.py"
+
 Write-Host "Build completed."

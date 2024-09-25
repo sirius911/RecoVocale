@@ -6,8 +6,9 @@ import threading
 import keyboard
 
 from UserConfig import UserConfig
-from Direct_Mode import Direct_Mode
-from Record_Mode import Record_Mode
+from Mode_Direct import Mode_Direct
+from Mode_Record import Mode_Record
+from Mode_Reduit import Mode_Reduit
 from utils_socket import check_server_status
 from utils_keyboard import Simulator
 from Micro import Micro
@@ -36,9 +37,11 @@ class App:
         #----------------------MODE----------------------------
         print(f"mode = {mode}")
         if mode == "RECORD":
-            self.current_mode = Record_Mode(self)
+            self.current_mode = Mode_Record(self)
+        elif mode == "REDUIT":
+            self.current_mode = Mode_Reduit(self)
         else:
-            self.current_mode = Direct_Mode(self)
+            self.current_mode = Mode_Direct(self)
 
         self.simulate_keyboard = False
         self.simulator_keyboard = Simulator(text=None, debug=self.config.debug)
@@ -88,9 +91,11 @@ class App:
                 self.current_mode.exit()
                 self.current_mode = None
                 if mode == DIRECT:
-                    self.current_mode = Direct_Mode(self)
+                    self.current_mode = Mode_Direct(self)
                 elif mode == RECORD:
-                    self.current_mode = Record_Mode(self)
+                    self.current_mode = Mode_Record(self)
+                elif mode == REDUIT:
+                    self.current_mode = Mode_Reduit(self)
                 else:
                     print("Erreur de Mode dans App")
                     self.on_closing()
@@ -195,11 +200,11 @@ def start_loop(loop):
     asyncio.set_event_loop(loop)
     loop.run_forever()
 
-# def on_resize(event):
-#         # Afficher les dimensions de la fenêtre dans la barre de titre
-#         width = event.width
-#         height = event.height
-#         print(f"Ma fenêtre Tkinter - Dimensions: {width}x{height}")
+def on_resize(event):
+        # Afficher les dimensions de la fenêtre dans la barre de titre
+        width = event.width
+        height = event.height
+        print(f"Ma fenêtre Tkinter - Dimensions: {width}x{height}")
 
 if __name__ == "__main__":
      # Récupérer l'ID du processus du splash screen passé en argument
@@ -219,7 +224,7 @@ if __name__ == "__main__":
         threading.Thread(target=start_loop, args=(new_loop,), daemon=True).start()
 
         app = App(root, new_loop)  # Pass the new loop to the app
-        # root.bind("<Configure>", on_resize)
+        root.bind("<Configure>", on_resize)
         root.mainloop()
     except Exception as e:
         print(e)

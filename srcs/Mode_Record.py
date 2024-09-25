@@ -65,7 +65,7 @@ class AudioManager:
 
 
 
-class Record_Mode(Mode):
+class Mode_Record(Mode):
     def enter(self):
         self.mode = RECORD
         # self.app.simulate_keyboard = RECORD.simule_keyboard

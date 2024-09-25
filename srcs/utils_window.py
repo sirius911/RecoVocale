@@ -3,7 +3,7 @@ import sys
 import tkinter as tk
 from tkinter import BooleanVar
 from PIL import Image, ImageTk
-from info import DIRECT, RECORD
+from info import DIRECT, RECORD, REDUIT
 from ToolTip import ToolTip
 
 def get_config_path(file:str):
@@ -29,19 +29,20 @@ def _load_and_resize_image(path, size):
      return ImageTk.PhotoImage(image)
 
 def create_buttons(self):
-    #--------------------------------BOUTON -------------------------------------
-
     # Load, resize and convert images using Pillow
     button_width = self.mode.button_width
     self.record_image = _load_and_resize_image(resource_path("Icons/pause.png"), (button_width, button_width))
     self.pause_image = _load_and_resize_image(resource_path("Icons/rec.png"), (button_width, button_width))
     self.trash_image = _load_and_resize_image(resource_path("Icons/trash.png"), (button_width, button_width))
-    
-    # Create a frame to hold the buttons
-    self.button_frame = tk.Frame(self.root)
-    self.button_frame.pack(pady=10)
 
-    # Create buttons and canvas in the same frame, aligning them side by side
+    # Create a frame to hold the buttons and place it in the center
+    self.button_frame = tk.Frame(self.root)
+    self.button_frame.grid(row=0, column=0, pady=10)
+
+    # Configure grid layout for centering the buttons
+    self.root.grid_columnconfigure(0, weight=1)  # Center the frame in the window
+
+    # Add buttons and center them within the frame
     self.rec_button = tk.Button(self.button_frame, image=self.pause_image, command=self.toggle_start_stop, state=tk.DISABLED)
     self.rec_button.grid(row=0, column=0, padx=5)
     if self.app.status_server == True:
@@ -55,6 +56,14 @@ def create_buttons(self):
 
     self.trash_button = tk.Button(self.button_frame, image=self.trash_image, command=self.clear_text_box)
     self.trash_button.grid(row=0, column=2, padx=5)
+
+    # Center the buttons within the button_frame by configuring columns in button_frame
+    self.button_frame.grid_columnconfigure(0, weight=1)
+    self.button_frame.grid_columnconfigure(1, weight=1)
+    self.button_frame.grid_columnconfigure(2, weight=1)
+
+    # Optional: If you want the frame to be centered horizontally in the window
+    self.button_frame.grid(row=0, column=0, sticky="n")  # This will keep it centered
 
 
 def create_menus(self):
@@ -75,7 +84,11 @@ def create_menus(self):
     self.mode_menu.add_radiobutton(label='Direct',
                                    variable=self.mod_var,
                                    value=DIRECT,
-                                   command= lambda: self.app.switch_mode(DIRECT)) 
+                                   command= lambda: self.app.switch_mode(DIRECT))
+    self.mode_menu.add_radiobutton(label='Réduit',
+                                   variable=self.mod_var,
+                                   value=REDUIT,
+                                   command= lambda: self.app.switch_mode(REDUIT))
 
     self.mode_menu.add_radiobutton(label='Enregistrement',
                                    variable=self.mod_var,

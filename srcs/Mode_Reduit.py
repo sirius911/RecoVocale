@@ -1,52 +1,15 @@
 from Mode import Mode
 import tkinter as tk
 from utils_window import create_menus, create_buttons
-from info import DIRECT
+from info import REDUIT, VERSION
 from ClientManager import ClientManager
 
-def trouver_bornes_mot_tk(phrase, curseur, direction='left'):
-    # Si le curseur est à la fin, on le place au dernier caractère
-    if curseur == -1:
-        curseur = len(phrase) - 1
 
-    # Assurer que le curseur est dans les bornes de la phrase
-    curseur = max(0, min(len(phrase) - 1, curseur))
-    
-    if direction == 'left':
-        # Trouver le début du mot à left
-        debut = curseur
-        while debut > 0 and phrase[debut].isspace():
-            debut -= 1
-        while debut > 0 and not phrase[debut - 1].isspace():
-            debut -= 1
-        
-        # Trouver la fin du mot
-        fin = curseur
-        while fin < len(phrase) and not phrase[fin].isspace():
-            fin += 1
-        return debut, fin - 1
-    
-    elif direction == 'right':
-        # Trouver le début du mot à right
-        debut = curseur
-        while debut < len(phrase) and phrase[debut].isspace():
-            debut += 1
-        
-        fin = debut
-        while fin < len(phrase) and not phrase[fin].isspace():
-            fin += 1
-        
-        return debut, fin - 1
-    
-    else:
-        raise ValueError("La direction doit être 'left' ou 'right'.")
-
-
-class Direct_Mode(Mode):
+class Mode_Reduit(Mode):
     def enter(self):
-        self.mode = DIRECT
-        # self.app.simulate_keyboard = DIRECT.simule_keyboard
-        self.mod_var.set(DIRECT)
+        self.mode = REDUIT
+        # self.app.simulate_keyboard = REDUIT.simule_keyboard
+        self.mod_var.set(REDUIT)
         self.ui()
         #----------------- Lien Client Whisper -----------------------
         self.client_manager = ClientManager(
@@ -62,27 +25,35 @@ class Direct_Mode(Mode):
         )
         super().enter()
 
-    def ui(self):
+    def ui(self): 
         create_menus(self)
         create_buttons(self)
 
+        # Configure the grid system of the root window
+        self.root.grid_rowconfigure(1, weight=1)
+        self.root.grid_columnconfigure(0, weight=1)
+
+        # Create the text box frame
         self.text_box_frame = tk.Frame(self.root)
-        self.text_box_frame.pack(pady=10, fill=tk.BOTH, expand=True)
-        
+        self.text_box_frame.grid(row=1, column=0, sticky="nsew")
+
+        # Add scrollbar to the text box
         self.text_box_scrollbar = tk.Scrollbar(self.text_box_frame)
         self.text_box_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-        
-        self.text_box = tk.Text(self.text_box_frame, yscrollcommand=self.text_box_scrollbar.set)
-        self.text_box.pack(pady=10, fill=tk.BOTH, expand=True)
 
+        # Add the text box
+        self.text_box = tk.Text(self.text_box_frame, yscrollcommand=self.text_box_scrollbar.set)
+        self.text_box.pack(fill=tk.BOTH, expand=True)
+
+        # Configure the selection tag
         self.text_box.tag_configure("sel", background="yellow", foreground="black")
-        
+
+        # Attach the scrollbar to the text box
         self.text_box_scrollbar.config(command=self.text_box.yview)
 
-        # Barre d'information en bas de la fenêtre
-        self.status_bar = tk.Label(self.root, text="Bienvenue dans l'application", bd=1, relief=tk.SUNKEN, anchor=tk.W)
-        self.status_bar.pack(side=tk.BOTTOM, fill=tk.X)
-
+        # Create the status bar at the bottom of the window
+        self.status_bar = tk.Label(self.root, text=f"RecoVocale {VERSION}", bd=1, relief=tk.SUNKEN, anchor=tk.W)
+        self.status_bar.grid(row=2, column=0, sticky="ew")
 
         # self.copy_button = tk.Button(self.root, text="Copy", command=self.copy_to_clipboard)
         # self.copy_button.pack(pady=10)
