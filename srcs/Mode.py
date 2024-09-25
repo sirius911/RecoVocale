@@ -100,6 +100,9 @@ class Mode:
     def name(self):
         return self.mode.name
     
+    def select_text_box(self, dir = "left"):
+        pass
+    
     def toggle_start_stop(self):
         """
         Toggle the start/stop state of the transcription client.
