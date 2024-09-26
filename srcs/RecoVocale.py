@@ -13,8 +13,7 @@ from utils_socket import check_server_status
 from utils_keyboard import Simulator
 from Micro import Micro
 from info import *
-import sys
-import os
+from pynput.keyboard import Key
 
 # sys.stdout = open(os.devnull, 'w')  # Enregistre les sorties dans un fichier log
 # sys.stderr = open(os.devnull, 'w')   # Enregistre les erreurs dans un fichier log
@@ -31,7 +30,7 @@ class App:
  
         #-------------------check serveur-----------------------
         self.status_server = check_server_status(self.config.server_ip, self.config.port)
-        self.root.title(f"RecoVocale [{self.config.server_ip}:{self.config.port}] (v{VERSION}) {"" if self.status_server else "not"} connected")
+        # self.root.title(f"RecoVocale [{self.config.server_ip}:{self.config.port}] (v{VERSION}) {"" if self.status_server else "not"} connected")
         #-----------------Shortcut------------------------------
         self.keyboard_shortcut = self.config.shortcut
         #----------------------MODE----------------------------
@@ -43,10 +42,13 @@ class App:
         else:
             self.current_mode = Mode_Direct(self)
 
-        self.simulate_keyboard = False
-        self.simulator_keyboard = Simulator(text=None, debug=self.config.debug)
-        #TODO Verifier le raccourcis qui peut planter
-        keyboard.add_hotkey(self.keyboard_shortcut, self.current_mode.toggle_start_stop)
+        # self.simulate_keyboard = False
+        # self.simulator_keyboard = Simulator(text=None, debug=self.config.debug)
+       
+        try: #Verifier le raccourcis qui peut planter
+            keyboard.add_hotkey(self.keyboard_shortcut, self.current_mode.toggle_start_stop)
+        except Exception:
+            keyboard.add_hotkey("F3", self.current_mode.toggle_start_stop)
 
         # Use the provided asyncio event loop
         self.loop = loop
@@ -60,7 +62,7 @@ class App:
         # self.current_mode.start()
 
     def paste_from_clipboard(self):
-        Simulator('\u0001v')
+        Simulator(Key.ctrl+'v')
             
     def running(self):
         return self.client_manager.running
@@ -88,10 +90,11 @@ class App:
         if self.current_mode:
             if self.current_mode.mode != mode:
                 self.current_mode.stop()
-                self.current_mode.exit()
+                text_en_cours = self.current_mode.exit()
                 self.current_mode = None
                 if mode == DIRECT:
                     self.current_mode = Mode_Direct(self)
+                    self.current_mode.update_transcriptions(message=text_en_cours, ending=True)
                 elif mode == RECORD:
                     self.current_mode = Mode_Record(self)
                 elif mode == REDUIT:
@@ -99,13 +102,13 @@ class App:
                 else:
                     print("Erreur de Mode dans App")
                     self.on_closing()
-                # self.current_mode.start()
-                # self.current_mode.update()
+
                 # Utiliser after_idle pour s'assurer que geometry est bien appliqué
                 self.root.after_idle(lambda: self.root.geometry(f"{self.current_mode.mode.window_width}x{self.current_mode.mode.window_height}+{self.config.x_window}+{self.config.y_window}"))
                 self.mic.change_mode(self.current_mode)
                 keyboard.clear_all_hotkeys()
                 keyboard.add_hotkey(self.keyboard_shortcut, self.current_mode.toggle_start_stop)
+
     #---------------------------------------------------------------------------------------------------------------------
 #               Fenetre shorcut a détacher dans une autre class 
     def change_shortcut(self):
@@ -139,9 +142,6 @@ class App:
             if self.is_valid_shortcut(self.keyboard_shortcut.split('+')):
                 keyboard.clear_all_hotkeys()
                 keyboard.add_hotkey(self.keyboard_shortcut, self.current_mode.toggle_start_stop)
-                # self.start_button.config(text=f"Start ({self.keyboard_shortcut})")
-                # self.stop_button.config(text=f"Stop ({self.keyboard_shortcut})")
-                # self.icon.title = f"RecoVocale (v{VERSION})[{self.keyboard_shortcut}]"
                 self.on_close_shortcut_window()  # Fermer la fenêtre et réactiver "toujours au-dessus"
             else:
                 messagebox.showerror("Raccourci invalide", "La combinaison de touches n'est pas valide.")
@@ -201,7 +201,6 @@ def start_loop(loop):
     loop.run_forever()
 
 def on_resize(event):
-        # Afficher les dimensions de la fenêtre dans la barre de titre
         width = event.width
         height = event.height
         print(f"Ma fenêtre Tkinter - Dimensions: {width}x{height}")
@@ -224,7 +223,7 @@ if __name__ == "__main__":
         threading.Thread(target=start_loop, args=(new_loop,), daemon=True).start()
 
         app = App(root, new_loop)  # Pass the new loop to the app
-        root.bind("<Configure>", on_resize)
+        # root.bind("<Configure>", on_resize)
         root.mainloop()
     except Exception as e:
         print(e)

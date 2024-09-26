@@ -17,7 +17,11 @@ class Mode:
         self.root.resizable(self.mode.resizable, self.mode.resizable)
         self.root.attributes("-topmost", self.mode.topmost)
         self.root.geometry(f"{self.mode.window_width}x{self.mode.window_height}+{self.app.config.x_window}+{self.app.config.y_window}")
-        # self.create_systray_icon()
+        if self.mode == REDUIT:
+            self.root.title(f"RV v{VERSION}")
+        else:
+            self.root.title(f"RecoVocale [{self.app.config.server_ip}:{self.app.config.port}] (v{VERSION}) {"" if self.app.status_server else "not"} connected")
+
 
     # def show_window(self, icon, item):
     #     # self.simulate_keyboard_var.set(False)
@@ -28,8 +32,8 @@ class Mode:
     #     self.update_icon()
     #     self.update_icon_image(self.create_error_image())
 
-    def update_transcription(self, transcriptions):
-        pass
+    # def update_transcription(self, transcriptions):
+    #     pass
 
     def get_selected_text(self):
         return self.transcription.get()
@@ -116,6 +120,7 @@ class Mode:
     def exit(self):
         for widget in self.root.winfo_children():
             widget.destroy()
+        return self.transcription.get()
 #-----------------------------------------------------------------------
 #                                  MODE SYSTRAY
 #-----------------------------------------------------------------------

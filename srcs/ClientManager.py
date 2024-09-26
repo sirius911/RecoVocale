@@ -22,6 +22,7 @@ class ClientManager:
         self.update_callback = update_callback
         self.correcteur = Correcteur()
 
+
     def start_client(self, loop):
         print("Starting client in ClientManager")
         self.stop_client()  # Ensure any previous client is stopped before starting a new one

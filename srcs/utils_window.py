@@ -29,6 +29,8 @@ def _load_and_resize_image(path, size):
      return ImageTk.PhotoImage(image)
 
 def create_buttons(self):
+    padx = 2 if self.mode == REDUIT else 5
+    pady = 10 if self.mode == REDUIT else 10
     # Load, resize and convert images using Pillow
     button_width = self.mode.button_width
     self.record_image = _load_and_resize_image(resource_path("Icons/pause.png"), (button_width, button_width))
@@ -37,14 +39,14 @@ def create_buttons(self):
 
     # Create a frame to hold the buttons and place it in the center
     self.button_frame = tk.Frame(self.root)
-    self.button_frame.grid(row=0, column=0, pady=10)
+    self.button_frame.grid(row=0, column=0, pady=pady)
 
     # Configure grid layout for centering the buttons
     self.root.grid_columnconfigure(0, weight=1)  # Center the frame in the window
 
     # Add buttons and center them within the frame
     self.rec_button = tk.Button(self.button_frame, image=self.pause_image, command=self.toggle_start_stop, state=tk.DISABLED)
-    self.rec_button.grid(row=0, column=0, padx=5)
+    self.rec_button.grid(row=0, column=0, padx=padx)
     if self.app.status_server == True:
         self.rec_button.config(state=tk.NORMAL)
 
@@ -52,10 +54,11 @@ def create_buttons(self):
 
     self.rec_canvas = tk.Canvas(self.button_frame, width=button_width, height=button_width)
     self.rec_circle = self.rec_canvas.create_oval(2, 2, button_width, button_width, fill="grey")
-    self.rec_canvas.grid(row=0, column=1, padx=5)
+    self.rec_canvas.grid(row=0, column=1, padx=padx)
 
-    self.trash_button = tk.Button(self.button_frame, image=self.trash_image, command=self.clear_text_box)
-    self.trash_button.grid(row=0, column=2, padx=5)
+    if self.mode == DIRECT:
+        self.trash_button = tk.Button(self.button_frame, image=self.trash_image, command=self.clear_text_box)
+        self.trash_button.grid(row=0, column=2, padx=padx)
 
     # Center the buttons within the button_frame by configuring columns in button_frame
     self.button_frame.grid_columnconfigure(0, weight=1)
@@ -63,7 +66,7 @@ def create_buttons(self):
     self.button_frame.grid_columnconfigure(2, weight=1)
 
     # Optional: If you want the frame to be centered horizontally in the window
-    self.button_frame.grid(row=0, column=0, sticky="n")  # This will keep it centered
+    # self.button_frame.grid(row=0, column=0, sticky="n")  # This will keep it centered
 
 
 def create_menus(self):
@@ -114,3 +117,5 @@ def create_menus(self):
     # Options du menu Édition
     self.edit_menu.add_command(label="Copier", command=self.copy_to_clipboard)
     self.edit_menu.add_command(label="Coller", command=self.app.paste_from_clipboard)
+    if self.mode == DIRECT:
+        self.edit_menu.add_command(label="Effacer", command=self.clear_text_box)

@@ -23,9 +23,9 @@ RECORD.simule_keyboard = False
 
 REDUIT = SimpleNamespace()
 REDUIT.name = "REDUIT"
-REDUIT.resizable = False
+REDUIT.resizable = True
 REDUIT.topmost = True
-REDUIT.window_width = 138
+REDUIT.window_width = 226
 REDUIT.window_height = 60
 REDUIT.button_width = 15
 REDUIT.simule_keyboard = True

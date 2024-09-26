@@ -1,7 +1,7 @@
 import time
 from pynput.keyboard import Controller, Key
 
-TIME_WRITE = 0.02   #delay for typing speed of all Char 
+TIME_WRITE = 0.0   #delay for typing speed of all Char 
 TIME_DELETE = 0.01  #delay for typing speed for backspace
 
 class Simulator:
@@ -19,10 +19,10 @@ class Simulator:
             '\u0003': Key.right,  # '\u0003' as a placeholder for Right Arrow
             '\u0004': Key.up,  # '\u0004' as a placeholder for Up Arrow
             '\u0005': Key.down,  # '\u0005' as a placeholder for Down Arrow
+            '\u0006': Key.delete,  # '\u0006' as a placeholder for delete
         }
         if text is not None:    # Permet d'appeler la classe de n'importe ou et de faire taper text
             self.simule_key(text)
-        
 
     def init(self):
         self.previous_text = ""
@@ -51,9 +51,12 @@ class Simulator:
             self.previous_text = new_text
 
     def simule_key(self, chaine):
-        for char in chaine:
-            self._type_character(char)
-            time.sleep(TIME_WRITE) # Add a small delay to simulate typing speed
+        if isinstance(chaine, Key):
+            self._type_character(chaine)
+        else:
+            for char in chaine:
+                self._type_character(char)
+                time.sleep(TIME_WRITE) # Add a small delay to simulate typing speed
 
     def _type_character(self, char:str):
         key = self.special_keys_mapping.get(char, char)
