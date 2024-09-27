@@ -4,6 +4,7 @@ from utils_window import create_menus, create_buttons
 from info import REDUIT, VERSION
 from ClientManager import ClientManager
 from utils_keyboard import Simulator
+from pynput.keyboard import Key
 
 class Mode_Reduit(Mode):
     def enter(self):
@@ -58,14 +59,14 @@ class Mode_Reduit(Mode):
 
     def pause(self):
         # if self.config.debug:
-        print("Pausing client in App")
+        print("Pausing client Mode Reduit")
         self.client_manager.pause()
         self.app.recording = False
         self.update()
 
     def unpause(self):
         # if self.config.debug:
-        print(f"Unpausing client in App")
+        print(f"Unpausing client in Mode Reduit")
         if self.app.status_server == True:
             if not self.app.recording:
                 if self.client_manager.client:
@@ -120,16 +121,20 @@ class Mode_Reduit(Mode):
     #     self.root.update()
 
     def update_transcriptions(self, message, ending):
-        self.transcription.update(message)
+        self.transcription.update(message, -1)
         if ending:
+            # copie dans clipboard
+            self.root.clipboard_clear()
+            self.root.clipboard_append(self.transcription.text_en_cours)
+            # coller
+            Simulator([Key.ctrl, 'v'])
+            # Simulator(self.transcription.text_en_cours)
             self.transcription.validation()
-            Simulator(self.transcription.text_transcription)
-            self.simulator_keyboard.init()
+            self.status_bar.config( text=f'RecoVocale {VERSION}', bg='lightblue', fg='darkblue', anchor=tk.W)
+            # self.simulator_keyboard.init()
         else:
+            self.status_bar.config(text='* Transcription *', bg='lightblue', fg='darkblue', anchor=tk.CENTER)
 
-            print("en calcul")
-        # self.text_box.delete('1.0', tk.END)
-        # self.text_box.insert(tk.END, self.transcription.get())
-        # self.text_box.insert(tk.END, self.transcription.en_cours)
-        # self.text_box.mark_set(tk.INSERT, tk.END)
-        # self.text_box.see(tk.END)
+    def exit(self):
+        super().exit()
+        return self.transcription.get() # on retourne la transcription en cours

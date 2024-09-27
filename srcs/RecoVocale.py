@@ -62,7 +62,7 @@ class App:
         # self.current_mode.start()
 
     def paste_from_clipboard(self):
-        Simulator(Key.ctrl+'v')
+        Simulator([Key.ctrl, 'v'])
             
     def running(self):
         return self.client_manager.running
@@ -99,6 +99,7 @@ class App:
                     self.current_mode = Mode_Record(self)
                 elif mode == REDUIT:
                     self.current_mode = Mode_Reduit(self)
+                    self.current_mode.update_transcriptions(message=text_en_cours, ending=True)
                 else:
                     print("Erreur de Mode dans App")
                     self.on_closing()

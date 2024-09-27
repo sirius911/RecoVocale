@@ -47,7 +47,6 @@ def trouver_bornes_mot_tk(phrase, curseur, direction='left'):
 class Mode_Direct(Mode):
     def enter(self):
         self.mode = DIRECT
-        # self.app.simulate_keyboard = DIRECT.simule_keyboard
         self.mod_var.set(DIRECT)
         self.ui()
         #----------------- Lien Client Whisper -----------------------
@@ -100,14 +99,14 @@ class Mode_Direct(Mode):
 
     def pause(self):
         # if self.config.debug:
-        print("Pausing client in App")
+        print("Pausing client in Mode Direct")
         self.client_manager.pause()
         self.app.recording = False
         self.update()
 
     def unpause(self):
         # if self.config.debug:
-        print(f"Unpausing client in App")
+        print(f"Unpausing client in Mode Direct")
         if self.app.status_server == True:
             if not self.app.recording:
                 if self.client_manager.client:
@@ -159,6 +158,26 @@ class Mode_Direct(Mode):
         except tk.TclError:
             # Gestion d'erreur si aucune sélection n'est faite
             return self.transcription.get(), True
+        
+    def get_pos_select(self):
+        """
+            retourne un couple (start,end) si selection dans text_box ou None 
+        """
+        try:
+            if self.text_box.tag_ranges("sel"):
+                # Obtenir les positions 'ligne.colonne' de la sélection
+                start = self.text_box.index(tk.SEL_FIRST)
+                end = self.text_box.index(tk.SEL_LAST)
+                
+                # Convertir ces positions en indices globaux
+                start_index = self.text_box.count("1.0", start)[0]  # Distance depuis le début du texte
+                end_index = self.text_box.count("1.0", end)[0]      # Distance jusqu'à la fin du texte sélectionné
+                
+                return (start_index, end_index)
+            else:
+                return (0, 0)
+        except tk.TclError:
+            return (0, 0)
 
     def clear_text_box(self):
         """
@@ -172,7 +191,7 @@ class Mode_Direct(Mode):
             self.text_box.delete('1.0', tk.END)
         else:
             print(f"{text_to_del} à effacer")
-            Simulator(Key.delete)
+            Simulator([Key.delete])
 
         self.root.update()
 
@@ -198,10 +217,10 @@ class Mode_Direct(Mode):
         self.transcription.pos_cur = self.get_pos_curseur()
 
     def update_transcriptions(self, message, ending):
-        print(f"ending = {ending}")
         if self.flag_begin:
             self.flag_begin = False
             self.transcription.pos_cur = self.get_pos_curseur()
+            self.transcription.cur_selec = self.get_pos_select()
 
         self.transcription.update(message)
 
@@ -254,3 +273,8 @@ class Mode_Direct(Mode):
         else:
             self.text_box.mark_set(tk.INSERT, end_index)
         self.text_box.see(tk.INSERT)  # Faire défiler jusqu'au curseur
+
+    def exit(self):
+        retour = self.text_box.get("1.0", tk.END) # on retourne la transcription en cours
+        super().exit()
+        return retour
