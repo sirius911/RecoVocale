@@ -100,13 +100,13 @@ def create_menus(self):
     self.mode_menu.entryconfig('Enregistrement', state=tk.DISABLED) #
 
     # Autres options du menu Paramètres
-    self.settings_menu.add_separator()
-    self.settings_menu.add_command(label="Info", command=self.info)
-    self.settings_menu.add_separator()
+    # self.settings_menu.add_separator()
+    # self.settings_menu.add_command(label="Info", command=self.info)
+    # self.settings_menu.add_separator()
 
     self.debug_var = BooleanVar(value=self.app.config.debug)
     self.settings_menu.add_checkbutton(label="Debug", variable=self.debug_var, 
-                                   command=lambda:setattr(self.app.config, 'debug', self.debug_var.get()))
+                                   command=self.toggle_debug)
     self.settings_menu.add_separator()
     self.settings_menu.add_command(label="Quitter", command=self.exit_app)
 

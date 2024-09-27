@@ -9,6 +9,7 @@ class Mode:
         self.root = app.root
         self.mod_var = tk.StringVar()
         self.transcription = Transcription()
+        self.simulator_keyboard = None
         self.enter()
 
     def enter(self):
@@ -27,7 +28,11 @@ class Mode:
     #     pass
     
     def stop_client(self):
-        pass
+        self.transcription.validation()
+        if self.client_manager:
+            self.client_manager.stop_client()
+        self.app.recording = False
+        self.update()
 
     def copy_to_clipboard(self):
         self.root.clipboard_clear()
@@ -36,7 +41,22 @@ class Mode:
     # def hide_window(self):
     #     self.simulate_keyboard_var.set(True)
     #     self.is_hidden = True
-    
+
+    def pause(self):
+        self.client_manager.pause()
+        self.app.recording = False
+        self.update()
+
+    def unpause(self):
+        if self.app.status_server == True:
+            if not self.app.recording:
+                if self.client_manager.client:
+                    self.client_manager.client.set_pause(False)
+                else:
+                    self.client_manager.start_client(self.app.loop)
+                self.app.recording = True
+        self.update()
+
     def exit_app(self):
         # self.icon.stop()
         self.app.on_closing()
@@ -68,23 +88,7 @@ class Mode:
         self._update_rec_circle()
         self._update_image_button()
         self._update_barre_status()
-
-    def info(self):
-        #print info TODO: A mettre en fênetre
-        print('--------------------------------------------------------------------')
-        print(f"Version : v{VERSION}")
-        if check_server_status(self.app.config.server_ip, self.app.config.port):
-            _serv = f"Connected @{self.app.config.server_ip}:{self.app.config.port}"
-        else:
-            _serv = f"Not Connected @{self.app.config.server_ip}:{self.app.config.port}"
-        print(f"Model = {self.client_manager.client.get_model_path()}")
-        print(f"Serveur : {_serv}")
-        print(f"Micro : {self.app.mic.micro_name if self.app.mic else None}")
-        print(f"Mode = {self.name()} - Simulation Clavier: {self.app.simulate_keyboard}")
-        print(f"Raccourci : {self.app.keyboard_shortcut}")
-        print(f"Debug : {self.app.config.debug}")
-        print(f"Position actuelle de la fenêtre : x={self.app.root.winfo_x()}, y={self.app.root.winfo_y()}")
-        print('--------------------------------------------------------------------')
+        self.app.info()
 
     def name(self):
         return self.mode.name
@@ -96,11 +100,18 @@ class Mode:
         """
         Toggle the start/stop state of the transcription client.
         """
-        # print(f"mode = {self.name()}")
         if self.app.recording:
             self.pause()
         else:
             self.unpause()
+
+    def toggle_debug(self):
+        #maj de la variable config
+        self.app.config.debug = self.debug_var.get()
+        if self.app.config.debug:
+            self.app.console_debug.debug_window.deiconify()
+        else:
+            self.app.console_debug.debug_window.withdraw()
 
     def exit(self):
         for widget in self.root.winfo_children():

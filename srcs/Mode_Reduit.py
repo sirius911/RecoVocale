@@ -58,32 +58,19 @@ class Mode_Reduit(Mode):
         self.status_bar.grid(row=2, column=0, sticky="ew")
 
     def pause(self):
-        # if self.config.debug:
-        print("Pausing client Mode Reduit")
-        self.client_manager.pause()
-        self.app.recording = False
-        self.update()
+        if self.app.config.debug:
+            print("Pausing client in Mode Réduit")
+        super().pause()
 
     def unpause(self):
-        # if self.config.debug:
-        print(f"Unpausing client in Mode Reduit")
-        if self.app.status_server == True:
-            if not self.app.recording:
-                if self.client_manager.client:
-                    self.client_manager.client.set_pause(False)
-                else:
-                    self.client_manager.start_client(self.app.loop)
-                self.app.recording = True
-        self.update()
+        if self.app.config.debug:
+            print("UnPausing client in Mode Réduit")
+        super().unpause()
 
     def stop_client(self):
-        self.transcription.validation()
-        # if self.config.debug:
-        #     print("Stopping client in App")
-        if self.client_manager:
-            self.client_manager.stop_client()
-        self.app.recording = False
-        self.update()
+        if self.app.config.debug:
+            print("Stop client in Mode Réduit")
+        super().stop_client()
 
     def stop(self):
         self.stop_client()

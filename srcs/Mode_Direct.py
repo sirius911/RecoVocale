@@ -6,6 +6,7 @@ from ClientManager import ClientManager
 from utils_keyboard import Simulator
 from pynput.keyboard import Key
 
+
 def trouver_bornes_mot_tk(phrase, curseur, direction='left'):
     # Si le curseur est à la fin, on le place au dernier caractère
     if curseur == -1:
@@ -98,32 +99,20 @@ class Mode_Direct(Mode):
         self.status_bar.grid(row=2, column=0, sticky="ew")
 
     def pause(self):
-        # if self.config.debug:
-        print("Pausing client in Mode Direct")
-        self.client_manager.pause()
-        self.app.recording = False
-        self.update()
+        if self.app.config.debug:
+            print("Pausing client in Mode Direct")
+        super().pause()
 
     def unpause(self):
-        # if self.config.debug:
-        print(f"Unpausing client in Mode Direct")
-        if self.app.status_server == True:
-            if not self.app.recording:
-                if self.client_manager.client:
-                    self.client_manager.client.set_pause(False)
-                else:
-                    self.client_manager.start_client(self.app.loop)
-                self.app.recording = True
-        self.update()
+        if self.app.config.debug:
+            print(f"UnPausing client in Mode Direct")
+        super().unpause()
 
     def stop_client(self):
-        self.transcription.validation()
-        # if self.config.debug:
-        #     print("Stopping client in App")
-        if self.client_manager:
-            self.client_manager.stop_client()
-        self.app.recording = False
-        self.update()
+        if self.app.config.debug:
+            print(f"Stop client in Mode Direct")
+        super().stop_client()
+
 
     def stop(self):
         self.stop_client()

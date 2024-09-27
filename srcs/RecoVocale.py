@@ -1,4 +1,3 @@
-import signal
 import tkinter as tk
 from tkinter import messagebox
 import asyncio
@@ -14,6 +13,7 @@ from utils_keyboard import Simulator
 from Micro import Micro
 from info import *
 from pynput.keyboard import Key
+from fenetre_debug import DebugWindow
 
 # sys.stdout = open(os.devnull, 'w')  # Enregistre les sorties dans un fichier log
 # sys.stderr = open(os.devnull, 'w')   # Enregistre les erreurs dans un fichier log
@@ -22,6 +22,11 @@ from pynput.keyboard import Key
 class App:
     def __init__(self, root, loop):
         self.config = UserConfig()
+        self.console_debug = DebugWindow(root)
+        if self.config.debug:
+           self.console_debug.debug_window.deiconify()  # Afficher la fenêtre de débogage
+        else:
+            self.console_debug.debug_window.withdraw()
         mode = self.config.mode
         self.root = root
         self.recording = False
@@ -30,20 +35,16 @@ class App:
  
         #-------------------check serveur-----------------------
         self.status_server = check_server_status(self.config.server_ip, self.config.port)
-        # self.root.title(f"RecoVocale [{self.config.server_ip}:{self.config.port}] (v{VERSION}) {"" if self.status_server else "not"} connected")
+
         #-----------------Shortcut------------------------------
         self.keyboard_shortcut = self.config.shortcut
         #----------------------MODE----------------------------
-        print(f"mode = {mode}")
         if mode == "RECORD":
             self.current_mode = Mode_Record(self)
         elif mode == "REDUIT":
             self.current_mode = Mode_Reduit(self)
         else:
             self.current_mode = Mode_Direct(self)
-
-        # self.simulate_keyboard = False
-        # self.simulator_keyboard = Simulator(text=None, debug=self.config.debug)
        
         try: #Verifier le raccourcis qui peut planter
             keyboard.add_hotkey(self.keyboard_shortcut, self.current_mode.toggle_start_stop)
@@ -59,7 +60,7 @@ class App:
         # Initialize the microphone 
         self.mic = Micro(loop, app=self.current_mode)
 
-        # self.current_mode.start()
+        self.info()
 
     def paste_from_clipboard(self):
         Simulator([Key.ctrl, 'v'])
@@ -70,6 +71,7 @@ class App:
     def update(self):
         if self.current_mode:
             self.current_mode.update() 
+            self.info()
 
     def on_closing(self):
         self.current_mode.stop()
@@ -86,7 +88,8 @@ class App:
         self.loop.stop()
 
     def switch_mode(self, mode):
-        print(f"switch_mode({mode.name})")
+        if self.config.debug:
+            self.console_debug.log_message(f"switch_mode({mode.name})")
         if self.current_mode:
             if self.current_mode.mode != mode:
                 self.current_mode.stop()
@@ -101,7 +104,7 @@ class App:
                     self.current_mode = Mode_Reduit(self)
                     self.current_mode.update_transcriptions(message=text_en_cours, ending=True)
                 else:
-                    print("Erreur de Mode dans App")
+                    self.console_debug.log_message("Erreur de Mode dans App")
                     self.on_closing()
 
                 # Utiliser after_idle pour s'assurer que geometry est bien appliqué
@@ -109,6 +112,48 @@ class App:
                 self.mic.change_mode(self.current_mode)
                 keyboard.clear_all_hotkeys()
                 keyboard.add_hotkey(self.keyboard_shortcut, self.current_mode.toggle_start_stop)
+
+                # recréation de la fenetre debug
+                self.console_debug = DebugWindow(root)
+                if self.config.debug:
+                    self.console_debug.debug_window.deiconify()  # Afficher la fenêtre de débogage
+                else:
+                    self.console_debug.debug_window.withdraw()
+                self.info()
+    
+    def info(self):
+        self.console_debug.delete_status()
+        self.console_debug.append_status_with_format("Version : ", font_style="italic")
+        self.console_debug.append_status_with_format(f"v{VERSION}\n", color="green")
+        self.console_debug.append_status_with_format("Modèle : ", font_style="italic")
+        if self.current_mode.client_manager.client:
+            self.console_debug.append_status_with_format(f"{self.current_mode.client_manager.client.get_model_path()}\n", color="green")
+        else:
+           self.console_debug.append_status_with_format("None\n", color="blue")
+        self.console_debug.append_status_with_format("Serveur : ", font_style="italic")
+        if check_server_status(self.config.server_ip, self.config.port):
+            self.console_debug.append_status_with_format(f"Connected @{self.config.server_ip}:{self.config.port} \n", color="green")
+        else:
+            self.console_debug.append_status_with_format(f"NOT Connected @{self.config.server_ip}:{self.config.port} \n", color="red")
+        self.console_debug.append_status_with_format("Micro : ", font_style="italic")
+        self.console_debug.append_status_with_format(f"{self.mic.micro_name if self.mic else None}\n", color="green")
+
+        self.console_debug.append_status_with_format("Mode : ", font_style="italic")
+        self.console_debug.append_status_with_format(self.current_mode.name(), color="green")
+        self.console_debug.append_status_with_format(" - Simul Clavier : ", font_style="italic")
+        self.console_debug.append_status_with_format(f" {'Oui' if self.current_mode.simulator_keyboard else 'Non'}\n", color="green")
+        
+        self.console_debug.append_status_with_format("Raccourci : ", font_style="italic")
+        self.console_debug.append_status_with_format(f"{self.keyboard_shortcut}\n", color="green")
+
+        self.console_debug.append_status_with_format("Debug : ", font_style="italic")
+        self.console_debug.append_status_with_format(f"{self.config.debug}\n", color="green")
+
+        self.console_debug.append_status_with_format("Position actuelle de la fenêtre : x=", font_style="italic")
+        self.console_debug.append_status_with_format(self.root.winfo_x(), color="green")
+        self.console_debug.append_status_with_format(", y=", font_style="italic")
+        self.console_debug.append_status_with_format(self.root.winfo_y(), color="green")
+
 
     #---------------------------------------------------------------------------------------------------------------------
 #               Fenetre shorcut a détacher dans une autre class 
