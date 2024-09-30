@@ -90,9 +90,6 @@ class Mode_Record(Mode):
     def sauvegarde(self):
         self.audio_manager.start_recording(self.app.loop)
 
-    # def stop(self):
-    #     print("STOP")
-
     def stop(self):
         print("Enregistrement arrêté")
         self.audio_manager.stop_recording()

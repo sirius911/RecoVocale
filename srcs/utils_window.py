@@ -94,10 +94,7 @@ def create_menus(self):
                                    variable=self.mod_var,
                                    value=DIRECT,
                                    command= lambda: self.app.switch_mode(DIRECT))
-    self.mode_menu.add_radiobutton(label='Apprentissage',
-                                   variable=self.mod_var,
-                                   value=APPRENTI,
-                                   command= lambda: self.app.switch_mode(APPRENTI))
+    
     self.mode_menu.add_radiobutton(label='Réduit',
                                    variable=self.mod_var,
                                    value=REDUIT,
@@ -107,7 +104,12 @@ def create_menus(self):
                                    variable=self.mod_var,
                                    value=RECORD,
                                    command= lambda: self.app.switch_mode(RECORD))
-    self.mode_menu.entryconfig('Enregistrement', state=tk.DISABLED) #
+    self.mode_menu.entryconfig('Enregistrement', state=tk.DISABLED) 
+
+    self.mode_menu.add_radiobutton(label='Apprentissage',
+                                   variable=self.mod_var,
+                                   value=APPRENTI,
+                                   command= lambda: self.app.switch_mode(APPRENTI))
 
     # Autres options du menu Paramètres
     # self.settings_menu.add_separator()

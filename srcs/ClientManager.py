@@ -81,7 +81,6 @@ class ClientManager:
         except Exception as e:
             print(e)
             traceback.print_exc()
-        print("sortie du while")
 
     def stop_client(self):
         if not self.running:

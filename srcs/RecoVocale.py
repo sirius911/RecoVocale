@@ -92,10 +92,11 @@ class App:
 
     def switch_mode(self, mode):
         if self.config.debug:
-            self.console_debug.log_message(f"switch_mode({mode.name})")
+            print(f"switch_mode({mode.name})")
         if self.current_mode:
             if self.current_mode.mode != mode:
                 self.current_mode.stop()
+                log_en_cours = self.console_debug.get_log_message()
                 text_en_cours = self.current_mode.exit()
                 self.current_mode = None
                 if mode == DIRECT:
@@ -125,6 +126,7 @@ class App:
                 else:
                     self.console_debug.debug_window.withdraw()
                 self.info()
+                self.console_debug.log_message(log_en_cours)
     
     def info(self):
         self.console_debug.delete_status()

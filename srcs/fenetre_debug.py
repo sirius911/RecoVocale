@@ -44,7 +44,6 @@ class DebugWindow:
         self.original_stdout = sys.stdout
         self.original_stderr = sys.stderr
 
-
         # Rediriger les sorties `print` vers la zone `log_area`
         sys.stdout = RedirectOutput(self.log_area)
         sys.stderr = RedirectOutput(self.log_area)  # Redirige aussi les erreurs
@@ -54,6 +53,9 @@ class DebugWindow:
         """Ajoute un message personnalisé à la zone de logs."""
         self.log_area.insert(tk.END, message + '\n')
         self.log_area.see(tk.END)  # Faire défiler automatiquement vers le bas
+
+    def get_log_message(self):
+        return self.log_area.get('1.0', tk.END)
 
     def update_status(self, status):
         """Met à jour les statuts dans la zone de statut."""
