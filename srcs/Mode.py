@@ -67,9 +67,9 @@ class Mode:
 
     def _update_image_button(self):
         if self.app.recording:
-            self.rec_button.config(image=self.record_image)
-        else:
             self.rec_button.config(image=self.pause_image)
+        else:
+            self.rec_button.config(image=self.record_image)
 
     def _update_barre_status(self):
         if self.app.recording:

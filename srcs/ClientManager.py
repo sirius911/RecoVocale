@@ -36,7 +36,7 @@ class ClientManager:
                 translate=self.translate,
                 use_vad=self.use_vad,
                 save_output_recording=self.save_output_recording,
-                output_recording_filename=self.output_recording_filename
+                output_recording_filename=self.output_recording_filename,
             )
         self.client.set_pause(False)
         self.running = True

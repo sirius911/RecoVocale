@@ -1,6 +1,6 @@
 from types import SimpleNamespace
 
-VERSION = '0.72'
+VERSION = '0.74'
 
 #------------------------ M O D E S ----------------------
 DIRECT = SimpleNamespace()
@@ -26,3 +26,11 @@ REDUIT.topmost = True
 REDUIT.window_width = 226
 REDUIT.window_height = 60
 REDUIT.button_width = 15
+
+APPRENTI = SimpleNamespace()
+APPRENTI.name = "APPRENTI"
+APPRENTI.resizable = True
+APPRENTI.topmost = True
+APPRENTI.window_width = 940
+APPRENTI.window_height = 709
+APPRENTI.button_width = 30

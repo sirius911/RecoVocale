@@ -6,6 +6,7 @@ import keyboard
 
 from UserConfig import UserConfig
 from Mode_Direct import Mode_Direct
+from Mode_Apprenti import Mode_Apprenti
 from Mode_Record import Mode_Record
 from Mode_Reduit import Mode_Reduit
 from utils_socket import check_server_status
@@ -41,6 +42,8 @@ class App:
         #----------------------MODE----------------------------
         if mode == "RECORD":
             self.current_mode = Mode_Record(self)
+        elif mode == "APPRENTI":
+            self.current_mode = Mode_Apprenti(self)
         elif mode == "REDUIT":
             self.current_mode = Mode_Reduit(self)
         else:
@@ -98,6 +101,8 @@ class App:
                 if mode == DIRECT:
                     self.current_mode = Mode_Direct(self)
                     self.current_mode.update_transcriptions(message=text_en_cours, ending=True)
+                elif mode == APPRENTI:
+                    self.current_mode = Mode_Apprenti(self)
                 elif mode == RECORD:
                     self.current_mode = Mode_Record(self)
                 elif mode == REDUIT:

@@ -3,7 +3,7 @@ import sys
 import tkinter as tk
 from tkinter import BooleanVar
 from PIL import Image, ImageTk
-from info import DIRECT, RECORD, REDUIT
+from info import DIRECT, RECORD, REDUIT, APPRENTI
 from ToolTip import ToolTip
 
 def get_config_path(file:str):
@@ -33,9 +33,11 @@ def create_buttons(self):
     pady = 10 if self.mode == REDUIT else 10
     # Load, resize and convert images using Pillow
     button_width = self.mode.button_width
-    self.record_image = _load_and_resize_image(resource_path("Icons/pause.png"), (button_width, button_width))
-    self.pause_image = _load_and_resize_image(resource_path("Icons/rec.png"), (button_width, button_width))
+    self.record_image = _load_and_resize_image(resource_path("Icons/rec.png"), (button_width, button_width))
+    self.pause_image = _load_and_resize_image(resource_path("Icons/pause.png"), (button_width, button_width))
     self.trash_image = _load_and_resize_image(resource_path("Icons/trash.png"), (button_width, button_width))
+    self.learn_image = _load_and_resize_image(resource_path("Icons/learn.jpg"), (button_width, button_width))
+    self.play_image = _load_and_resize_image(resource_path("Icons/play.png"), (button_width, button_width))
 
     # Create a frame to hold the buttons and place it in the center
     self.button_frame = tk.Frame(self.root)
@@ -45,7 +47,7 @@ def create_buttons(self):
     self.root.grid_columnconfigure(0, weight=1)  # Center the frame in the window
 
     # Add buttons and center them within the frame
-    self.rec_button = tk.Button(self.button_frame, image=self.pause_image, command=self.toggle_start_stop, state=tk.DISABLED)
+    self.rec_button = tk.Button(self.button_frame, image=self.record_image, command=self.toggle_start_stop, state=tk.DISABLED)
     self.rec_button.grid(row=0, column=0, padx=padx)
     if self.app.status_server == True:
         self.rec_button.config(state=tk.NORMAL)
@@ -56,10 +58,14 @@ def create_buttons(self):
     self.rec_circle = self.rec_canvas.create_oval(2, 2, button_width, button_width, fill="grey")
     self.rec_canvas.grid(row=0, column=1, padx=padx)
 
-    if self.mode == DIRECT:
+    if self.mode == DIRECT or self.mode == APPRENTI:
         self.trash_button = tk.Button(self.button_frame, image=self.trash_image, command=self.clear_text_box)
         self.trash_button.grid(row=0, column=2, padx=padx)
-
+    if self.mode == APPRENTI:
+        self.learning_button = tk.Button(self.button_frame, image=self.learn_image, command=self.learning, state=tk.DISABLED)
+        self.learning_button.grid(row=0, column=3, padx=padx)
+        self.play_button = tk.Button(self.button_frame, image=self.play_image, command=self.play, state=tk.DISABLED)
+        self.play_button.grid(row=0, column=4, padx=padx)
     # Center the buttons within the button_frame by configuring columns in button_frame
     self.button_frame.grid_columnconfigure(0, weight=1)
     self.button_frame.grid_columnconfigure(1, weight=1)
@@ -88,6 +94,10 @@ def create_menus(self):
                                    variable=self.mod_var,
                                    value=DIRECT,
                                    command= lambda: self.app.switch_mode(DIRECT))
+    self.mode_menu.add_radiobutton(label='Apprentissage',
+                                   variable=self.mod_var,
+                                   value=APPRENTI,
+                                   command= lambda: self.app.switch_mode(APPRENTI))
     self.mode_menu.add_radiobutton(label='Réduit',
                                    variable=self.mod_var,
                                    value=REDUIT,
