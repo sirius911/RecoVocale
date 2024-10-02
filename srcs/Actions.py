@@ -1,3 +1,4 @@
+import time
 from utils_keyboard import Simulator
 import tkinter as tk
 
@@ -27,11 +28,14 @@ class ValidTranscriptions(Action):
 
 class Keyboard(Action):
     def execute(self, data):
+        self.app.status_bar.config(text=f'-{data} -', bg='lightblue', fg='darkblue', anchor=tk.CENTER)
         Simulator(data=data, debug=False)
 
 class Copie_clipboard(Action):
     def execute(self):
         self.app.copy_to_clipboard()
+        time.sleep(0.5)
+        self.app._update_barre_status()
 
 class Selection(Action):
     def execute(self, dir):

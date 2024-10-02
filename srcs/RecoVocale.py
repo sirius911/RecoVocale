@@ -1,3 +1,4 @@
+import time
 import tkinter as tk
 from tkinter import messagebox
 import asyncio
@@ -23,6 +24,7 @@ from fenetre_debug import DebugWindow
 class App:
     def __init__(self, root, loop):
         self.config = UserConfig()
+        self.insertions = "config/insertions.xml"
         self.console_debug = DebugWindow(root)
         if self.config.debug:
            self.console_debug.debug_window.deiconify()  # Afficher la fenêtre de débogage
@@ -66,7 +68,10 @@ class App:
         self.info()
 
     def paste_from_clipboard(self):
+        self.current_mode.status_bar.config(text='- Coller -', bg='lightblue', fg='darkblue', anchor=tk.CENTER)
         Simulator([Key.ctrl, 'v'])
+        time.sleep(0.5)
+        self.current_mode._update_barre_status()
             
     def running(self):
         return self.client_manager.running
@@ -115,7 +120,8 @@ class App:
 
                 # Utiliser after_idle pour s'assurer que geometry est bien appliqué
                 self.root.after_idle(lambda: self.root.geometry(f"{self.current_mode.mode.window_width}x{self.current_mode.mode.window_height}+{self.config.x_window}+{self.config.y_window}"))
-                self.mic.change_mode(self.current_mode)
+                if self.mic:
+                    self.mic.change_mode(self.current_mode)
                 keyboard.clear_all_hotkeys()
                 keyboard.add_hotkey(self.keyboard_shortcut, self.current_mode.toggle_start_stop)
 
@@ -268,7 +274,7 @@ if __name__ == "__main__":
     #     except Exception as e:
     #         print(f"Erreur lors de la fermeture du splash screen : {e}")
     #         pass
-
+    
     try:
         root = tk.Tk()
         # Create a new event loop

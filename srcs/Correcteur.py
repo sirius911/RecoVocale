@@ -3,7 +3,6 @@ import os
 import re
 from utils_window import get_config_path
 import re
-from insertions import dico_insertion
 
 def remplacer_avec_dictionnaire(texte, pattern, dico_insertion):
     insertion = False
@@ -23,11 +22,10 @@ def remplacer_avec_dictionnaire(texte, pattern, dico_insertion):
         # Si aucune correspondance, on laisse tel quel
         print(f" -> non trouvé")
         return match.group(0)
-    
     # Utilise re.sub pour remplacer les occurrences du pattern
     return re.sub(pattern, remplacement, texte, flags=re.IGNORECASE), insertion
 
-def insertion(phrase):
+def insertion(phrase, dico_insertion):
 
     pattern = r"\bins[éèêe]r(é|ez|er|ée|ées|és)[,. ]+([\w\s]+)"
     
@@ -36,7 +34,7 @@ def insertion(phrase):
     # print(f"nouvelle phrase = {nouveau_texte}")
     return nouveau_texte, ending
 
-def intercept(phrases):
+def intercept(phrases, dico_insertion):
     '''
     doit intercepter des mots clefs dans une liste de phrase
     Slash
@@ -93,7 +91,7 @@ def intercept(phrases):
     phrases_finale = re.sub(r' (?=\n)|(?<=\n) ', '', phrases_finale)
     # print(f" Après regex 4 : {phrases_finale}")
 
-    phrase_renvoyee, ending = insertion(phrases_finale)
+    phrase_renvoyee, ending = insertion(phrases_finale, dico_insertion)
     return phrase_renvoyee, ending
 
 

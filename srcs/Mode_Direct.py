@@ -125,9 +125,9 @@ class Mode_Direct(Mode):
     def valid_transcriptions(self):
         self.stop_client()
 
-    def copy_to_clipboard(self):
-        self.root.clipboard_clear()
-        self.root.clipboard_append(self .get_selected_text()[0])
+    # def copy_to_clipboard(self):
+    #     self.root.clipboard_clear()
+    #     self.root.clipboard_append(self .get_selected_text()[0])
 
     def get_selected_text(self):
         """

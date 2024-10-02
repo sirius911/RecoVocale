@@ -1,6 +1,6 @@
 from Mode import Mode
 import tkinter as tk
-from utils_window import create_menus, create_buttons
+from utils_window import create_menus, create_buttons, show_bubble_message, remove_bubble
 from info import REDUIT, VERSION
 from ClientManager import ClientManager
 from utils_keyboard import Simulator
@@ -110,6 +110,7 @@ class Mode_Reduit(Mode):
     def update_transcriptions(self, message, ending):
         self.transcription.update(message, -1)
         if ending:
+            remove_bubble()
             # copie dans clipboard
             self.root.clipboard_clear()
             self.root.clipboard_append(self.transcription.text_en_cours)
@@ -120,7 +121,9 @@ class Mode_Reduit(Mode):
             self.status_bar.config( text=f'RecoVocale {VERSION}', bg='lightblue', fg='darkblue', anchor=tk.W)
             # self.simulator_keyboard.init()
         else:
+            show_bubble_message(self.root, message)
             self.status_bar.config(text='* Transcription *', bg='lightblue', fg='darkblue', anchor=tk.CENTER)
+
 
     def exit(self):
         super().exit()

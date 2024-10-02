@@ -1,7 +1,9 @@
-from utils_socket import check_server_status
+# from utils_socket import check_server_status
+import time
 from info import *
 from Transcription import Transcription
 import tkinter as tk
+from insertions import GestionnaireInsertion, FenetreGestion
 
 class Mode:
     def __init__(self, app):
@@ -35,8 +37,11 @@ class Mode:
         self.update()
 
     def copy_to_clipboard(self):
+        self.status_bar.config(text='- Copie -', bg='lightblue', fg='darkblue', anchor=tk.CENTER)
         self.root.clipboard_clear()
         self.root.clipboard_append(self.transcription.get())
+        time.sleep(0.5)
+        self._update_barre_status()
 
     # def hide_window(self):
     #     self.simulate_keyboard_var.set(True)
@@ -117,3 +122,8 @@ class Mode:
         for widget in self.root.winfo_children():
             widget.destroy()
         # return self.transcription.get() # on retourne la transcription en cours
+
+    def gestion_insertions(self):
+        """Ouvre la fenêtre de gestion des insertions"""
+        gestionnaire = GestionnaireInsertion(self.app.insertions)
+        fenetre_gestion = FenetreGestion(self.root, gestionnaire)

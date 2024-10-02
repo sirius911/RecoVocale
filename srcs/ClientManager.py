@@ -1,5 +1,6 @@
 from client import EnhancedTranscriptionClient
-from Correcteur import Correcteur, intercept
+from Correcteur import intercept
+from insertions import GestionnaireInsertion
 import threading
 import asyncio
 import traceback
@@ -20,7 +21,7 @@ class ClientManager:
         self.display_task = None
         self.loop = None
         self.update_callback = update_callback
-        self.correcteur = Correcteur()
+        self.insertions = GestionnaireInsertion("config/insertions.xml")
 
 
     def start_client(self, loop):
@@ -62,7 +63,7 @@ class ClientManager:
                 transcriptions = transcriptions if self.client else []
                 # corrected_transcriptions = [self.correcteur.applique_corrections(line) for line in transcriptions]
                 
-                combined_text, ending = intercept(''.join(transcriptions).lstrip())
+                combined_text, ending = intercept(''.join(transcriptions).lstrip(), self.insertions.get())
                 
                 if combined_text.lstrip() != '' and combined_text == ancienne_transcription and self.client.is_pause():
                     compteur += 1

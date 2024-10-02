@@ -112,9 +112,9 @@ def create_menus(self):
                                    command= lambda: self.app.switch_mode(APPRENTI))
 
     # Autres options du menu Paramètres
-    # self.settings_menu.add_separator()
-    # self.settings_menu.add_command(label="Info", command=self.info)
-    # self.settings_menu.add_separator()
+    self.settings_menu.add_separator()
+    self.settings_menu.add_command(label="Gestion des Insertions", command=self.gestion_insertions)
+    self.settings_menu.add_separator()
 
     self.debug_var = BooleanVar(value=self.app.config.debug)
     self.settings_menu.add_checkbutton(label="Debug", variable=self.debug_var, 
@@ -131,3 +131,34 @@ def create_menus(self):
     self.edit_menu.add_command(label="Coller", command=self.app.paste_from_clipboard)
     if self.mode == DIRECT:
         self.edit_menu.add_command(label="Effacer", command=self.clear_text_box)
+
+bubble = None
+label_in_bubble = None
+
+def show_bubble_message(parent, message):
+    """Affiche ou met à jour la bulle de message."""
+    global bubble, label_in_bubble
+
+    # Si la bulle existe déjà, on met à jour le message
+    if bubble is not None:
+        label_in_bubble.config(text=message)
+    else:
+        # Sinon, on crée la bulle
+        bubble = tk.Toplevel(parent)
+        bubble.wm_overrideredirect(True)  # Fenêtre sans bordure
+
+        # Positionner la bulle dans la fenêtre parent
+        x = parent.winfo_rootx() + 1
+        y = parent.winfo_rooty() + 60
+        bubble.geometry(f"+{x}+{y}")
+
+        # Ajouter un label avec le message
+        label_in_bubble = tk.Label(bubble, text=message, font=("Arial", 10), background="yellow", relief="solid", borderwidth=1)
+        label_in_bubble.pack(padx=10, pady=5)
+        
+def remove_bubble():
+    """Ferme la bulle de message si elle est active."""
+    global bubble
+    if bubble:
+        bubble.destroy()
+        bubble = None
