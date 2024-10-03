@@ -15,6 +15,7 @@ class UserConfig:
         self.x_window = "10"
         self.y_window = "10"
         self.debug = False
+        self.insertions = "config/insertions.xml"
         # Lire la configuration si le fichier existe, sinon la créer
         if os.path.exists(self.config_file):
             self.load_config()
@@ -33,6 +34,7 @@ class UserConfig:
         self.x_window = config.get('SETTINGS', 'X_WINDOW', fallback=self.x_window)
         self.y_window = config.get('SETTINGS', 'Y_WINDOW', fallback=self.y_window)
         self.debug = (config.get('SETTINGS', 'DEBUG', fallback=self.debug) == 'True')
+        self.insertions = config.get('SETTINGS', 'INSERTIONS', fallback=self.insertions)
         
     def save_config(self, root):
         """Sauvegarde la configuration dans un fichier."""
@@ -47,7 +49,8 @@ class UserConfig:
             'MODE': self.mode,
             'X_WINDOW': root.winfo_x() if root else 0,
             'Y_WINDOW': root.winfo_y() if root else 0,
-            'DEBUG': 'True' if self.debug else 'False'
+            'DEBUG': 'True' if self.debug else 'False',
+            'INSERTIONS': self.insertions
         }
         print(f"Sauvegarde {self.config_file} ...", end =' ')
 

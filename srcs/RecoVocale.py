@@ -22,7 +22,7 @@ from insertions import GestionnaireInsertion
 class App:
     def __init__(self, root, loop):
         self.config = UserConfig()
-        self.insertions = GestionnaireInsertion("config/insertions.xml")
+        self.insertions = GestionnaireInsertion(self.config.insertions)
         self.console_debug = DebugWindow(root)
         if self.config.debug:
            self.console_debug.debug_window.deiconify()  # Afficher la fenêtre de débogage
@@ -163,7 +163,10 @@ class App:
         self.console_debug.append_status_with_format("Position actuelle de la fenêtre : x=", font_style="italic")
         self.console_debug.append_status_with_format(self.root.winfo_x(), color="green")
         self.console_debug.append_status_with_format(", y=", font_style="italic")
-        self.console_debug.append_status_with_format(self.root.winfo_y(), color="green")
+        self.console_debug.append_status_with_format(f"{self.root.winfo_y()}\n", color="green")
+
+        self.console_debug.append_status_with_format("Fichier des insertions : ", font_style="italic")
+        self.console_debug.append_status_with_format(self.config.insertions, color="green")
 
 
     #---------------------------------------------------------------------------------------------------------------------

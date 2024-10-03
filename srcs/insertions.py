@@ -3,12 +3,20 @@ from tkinter import messagebox
 import tkinter.font as tkFont  # Importer le module pour gérer la police
 import xml.etree.ElementTree as ET
 import xml.dom.minidom as minidom
+import os
 
 
 class GestionnaireInsertion:
     def __init__(self, fichier_xml):
         self.fichier_xml = fichier_xml
-        self.data = self.charger_donnees()
+        # Vérifier si le fichier existe
+        if os.path.exists(fichier_xml):
+            try:
+                self.data = self.charger_donnees()
+            except ET.ParseError:
+                self.data = {}
+        else:
+            self.data = {}
 
     def charger_donnees(self):
         tree = ET.parse(self.fichier_xml)
