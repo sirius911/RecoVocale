@@ -22,7 +22,9 @@ class Mode_Reduit(Mode):
             True,
             False,
             "",
-            self.update_transcriptions  # Pass the callback to ClientManager
+            self.update_transcriptions,  # Pass the callback to ClientManager
+            self.app.insertions,
+            self.is_ouverte,
         )
         super().enter()
         self.simulator_keyboard = Simulator(None, True)

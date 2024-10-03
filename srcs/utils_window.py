@@ -113,7 +113,7 @@ def create_menus(self):
 
     # Autres options du menu Paramètres
     self.settings_menu.add_separator()
-    self.settings_menu.add_command(label="Gestion des Insertions", command=self.gestion_insertions)
+    self.settings_menu.add_command(label="Gestion des Insertions", command=self.ouvrir_gestion_insertions)
     self.settings_menu.add_separator()
 
     self.debug_var = BooleanVar(value=self.app.config.debug)

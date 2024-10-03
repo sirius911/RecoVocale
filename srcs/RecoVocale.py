@@ -16,15 +16,13 @@ from Micro import Micro
 from info import *
 from pynput.keyboard import Key
 from fenetre_debug import DebugWindow
-
-# sys.stdout = open(os.devnull, 'w')  # Enregistre les sorties dans un fichier log
-# sys.stderr = open(os.devnull, 'w')   # Enregistre les erreurs dans un fichier log
+from insertions import GestionnaireInsertion
 
 
 class App:
     def __init__(self, root, loop):
         self.config = UserConfig()
-        self.insertions = "config/insertions.xml"
+        self.insertions = GestionnaireInsertion("config/insertions.xml")
         self.console_debug = DebugWindow(root)
         if self.config.debug:
            self.console_debug.debug_window.deiconify()  # Afficher la fenêtre de débogage

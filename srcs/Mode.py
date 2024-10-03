@@ -11,6 +11,7 @@ class Mode:
         self.root = app.root
         self.mod_var = tk.StringVar()
         self.transcription = Transcription()
+        self.fenetre_gestion_ouverte = False  # Attribut pour savoir si la fenêtre est ouverte
         self.simulator_keyboard = None
         self.enter()
 
@@ -123,7 +124,18 @@ class Mode:
             widget.destroy()
         # return self.transcription.get() # on retourne la transcription en cours
 
-    def gestion_insertions(self):
+    def ouvrir_gestion_insertions(self):
         """Ouvre la fenêtre de gestion des insertions"""
-        gestionnaire = GestionnaireInsertion(self.app.insertions)
-        fenetre_gestion = FenetreGestion(self.root, gestionnaire)
+        if not self.fenetre_gestion_ouverte:
+            self.fenetre_gestion = FenetreGestion(self.root, self.app.insertions, self.fermer_gestion_insertions)
+            self.fenetre_gestion.protocol("WM_DELETE_WINDOW", self.fermer_gestion_insertions)
+            self.fenetre_gestion_ouverte = True
+
+    def fermer_gestion_insertions(self):
+        """Méthode appelée lorsque la fenêtre de gestion est fermée"""
+        if self.fenetre_gestion:
+            self.fenetre_gestion.destroy()
+        self.fenetre_gestion_ouverte = False
+
+    def is_ouverte(self):
+        return self.fenetre_gestion_ouverte

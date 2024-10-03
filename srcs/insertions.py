@@ -73,15 +73,17 @@ class GestionnaireInsertion:
             f.write(pretty_xml_str)
 
 
-
 class FenetreGestion(tk.Toplevel):
-    def __init__(self, parent, gestionnaire):
+    def __init__(self, parent, gestionnaire, termine=None):
         super().__init__(parent)  # Définir la fenêtre parent comme Toplevel
+        self.fonction_termine = termine
         self.gestionnaire = gestionnaire
         self.title("Gérer les insertions automatiques")
         self.resizable(True, True)
         self.transient(parent)  # Faire en sorte que la fenêtre soit modale par rapport au parent
         self.grab_set()  # Empêcher les interactions avec la fenêtre parent tant que celle-ci est ouverte
+
+        self.confirmation_en_cours = False  # Drapeau pour éviter les confirmations multiples
 
         # Liste des insertions
         self.liste_insertion = tk.Listbox(self, width=30)
@@ -103,6 +105,9 @@ class FenetreGestion(tk.Toplevel):
 
         self.bouton_appliquer = tk.Button(self.frame_formulaire, text="Appliquer", command=self.appliquer_modifications)
         self.bouton_appliquer.pack(side="left", padx=5, pady=5)
+        self.bouton_appliquer.config(state="disabled")  # Désactiver par défaut
+
+        self.modifications_en_cours = False
 
         self.bouton_nouveau = tk.Button(self.frame_formulaire, text="Nouvelle insertion", command=self.nouvelle_insertion)
         self.bouton_nouveau.pack(side="left", padx=5, pady=5)
@@ -110,11 +115,23 @@ class FenetreGestion(tk.Toplevel):
         self.bouton_supprimer = tk.Button(self.frame_formulaire, text="Supprimer", command=self.supprimer_insertion)
         self.bouton_supprimer.pack(side="left", padx=5, pady=5)
 
-        self.bouton_fermer = tk.Button(self.frame_formulaire, text="Fermer", command=self.destroy)
+        self.bouton_fermer = tk.Button(self.frame_formulaire, text="Fermer", command=self.fermer_fenetre)
         self.bouton_fermer.pack(side="right", padx=5, pady=5)
+
+        self.entry_nom.config(state="disabled")
+        self.entry_description.config(state="disabled")
+        self.entry_phrase.config(state="disabled")
+        self.text_contenu.config(state="disabled")
+
+        self.entry_nom.bind("<KeyRelease>", self.on_field_change)
+        self.entry_description.bind("<KeyRelease>", self.on_field_change)
+        self.entry_phrase.bind("<KeyRelease>", self.on_field_change)
+        self.text_contenu.bind("<KeyRelease>", self.on_field_change)
 
         self.liste_insertion.bind("<<ListboxSelect>>", self.afficher_insertion)
 
+        # Associer l'événement de fermeture à la méthode fermer_fenetre
+        self.protocol("WM_DELETE_WINDOW", self.fermer_fenetre)  # Associer la fermeture de la fenêtre à la méthode
 
     def creer_ligne_champ(self, label_text, champ):
         """Crée une ligne avec un label et un champ Entry."""
@@ -145,6 +162,12 @@ class FenetreGestion(tk.Toplevel):
         setattr(self, f'text_{champ}', text)
 
     def afficher_insertion(self, event):
+        if self.modifications_en_cours:
+            # Empêcher la sélection sans avertissement
+            reponse = messagebox.askyesno("Attention", "Vous avez des modifications non enregistrées. Voulez-vous vraiment annuler ces modifications ?")
+            if not reponse:
+                return  # Annuler la sélection si l'utilisateur refuse de perdre les modifications
+
         selection = self.liste_insertion.curselection()
         if selection:
             name = self.liste_insertion.get(selection)
@@ -154,6 +177,9 @@ class FenetreGestion(tk.Toplevel):
 
             if full_key:
                 data = self.gestionnaire.data[full_key]
+
+                # Réactiver les champs avant de remplir les valeurs
+                self.activer_champs()
 
                 self.entry_nom.delete(0, tk.END)
                 self.entry_nom.insert(0, data['name'])
@@ -166,54 +192,69 @@ class FenetreGestion(tk.Toplevel):
 
                 self.text_contenu.delete("1.0", tk.END)
                 self.text_contenu.insert(tk.END, data['body'])
+
+                 # Désactiver le bouton Appliquer après avoir affiché l'insertion
+                self.bouton_appliquer.config(state="disabled")
+                self.modifications_en_cours = False
+
     def appliquer_modifications(self):
-        phrase = self.entry_phrase.get()
+        nom = self.entry_nom.get().strip()
+        description = self.entry_description.get().strip()
+        phrase = self.entry_phrase.get().strip()
+        contenu = self.text_contenu.get("1.0", tk.END).strip()
+
+        if not nom or not phrase or not contenu:
+            messagebox.showwarning("Erreur", "Le nom, la forme prononcée et le contenu sont requis pour ajouter une nouvelle insertion.")
+            return
+
         if phrase in self.gestionnaire.data:
-            self.gestionnaire.data[phrase]['name'] = self.entry_nom.get()
-            self.gestionnaire.data[phrase]['description'] = self.entry_description.get()
-            self.gestionnaire.data[phrase]['body'] = self.text_contenu.get("1.0", tk.END).strip()
+            self.gestionnaire.data[phrase]['name'] = nom
+            self.gestionnaire.data[phrase]['description'] = description
+            self.gestionnaire.data[phrase]['body'] = contenu
             messagebox.showinfo("Info", "Modifications appliquées !")
         else:
-            self.gestionnaire.ajouter_insertion(
-                self.entry_nom.get(),
-                self.entry_description.get(),
-                self.entry_phrase.get(),
-                self.text_contenu.get("1.0", tk.END).strip()
-            )
-            self.liste_insertion.insert(tk.END, phrase)
+            self.gestionnaire.ajouter_insertion(nom, description, phrase, contenu)
+            self.liste_insertion.insert(tk.END, nom)
             messagebox.showinfo("Info", "Nouvelle insertion ajoutée !")
         
         # Sauvegarder après modification ou ajout
         self.gestionnaire.sauvegarder_modifications()
 
+        # Désactiver les champs et le bouton Appliquer après l'application
+        self.modifications_en_cours = False
+        self.bouton_appliquer.config(state="disabled")
+        self.desactiver_champs()
 
     def supprimer_insertion(self):
-        """Supprime l'insertion sélectionnée."""
+        """Supprime l'insertion sélectionnée sans créer automatiquement une nouvelle insertion."""
         selection = self.liste_insertion.curselection()
         if selection:
-            # Récupérer le nom sélectionné
-            name = self.liste_insertion.get(selection)
+            if messagebox.askyesno("Confirmation", "Voulez-vous vraiment supprimer cette insertion ?"):
+                # Récupérer le nom sélectionné
+                name = self.liste_insertion.get(selection)
 
-            # Rechercher la clé complète correspondant à ce nom dans self.gestionnaire.data
-            full_key = next((key for key, value in self.gestionnaire.data.items() if value['name'] == name), None)
+                # Rechercher la clé complète correspondant à ce nom dans self.gestionnaire.data
+                full_key = next((key for key, value in self.gestionnaire.data.items() if value['name'] == name), None)
 
-            if full_key:
-                # Supprimer l'insertion de self.gestionnaire.data
-                del self.gestionnaire.data[full_key]
-                
-                # Supprimer l'insertion de la Listbox
-                self.liste_insertion.delete(selection)
+                if full_key:
+                    # Supprimer l'insertion de self.gestionnaire.data
+                    del self.gestionnaire.data[full_key]
 
-                # Vider les champs après suppression
-                self.nouvelle_insertion()
+                    # Supprimer l'insertion de la Listbox
+                    self.liste_insertion.delete(selection)
 
-                # Message de succès
-                messagebox.showinfo("Info", "Insertion supprimée avec succès.")
-            else:
-                messagebox.showwarning("Erreur", "Insertion non trouvée.")
+                    # Vider les champs après suppression
+                    self.vider_champs()
+
+                    # Sauvegarder après la suppression
+                    self.gestionnaire.sauvegarder_modifications()
+
+                    # Message de succès
+                    messagebox.showinfo("Info", "Insertion supprimée avec succès.")
+                else:
+                    messagebox.showwarning("Erreur", "Insertion non trouvée.")
         else:
             messagebox.showwarning("Erreur", "Aucune insertion sélectionnée à supprimer.")
-
 
     def nouvelle_insertion(self):
         """Vide tous les champs pour ajouter une nouvelle insertion."""
@@ -222,8 +263,67 @@ class FenetreGestion(tk.Toplevel):
         self.entry_phrase.delete(0, tk.END)
         self.text_contenu.delete("1.0", tk.END)
 
+        # Activer les champs pour permettre la saisie
+        self.activer_champs()
+
+        self.modifications_en_cours = True
+        self.bouton_appliquer.config(state="normal")  # Activer le bouton Appliquer pour une nouvelle insertion
+
+    def on_field_change(self, event):
+        # Activer le bouton "Appliquer" quand un champ est modifié
+        self.modifications_en_cours = True
+        self.bouton_appliquer.config(state="normal")
+
+
+    def fermer_fenetre(self):
+        # Empêcher la fermeture multiple ou la confirmation multiple
+        if self.confirmation_en_cours:
+            return
+        if self.modifications_en_cours:
+            self.confirmation_en_cours = True  # Activer le drapeau
+            reponse = messagebox.askyesno("Attention", "Vous avez des modifications non enregistrées. Voulez-vous vraiment quitter sans enregistrer ?")
+            self.confirmation_en_cours = False  # Désactiver le drapeau après réponse
+            if not reponse:
+                return  # Annuler la fermeture
+        self.fonction_termine()  # Appel à la méthode pour terminer
+    
+    def activer_champs(self):
+        self.entry_nom.config(state="normal")
+        self.entry_description.config(state="normal")
+        self.entry_phrase.config(state="normal")
+        self.text_contenu.config(state="normal")
+
+    def desactiver_champs(self):
+        self.entry_nom.config(state="disabled")
+        self.entry_description.config(state="disabled")
+        self.entry_phrase.config(state="disabled")
+        self.text_contenu.config(state="disabled")
+
+    def vider_champs(self):
+        self.entry_nom.delete(0, tk.END)
+        self.entry_description.delete(0, tk.END)
+        self.entry_phrase.delete(0, tk.END)
+        self.text_contenu.delete("1.0", tk.END)
+        self.desactiver_champs()  # Désactiver les champs après avoir vidé leur contenu
+
 
 if __name__ == "__main__":
-    gestionnaire = GestionnaireInsertion("config/insertions.xml")
-    app = FenetreGestion(gestionnaire)
-    app.mainloop()
+    # Créez la fenêtre principale Tkinter pour tester
+    root = tk.Tk()
+    root.title("Test FenetreGestion")
+
+    fichier_xml = "config/insertions.xml"
+
+    try:
+        # Initialisez la classe avec le fichier XML
+        gestionnaire = GestionnaireInsertion(fichier_xml)
+
+        # Initialisez et affichez la FenetreGestion pour test
+        fenetre_gestion = FenetreGestion(root, gestionnaire)
+        # fenetre_gestion.pack()  # Ajoutez la fenêtre à la fenêtre Tkinter
+
+    except Exception as e:
+        print(f"Erreur lors de l'initialisation du gestionnaire ou de la FenetreGestion : {e}")
+    
+    # Lancez la boucle principale Tkinter
+    root.mainloop()

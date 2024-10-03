@@ -1,12 +1,12 @@
 from client import EnhancedTranscriptionClient
 from Correcteur import intercept
-from insertions import GestionnaireInsertion
+from utils_keyboard import Simulator
 import threading
 import asyncio
 import traceback
 
 class ClientManager:
-    def __init__(self, host, port, lang, model, translate, use_vad, save_output_recording, output_recording_filename, update_callback):
+    def __init__(self, host, port, lang, model, translate, use_vad, save_output_recording, output_recording_filename, update_callback, insertions, fenetre_gestion_insertions):
         self.host = host
         self.port = port
         self.lang = lang
@@ -21,7 +21,8 @@ class ClientManager:
         self.display_task = None
         self.loop = None
         self.update_callback = update_callback
-        self.insertions = GestionnaireInsertion("config/insertions.xml")
+        self.insertions = insertions
+        self.fenetre_gestion_insertions = fenetre_gestion_insertions
 
 
     def start_client(self, loop):
@@ -58,12 +59,16 @@ class ClientManager:
         ancienne_transcription = ""
         try:
             while self.running:
-                
+                print(f"ici gestionfenetre = {self.fenetre_gestion_insertions()}")
                 transcriptions, _ = self.client.get_transcriptions()
                 transcriptions = transcriptions if self.client else []
                 # corrected_transcriptions = [self.correcteur.applique_corrections(line) for line in transcriptions]
-                
-                combined_text, ending = intercept(''.join(transcriptions).lstrip(), self.insertions.get())
+                if self.fenetre_gestion_insertions():
+                    # la fenetre des insertions est ouverte donc on n'intercepte pas 
+                    combined_text = ''.join(transcriptions).lstrip()
+                    ending = False
+                else:
+                    combined_text, ending = intercept(''.join(transcriptions).lstrip(), self.insertions.get())
                 
                 if combined_text.lstrip() != '' and combined_text == ancienne_transcription and self.client.is_pause():
                     compteur += 1
@@ -74,9 +79,13 @@ class ClientManager:
                 # print(f"compteur = {compteur} et client.is_pause = {self.client.is_pause()}")
                 ending = ending or (compteur > 1) # fin demandé par intercept() ou 2 fois le meme text en mode pause
                 if combined_text != "":
-                    self.update_callback(combined_text, ending)
+                    if not self.fenetre_gestion_insertions():
+                        # on appelle la fonction du mode
+                        self.update_callback(combined_text, ending)
                 if ending:
                     print("Fin de transcription demandée")
+                    if self.fenetre_gestion_insertions():
+                        Simulator(combined_text)
                     self.stop_client()
                 await asyncio.sleep(0.5)
         except Exception as e:

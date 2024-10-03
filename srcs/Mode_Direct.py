@@ -60,7 +60,9 @@ class Mode_Direct(Mode):
             True,
             False,
             "",
-            self.update_transcriptions  # Pass the callback to ClientManager
+            self.update_transcriptions,  # Pass the callback to ClientManager
+            self.app.insertions,
+            self.is_ouverte,
         )
         super().enter()
         self.flag_begin = True

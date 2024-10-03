@@ -30,7 +30,9 @@ class Mode_Apprenti(Mode):
             True,
             True,
             self.temp_wav_file,
-            self.update_transcriptions  # Pass the callback to ClientManager
+            self.update_transcriptions,  # Pass the callback to ClientManager
+            self.app.insertions,
+            self.is_ouverte,
         )
         super().enter()
         self.flag_begin = True
