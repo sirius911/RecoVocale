@@ -93,9 +93,22 @@ class FenetreGestion(tk.Toplevel):
 
         self.confirmation_en_cours = False  # Drapeau pour éviter les confirmations multiples
 
+        # Frame pour la Listbox et la Scrollbar
+        self.frame_liste = tk.Frame(self)
+        self.frame_liste.pack(side="left", fill="y", padx=5, pady=5)
+
         # Liste des insertions
-        self.liste_insertion = tk.Listbox(self, width=30)
-        self.liste_insertion.pack(side="left", fill="y", padx=5, pady=5)
+        self.liste_insertion = tk.Listbox(self.frame_liste, width=40)
+        self.liste_insertion.pack(side="left", fill="y")
+
+        # Scrollbar verticale pour la Listbox
+        self.scrollbar_liste = tk.Scrollbar(self.frame_liste, orient="vertical")
+        self.scrollbar_liste.pack(side="right", fill="y")
+
+        # Lier la Listbox et la Scrollbar
+        self.liste_insertion.config(yscrollcommand=self.scrollbar_liste.set)
+        self.scrollbar_liste.config(command=self.liste_insertion.yview)
+
 
         # Trier et insérer les noms dans la Listbox
         noms = sorted(self.gestionnaire.data.items(), key=lambda item: item[1]['name'])
@@ -201,9 +214,13 @@ class FenetreGestion(tk.Toplevel):
                 self.text_contenu.delete("1.0", tk.END)
                 self.text_contenu.insert(tk.END, data['body'])
 
-                 # Désactiver le bouton Appliquer après avoir affiché l'insertion
+                # Enregistrer la phrase actuelle avant modification
+                self.old_phrase = full_key  # Sauvegarder la phrase d'origine
+
+                # Désactiver le bouton Appliquer après avoir affiché l'insertion
                 self.bouton_appliquer.config(state="disabled")
                 self.modifications_en_cours = False
+
 
     def appliquer_modifications(self):
         nom = self.entry_nom.get().strip()
@@ -215,11 +232,19 @@ class FenetreGestion(tk.Toplevel):
             messagebox.showwarning("Erreur", "Le nom, la forme prononcée et le contenu sont requis pour ajouter une nouvelle insertion.")
             return
 
-        if phrase in self.gestionnaire.data:
-            self.gestionnaire.data[phrase]['name'] = nom
-            self.gestionnaire.data[phrase]['description'] = description
-            self.gestionnaire.data[phrase]['body'] = contenu
-            messagebox.showinfo("Info", "Modifications appliquées !")
+        # Supposons que self.old_phrase contienne la phrase originale (avant modification)
+        if self.old_phrase in self.gestionnaire.data:
+            if phrase != self.old_phrase:
+                # Si la phrase a changé, il faut supprimer l'ancienne entrée et ajouter la nouvelle
+                del self.gestionnaire.data[self.old_phrase]
+                self.gestionnaire.data[phrase] = {'name': nom, 'description': description, 'body': contenu}
+                messagebox.showinfo("Info", "Phrase modifiée et insertion mise à jour !")
+            else:
+                # Si la phrase n'a pas changé, on met juste à jour les autres champs
+                self.gestionnaire.data[phrase]['name'] = nom
+                self.gestionnaire.data[phrase]['description'] = description
+                self.gestionnaire.data[phrase]['body'] = contenu
+                messagebox.showinfo("Info", "Modifications appliquées !")
         else:
             self.gestionnaire.ajouter_insertion(nom, description, phrase, contenu)
             self.liste_insertion.insert(tk.END, nom)
@@ -232,6 +257,7 @@ class FenetreGestion(tk.Toplevel):
         self.modifications_en_cours = False
         self.bouton_appliquer.config(state="disabled")
         self.desactiver_champs()
+
 
     def supprimer_insertion(self):
         """Supprime l'insertion sélectionnée sans créer automatiquement une nouvelle insertion."""
@@ -276,6 +302,8 @@ class FenetreGestion(tk.Toplevel):
 
         self.modifications_en_cours = True
         self.bouton_appliquer.config(state="normal")  # Activer le bouton Appliquer pour une nouvelle insertion
+
+        self.old_phrase = None
 
     def on_field_change(self, event):
         # Activer le bouton "Appliquer" quand un champ est modifié

@@ -59,7 +59,6 @@ class ClientManager:
         ancienne_transcription = ""
         try:
             while self.running:
-                print(f"ici gestionfenetre = {self.fenetre_gestion_insertions()}")
                 transcriptions, _ = self.client.get_transcriptions()
                 transcriptions = transcriptions if self.client else []
                 # corrected_transcriptions = [self.correcteur.applique_corrections(line) for line in transcriptions]

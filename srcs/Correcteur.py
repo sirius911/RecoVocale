@@ -1,3 +1,4 @@
+from datetime import datetime
 import json
 import os
 import re
@@ -11,7 +12,9 @@ def remplacer_avec_dictionnaire(texte, pattern, dico_insertion):
         # Capture le texte après "insérer" (ce qui inclut plusieurs mots possibles)
         texte_suivant = match.group(2).strip()
         print(f"[Insérer] [{texte_suivant}]", end="")
-
+        if texte_suivant.lower() == "date":
+            insertion = True
+            return datetime.now().strftime("%d/%m/%Y")
         # Vérifie chaque regex du dictionnaire pour voir si elle correspond à une partie du texte suivant
         for regex, remplacement in dico_insertion.items():
             if re.search(regex, texte_suivant, flags=re.IGNORECASE):
@@ -37,7 +40,6 @@ def insertion(phrase, dico_insertion):
 def intercept(phrases, dico_insertion):
     '''
     doit intercepter des mots clefs dans une liste de phrase
-    Slash
     renvoi la phrase corrigée et un flag ending indiquand si on doit terminé la transcription
     '''
     # print(f"intercepte '{phrases}'")
@@ -51,12 +53,12 @@ def intercept(phrases, dico_insertion):
         r"[., ]*ferm\w*\s+(les\s|la\s)?parenthèse[s]?[,.]*": ")",
         r"[., ]*\b(deux|de|2)\b point[s]?[,.]*": ":",
         r"[., ]*point d'interrogation[,.]*": "?",
-        
-        r"[.,]*point d'exclamation[s]?[,.]*": "!",
-        r"[., ]*point virgule": ";",
+        r"[.,]*point d'exclamation[s]?[,.]*": "! ",
+        r"[., ]*point [àa] la ligne":".\n",
+        r"[., ]*point virgule": "; ",
         r"[., ]*[àa] la ligne": "\n",
-        r"[., ]*v[ieè]rgule[,. ]*": ",",
-        r"[., ]*point[,. ]*": ".",
+        r"[., ]*v[ieè]rgule[,. ]*": ", ",
+        r"[., ]*point[,. ]*": ". ",
         r"[., ]*sl[aâ][sc]h[e]?[,. ]*": "/",
     }
     
@@ -95,48 +97,48 @@ def intercept(phrases, dico_insertion):
     return phrase_renvoyee, ending
 
 
-class Correcteur:
-    def __init__(self):
-        """
-        A class to apply text corrections based on a set of predefined rules.
+# class Correcteur:
+#     def __init__(self):
+#         """
+#         A class to apply text corrections based on a set of predefined rules.
 
-        Attributes:
-            corrections (list): A list of correction rules loaded from a JSON file.
-        """
-        self.corrections = []
-        config_path = get_config_path("corrections.json")
-        if os.path.exists(config_path):
-            with open(config_path, 'r', encoding='utf-8') as file:
-                data = json.load(file)
-                self.corrections = data.get("corrections", [])
-                print(f"Load correction {config_path}: {len(self.corrections)}")
-        else:
-            print(f"No correction file : {config_path}")
+#         Attributes:
+#             corrections (list): A list of correction rules loaded from a JSON file.
+#         """
+#         self.corrections = []
+#         config_path = get_config_path("corrections.json")
+#         if os.path.exists(config_path):
+#             with open(config_path, 'r', encoding='utf-8') as file:
+#                 data = json.load(file)
+#                 self.corrections = data.get("corrections", [])
+#                 print(f"Load correction {config_path}: {len(self.corrections)}")
+#         else:
+#             print(f"No correction file : {config_path}")
 
-    def applique_corrections(self, texte:str) -> str:
-        """
-        Initialize the Correcteur with a corrections file.
+#     def applique_corrections(self, texte:str) -> str:
+#         """
+#         Initialize the Correcteur with a corrections file.
 
-        Args:
-            corrections_file (str): The path to the JSON file containing correction rules.
-        """
-        for correction in self.corrections:
-            regex_patterns = correction.get("regex", [])
-            replacements = correction.get("new", [])
-            actions = correction.get("actions", [])
+#         Args:
+#             corrections_file (str): The path to the JSON file containing correction rules.
+#         """
+#         for correction in self.corrections:
+#             regex_patterns = correction.get("regex", [])
+#             replacements = correction.get("new", [])
+#             actions = correction.get("actions", [])
 
-            for pattern in regex_patterns:
-                regex = re.compile(pattern, re.IGNORECASE)
-                texte = regex.sub(replacements[0], texte)  # Assuming single replacement for simplicity
+#             for pattern in regex_patterns:
+#                 regex = re.compile(pattern, re.IGNORECASE)
+#                 texte = regex.sub(replacements[0], texte)  # Assuming single replacement for simplicity
 
-            for action in actions:
-                if action == "del_prec_virgule":
-                    texte = re.sub(r',\s*', ' ', texte)
-                elif action == "del_prec_point":
-                    texte = re.sub(r'\.\s*', ' ', texte)
-        # Ensure there are no extra periods before a newline
-        texte = re.sub(r'\.\s*\n', '.\n', texte)
-        # Remove extra periods generated by multiple corrections
-        texte = re.sub(r'\.\n+', '.\n', texte)
+#             for action in actions:
+#                 if action == "del_prec_virgule":
+#                     texte = re.sub(r',\s*', ' ', texte)
+#                 elif action == "del_prec_point":
+#                     texte = re.sub(r'\.\s*', ' ', texte)
+#         # Ensure there are no extra periods before a newline
+#         texte = re.sub(r'\.\s*\n', '.\n', texte)
+#         # Remove extra periods generated by multiple corrections
+#         texte = re.sub(r'\.\n+', '.\n', texte)
 
-        return texte
+#         return texte

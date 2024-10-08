@@ -9,8 +9,8 @@
             "4": {"class": "ValidTranscriptions"},
             "32": {"class": "Copie_clipboard"},
             "64": {"class": "Keyboard", "arg":["\u0001","v"]},
-            "16": {"class": "Selection", "arg":"left"},
-            "8": {"class": "Selection", "arg":"right"},
+            "8": {"class": "Keyboard", "arg":["\u0003"]},
+            "16": {"class": "Keyboard", "arg":["\u0002"]},
             "512": {"class": "NoAction"},
             "1024": {"class": "NoAction"},
             "2048": {"class": "NoAction"}
@@ -26,8 +26,8 @@
             "4": {"class": "ValidTranscriptions"},
             "32": {"class": "Copie_clipboard"},
             "64": {"class": "Keyboard", "arg":["\u0001","v"]},
-            "8": {"class": "Selection", "arg":"right"},
-            "16": {"class": "Selection", "arg":"left"},
+            "8": {"class": "Keyboard", "arg":["\u0003"]},
+            "16": {"class": "Keyboard", "arg":["\u0002"]},
             "512": {"class": "NoAction"},
             "1024": {"class": "NoAction"},
             "2048": {"class": "NoAction"}

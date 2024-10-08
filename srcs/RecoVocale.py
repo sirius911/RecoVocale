@@ -28,10 +28,12 @@ class App:
            self.console_debug.debug_window.deiconify()  # Afficher la fenêtre de débogage
         else:
             self.console_debug.debug_window.withdraw()
-        mode = self.config.mode
+       
         self.root = root
+        
+        # Use the provided asyncio event loop
+        self.loop = loop
         self.recording = False
-        # self.root.title(f"RecoVocale [{self.config.server_ip}:{self.config.port}] (v{VERSION})")
         self.root.attributes("-topmost", True)  # Keep the window on top of others
  
         #-------------------check serveur-----------------------
@@ -40,6 +42,7 @@ class App:
         #-----------------Shortcut------------------------------
         self.keyboard_shortcut = self.config.shortcut
         #----------------------MODE----------------------------
+        mode = self.config.mode
         if mode == "RECORD":
             self.current_mode = Mode_Record(self)
         elif mode == "APPRENTI":
@@ -54,16 +57,25 @@ class App:
         except Exception:
             keyboard.add_hotkey("F3", self.current_mode.toggle_start_stop)
 
-        # Use the provided asyncio event loop
-        self.loop = loop
-
         self.root.protocol("WM_DELETE_WINDOW", self.current_mode.exit_app)
 
         # #---------------------------MICRO----------------------------
         # Initialize the microphone 
-        self.mic = Micro(loop, app=self.current_mode)
-
+        # self.mic = Micro(loop, app=self.current_mode)
+        self.mic = None
+        self.root.after(100, self.start_micro_monitoring)  # Démarrer l'intégration asyncio/tkinter
         self.info()
+
+    def start_micro_monitoring(self):
+        """Démarre la surveillance du micro via la méthode monitor() de Micro."""
+        if self.mic is None:
+            try:
+                self.mic = Micro(loop=self.loop, app=self.current_mode, call_back=self.info)
+                self.current_mode.status_bar.config(text=f'[{self.mic.micro_name}] connecté', bg='lightblue', fg='darkblue', anchor=tk.CENTER)
+            except Exception as e:
+                self.current_mode.status_bar.config(text='Micro déconnecté', bg='lightblue', fg='darkblue', anchor=tk.CENTER)
+        if self.mic:
+            asyncio.run_coroutine_threadsafe(self.mic.monitor(), self.loop)
 
     def paste_from_clipboard(self):
         self.current_mode.status_bar.config(text='- Coller -', bg='lightblue', fg='darkblue', anchor=tk.CENTER)
@@ -90,8 +102,8 @@ class App:
         self.config.x_window = self.root.winfo_rootx()
         self.config.y_window = self.root.winfo_rooty()
         self.config.save_config(self.root)
-        self.root.quit()
         self.loop.stop()
+        self.root.quit()
 
     def switch_mode(self, mode):
         if self.config.debug:
@@ -147,7 +159,10 @@ class App:
         else:
             self.console_debug.append_status_with_format(f"NOT Connected @{self.config.server_ip}:{self.config.port} \n", color="red")
         self.console_debug.append_status_with_format("Micro : ", font_style="italic")
-        self.console_debug.append_status_with_format(f"{self.mic.micro_name if self.mic else None}\n", color="green")
+        if self.mic and self.mic.is_connected():
+            self.console_debug.append_status_with_format(f"{self.mic.micro_name}\n", color="green")
+        else:
+            self.console_debug.append_status_with_format("Aucun\n", color="red")
 
         self.console_debug.append_status_with_format("Mode : ", font_style="italic")
         self.console_debug.append_status_with_format(self.current_mode.name(), color="green")
