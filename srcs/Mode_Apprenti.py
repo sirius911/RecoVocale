@@ -145,8 +145,11 @@ class Mode_Apprenti(Mode):
         self.stop_client()
 
     def copy_to_clipboard(self):
+        self.status_bar.config(text='- Copie -', bg='lightblue', fg='darkblue', anchor=tk.CENTER)
         self.root.clipboard_clear()
-        self.root.clipboard_append(self .get_selected_text()[0])
+        self.root.clipboard_append(self.get_selected_text())
+        time.sleep(0.5)
+        self._update_barre_status()
 
     def get_selected_text(self):
         """

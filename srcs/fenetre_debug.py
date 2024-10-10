@@ -45,8 +45,8 @@ class DebugWindow:
         self.original_stderr = sys.stderr
 
         # Rediriger les sorties `print` vers la zone `log_area`
-        # sys.stdout = RedirectOutput(self.log_area)
-        # sys.stderr = RedirectOutput(self.log_area)  # Redirige aussi les erreurs
+        sys.stdout = RedirectOutput(self.log_area)
+        sys.stderr = RedirectOutput(self.log_area)  # Redirige aussi les erreurs
         
 
     def log_message(self, message):

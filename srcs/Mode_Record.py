@@ -107,6 +107,9 @@ class Mode_Record(Mode):
             print("Enregistrement en pause")
             self.audio_manager.pause_recording()
 
+    def copy_to_clipboard(self):
+        pass
+
     async def start_audio_recording(self):
         self.audio_manager.start_recording(self.app.loop)
 

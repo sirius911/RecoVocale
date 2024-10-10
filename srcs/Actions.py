@@ -3,12 +3,15 @@ import time
 from utils_keyboard import Simulator
 import tkinter as tk
 import subprocess
+from abc import ABC, abstractmethod
+from pynput.keyboard import Key
 
 
-class Action:
+class Action(ABC):
     def __init__(self, app):
         self.app = app
 
+    @abstractmethod
     def execute(self):
         pass
 
@@ -28,6 +31,10 @@ class ValidTranscriptions(Action):
     def execute(self):
         self.app.valid_transcriptions()
 
+class Clear(Action):
+    def execute(self):
+        self.app.clear_text_box()
+
 class Keyboard(Action):
     def __init__(self, app, keys="", status_bar=True):
         super().__init__(app)
@@ -45,6 +52,12 @@ class Copie_clipboard(Action):
         self.app.copy_to_clipboard()
         time.sleep(0.5)
         self.app._update_barre_status()
+
+class CopierColler(Action):
+    def execute(self):
+        self.app.copy_to_clipboard()
+        time.sleep(0.5)
+        Simulator([Key.ctrl,'V'])
 
 class Selection(Action):
     def execute(self, dir):

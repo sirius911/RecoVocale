@@ -3,7 +3,7 @@ import time
 from info import *
 from Transcription import Transcription
 import tkinter as tk
-from insertions import GestionnaireInsertion, FenetreGestion
+from insertions import FenetreGestion
 
 class Mode:
     def __init__(self, app):
@@ -27,8 +27,8 @@ class Mode:
     def get_selected_text(self):
         return self.transcription.get()
     
-    # def start_client(self):
-    #     pass
+    def valid_transcriptions(self):
+        self.stop_client()
     
     def stop_client(self):
         self.transcription.validation()
@@ -43,10 +43,6 @@ class Mode:
         self.root.clipboard_append(self.transcription.get())
         time.sleep(0.5)
         self._update_barre_status()
-
-    # def hide_window(self):
-    #     self.simulate_keyboard_var.set(True)
-    #     self.is_hidden = True
 
     def pause(self):
         self.client_manager.pause()
@@ -81,7 +77,10 @@ class Mode:
         if self.app.recording:
             message = "RECORDING ..."
         else:
-            message = f"RecoVocale [{self.app.config.server_ip}:{self.app.config.port}] (v{VERSION}) {"" if self.app.status_server else "not"} connected"
+            if self.mode == REDUIT:
+                message = f"RecoVocale {VERSION}"
+            else:
+                message = f"RecoVocale [{self.app.config.server_ip}:{self.app.config.port}] (v{VERSION}) {"" if self.app.status_server else "not"} connected"
 
         if self.app.status_server == False:
             self.status_bar.config(text=message, fg='red', anchor=tk.W)
@@ -139,3 +138,6 @@ class Mode:
 
     def is_ouverte(self):
         return self.fenetre_gestion_ouverte
+    
+    def clear_text_box(self):
+        pass

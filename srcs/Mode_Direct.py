@@ -1,3 +1,4 @@
+import time
 from Mode import Mode
 import tkinter as tk
 from utils_window import create_menus, create_buttons
@@ -224,7 +225,12 @@ class Mode_Direct(Mode):
         else:
             self.set_pos_curseur(self.transcription.pos_cur)
 
-        # self.set_pos_curseur(self.transcription.pos_cur)
+    def copy_to_clipboard(self):
+        self.status_bar.config(text='- Copie -', bg='lightblue', fg='darkblue', anchor=tk.CENTER)
+        self.root.clipboard_clear()
+        self.root.clipboard_append(self.get_selected_text())
+        time.sleep(0.5)
+        self._update_barre_status()
 
     def select_text_box(self, dir = "left"):
         self.text_box.focus_set()
