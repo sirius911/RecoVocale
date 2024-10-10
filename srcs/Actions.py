@@ -57,7 +57,7 @@ class CopierColler(Action):
     def execute(self):
         self.app.copy_to_clipboard()
         time.sleep(0.5)
-        Simulator([Key.ctrl,'V'])
+        Simulator([Key.ctrl, 'v'])
 
 class Selection(Action):
     def execute(self, dir):

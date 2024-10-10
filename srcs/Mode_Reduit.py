@@ -70,8 +70,7 @@ class Mode_Reduit(Mode):
         super().unpause()
 
     def stop_client(self):
-        if self.app.config.debug:
-            print("Stop client in Mode Réduit")
+        print("Stop client in Mode Réduit")
         super().stop_client()
 
     def stop(self):

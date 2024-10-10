@@ -102,18 +102,15 @@ class Mode_Direct(Mode):
         self.status_bar.grid(row=2, column=0, sticky="ew")
 
     def pause(self):
-        if self.app.config.debug:
-            print("Pausing client in Mode Direct")
+        print("Pausing client in Mode Direct")
         super().pause()
 
     def unpause(self):
-        if self.app.config.debug:
-            print(f"UnPausing client in Mode Direct")
+        print(f"UnPausing client in Mode Direct")
         super().unpause()
 
     def stop_client(self):
-        if self.app.config.debug:
-            print(f"Stop client in Mode Direct")
+        print(f"Stop client in Mode Direct")
         super().stop_client()
 
 
@@ -228,7 +225,7 @@ class Mode_Direct(Mode):
     def copy_to_clipboard(self):
         self.status_bar.config(text='- Copie -', bg='lightblue', fg='darkblue', anchor=tk.CENTER)
         self.root.clipboard_clear()
-        self.root.clipboard_append(self.get_selected_text())
+        self.root.clipboard_append(self.get_selected_text()[0])
         time.sleep(0.5)
         self._update_barre_status()
 

@@ -33,7 +33,8 @@ class Client:
         translate=False,
         model=None,
         srt_file_path="output.srt",
-        use_vad=True
+        use_vad=True,
+        call_back=None
     ):
         """
         Initializes a Client instance for audio recording and streaming to a server.
@@ -67,6 +68,7 @@ class Client:
 
         #add by sirius
         self.transcripted = ''
+        self.call_back=call_back
 
         if translate:
             self.task = "translate"
@@ -137,6 +139,8 @@ class Client:
         self.transcripted = text
         
         utils.print_transcript(text)
+        # Call back
+        self.recording = self.call_back(text)
 
     def on_message(self, ws, message):
         """
@@ -303,7 +307,8 @@ class TranscriptionTeeClient:
     def __init__(self,
                  clients,
                  save_output_recording=False,
-                 output_recording_filename="./output_recording.wav",):
+                 output_recording_filename="./output_recording.wav",
+                ):
         self.clients = clients
         if not self.clients:
             raise Exception("At least one client is required.")
@@ -583,7 +588,7 @@ class TranscriptionTeeClient:
         self.close_all_clients()
         if self.save_output_recording:
             self.write_output_recording(n_audio_file)
-        self.write_all_clients_srt()
+        # self.write_all_clients_srt()
 
     def record(self):
         """
@@ -634,10 +639,11 @@ class TranscriptionTeeClient:
                             self.save_chunk(n_audio_file)
                             n_audio_file += 1
                         self.frames = b""
-            self.write_all_clients_srt()
+            # self.write_all_clients_srt()
             print(f"sortie de la boucle while record() : {self.save_output_recording}")
-            if self.save_output_recording:
-                 self.finalize_recording(n_audio_file)
+            self.finalize_recording(n_audio_file)
+            # if self.save_output_recording:
+            #      self.finalize_recording(n_audio_file)
         except KeyboardInterrupt:
             self.finalize_recording(n_audio_file)
 
@@ -754,8 +760,8 @@ class TranscriptionClient(TranscriptionTeeClient):
         transcription_client()
         ```
     """
-    def __init__(self, host, port,lang=None,translate=False,model=None,use_vad=True,save_output_recording=False,output_recording_filename="./output_recording.wav",output_transcription_path="./output.srt"):
-        self.client = Client(host, port, lang, translate, model, srt_file_path=output_transcription_path, use_vad=use_vad)
+    def __init__(self, host, port,lang=None,translate=False,model=None,use_vad=True,save_output_recording=False,output_recording_filename="./output_recording.wav",output_transcription_path="./output.srt", call_back=None):
+        self.client = Client(host, port, lang, translate, model, srt_file_path=output_transcription_path, use_vad=use_vad, call_back=call_back)
         if save_output_recording and not output_recording_filename.endswith(".wav"):
             raise ValueError(f"Please provide a valid `output_recording_filename`: {output_recording_filename}")
         if not output_transcription_path.endswith(".srt"):
@@ -768,7 +774,7 @@ class TranscriptionClient(TranscriptionTeeClient):
         )
 
 class EnhancedTranscriptionClient(TranscriptionClient):
-    def __init__(self, host, port, lang=None, model="small",translate=False, use_vad=True, save_output_recording=False, output_recording_filename="./output_recording.wav", output_transcription_path="./output.srt"):
+    def __init__(self, host, port, lang=None, model="small",translate=False, use_vad=True, save_output_recording=False, output_recording_filename="./output_recording.wav", output_transcription_path="./output.srt", call_back=None):
         super().__init__(host=host,
                          port=port,
                          lang=lang,
@@ -778,6 +784,7 @@ class EnhancedTranscriptionClient(TranscriptionClient):
                          save_output_recording=save_output_recording,
                          output_recording_filename=output_recording_filename,
                          output_transcription_path=output_transcription_path,
+                         call_back=call_back,
                          )
         self.pause = True
 

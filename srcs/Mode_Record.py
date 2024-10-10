@@ -62,8 +62,7 @@ class AudioManager:
     def unpause_recording(self):
         if self.is_recording:
             self.is_paused = False
-
-
+            
 
 class Mode_Record(Mode):
     def enter(self):
