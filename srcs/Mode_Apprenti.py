@@ -9,6 +9,7 @@ from ClientManager import ClientManager
 import pygame
 from datetime import datetime
 import tempfile
+from ftp_upload import upload_files_to_ftp
 
 
 class Mode_Apprenti(Mode):
@@ -190,10 +191,6 @@ class Mode_Apprenti(Mode):
         """
         Clear the content of the text box.
         """
-        # text_to_del, all = self.get_selected_text()
-        # self.valid_transcriptions()
-       
-        # if all:
         self.transcription.clear()
         self.text_box.delete('1.0', tk.END)
         self.rec_button.config(state=tk.NORMAL)
@@ -209,10 +206,10 @@ class Mode_Apprenti(Mode):
         fichiers = [self.temp_txt_file, self.temp_wav_file]
         for fichier in fichiers:
             if os.path.exists(fichier):
-                print(f"Effacement de {self.temp_wav_file}")
+                print(f"Effacement de {fichier}")
                 os.remove(fichier)
             else:
-                print(f"{self.temp_wav_file} non trouvé")
+                print(f"{fichier} non trouvé")
 
         self.root.update()
 
@@ -265,24 +262,28 @@ class Mode_Apprenti(Mode):
         filename = datetime.now().strftime("%Y%m%d%H%M%S%f")[:-4]
 
         #####   Les fichiers devrons etre transférér dans un serveur de stockage
-        print(f"On a deux fichiers : \n\t-{filename}.txt et \n\t-{filename}.wav")
+        print(f"On a deux fichiers : \n\t-wav->{self.temp_wav_file} et \n\t-text->{self.temp_txt_file}")
         # Chemin de destination
-        destination_dir = r"C:\Users\lorcyr\data"  # Répertoire de destination
+        # destination_dir = r"C:\Users\lorcyr\data"  # Répertoire de destination
         # Définir les nouveaux noms de fichiers dans le répertoire de destination
-        new_txt_file = os.path.join(destination_dir, f"{filename}.txt")
-        new_wav_file = os.path.join(destination_dir, f"{filename}.wav")
-        # Liste des fichiers à copier avec les nouveaux noms
-        fichiers = [(self.temp_txt_file, new_txt_file), (self.temp_wav_file, new_wav_file)]
-        # Copier chaque fichier dans le répertoire de destination avec le nouveau nom
-        for fichier_src, fichier_dest in fichiers:
-            if os.path.exists(fichier_src):
-                try:
-                    shutil.copy(fichier_src, fichier_dest)
-                    print(f"Fichier {fichier_src} copié sous le nom {fichier_dest}")
-                except Exception as e:
-                    print(f"Erreur lors de la copie du fichier {fichier_src} : {e}")
-            else:
-                print(f"Le fichier {fichier_src} n'existe pas.")
+        # new_txt_file = os.path.join(destination_dir, f"{filename}.txt")
+        # new_wav_file = os.path.join(destination_dir, f"{filename}.wav")
+
+        self.status_bar.config(text="Transfert des fichiers...")
+        upload_files_to_ftp(audio_file=self.temp_wav_file, text_file=self.temp_txt_file,filenames=filename)
+        
+        # # Liste des fichiers à copier avec les nouveaux noms
+        # fichiers = [(self.temp_txt_file, new_txt_file), (self.temp_wav_file, new_wav_file)]
+        # # Copier chaque fichier dans le répertoire de destination avec le nouveau nom
+        # for fichier_src, fichier_dest in fichiers:
+        #     if os.path.exists(fichier_src):
+        #         try:
+        #             shutil.copy(fichier_src, fichier_dest)
+        #             print(f"Fichier {fichier_src} copié sous le nom {fichier_dest}")
+        #         except Exception as e:
+        #             print(f"Erreur lors de la copie du fichier {fichier_src} : {e}")
+        #     else:
+        #         print(f"Le fichier {fichier_src} n'existe pas.")
         self.status_bar.config(text="Merci.")
         time.sleep(1)
         self.clear_text_box()

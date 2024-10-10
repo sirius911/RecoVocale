@@ -1,6 +1,8 @@
+import ctypes
 import time
 from utils_keyboard import Simulator
 import tkinter as tk
+import subprocess
 
 
 class Action:
@@ -60,7 +62,37 @@ class Attendre(Action):
     def execute(self):
         time.sleep(self.duree)
 
-class run(Action):
-    def execute(self, executable, arguments):
-        print(f"Execution de :{executable} {arguments}")
-        #TODO : lance l'executable executable avec les arguments
+# Constantes pour les options de fenêtre
+SW_SHOWNORMAL = 1
+SW_SHOWMINIMIZED = 2
+SW_SHOWMAXIMIZED = 3
+class Run(Action):
+    def __init__(self, app, executable, arguments=None, window_mode="normal"):
+        super().__init__(app)
+        self.executable = executable
+        self.arguments = arguments if arguments else []
+        self.window_mode = window_mode  # "normal", "maximized", "minimized"
+
+    def execute(self):
+        try:
+            # Crée la commande avec l'exécutable et les arguments
+            command = [self.executable] + self.arguments
+            print(f"Exécution de : {' '.join(command)}")
+            
+            # Crée un processus pour ouvrir l'application sans console supplémentaire
+            process = subprocess.Popen(command)
+
+            # Utilise ctypes pour ajuster l'état de la fenêtre
+            if self.window_mode == "normal":
+                ctypes.windll.user32.ShowWindow(process._handle, SW_SHOWNORMAL)
+            elif self.window_mode == "maximized":
+                ctypes.windll.user32.ShowWindow(process._handle, SW_SHOWMAXIMIZED)
+            elif self.window_mode == "minimized":
+                ctypes.windll.user32.ShowWindow(process._handle, SW_SHOWMINIMIZED)
+            else:
+                raise ValueError("Mode de fenêtre non valide")
+
+        except subprocess.CalledProcessError as e:
+            # Si une erreur se produit lors de l'exécution, affiche un message d'erreur
+            print(f"Erreur lors de l'exécution de : {self.executable}")
+            print(e)
