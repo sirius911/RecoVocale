@@ -136,26 +136,60 @@ bubble = None
 label_in_bubble = None
 
 def show_bubble_message(parent, message):
-    """Affiche ou met à jour la bulle de message."""
+    """Affiche ou met à jour la bulle de message avec une taille dynamique."""
     global bubble, label_in_bubble
 
-    # Si la bulle existe déjà, on met à jour le message
+    # Si la bulle existe déjà, on met à jour le message et redimensionne
     if bubble is not None:
         label_in_bubble.config(text=message)
+        
+        # Mise à jour pour recalculer la taille réelle du label après la modification du texte
+        bubble.update_idletasks()
+
+        # Récupérer la taille calculée de la fenêtre
+        bubble_width = bubble.winfo_width()
+        bubble_height = bubble.winfo_height()
+
+        # Recalculer la position pour recentrer la bulle après le changement de taille
+        screen_width = bubble.winfo_screenwidth()
+        screen_height = bubble.winfo_screenheight()
+        x = (screen_width // 2) - (bubble_width // 2)
+        y = (screen_height // 2) - (bubble_height // 2)
+
+        # Repositionner la bulle avec la nouvelle taille
+        bubble.geometry(f"+{x}+{y}")
+        
     else:
         # Sinon, on crée la bulle
         bubble = tk.Toplevel(parent)
         bubble.wm_overrideredirect(True)  # Fenêtre sans bordure
 
-        # Positionner la bulle dans la fenêtre parent
-        x = parent.winfo_rootx() + 1
-        y = parent.winfo_rooty() + 60
+        # Assurez-vous que la bulle soit toujours au-dessus des autres fenêtres
+        bubble.attributes("-topmost", True)
+
+        # Créer un label avec le message (sans fixer de dimensions)
+        label_in_bubble = tk.Label(bubble, text=message, font=("Arial", 10), background="yellow", fg="black", borderwidth=0)
+        label_in_bubble.pack(padx=10, pady=5)
+
+        # Mise à jour pour calculer la taille réelle du label une fois créé
+        bubble.update_idletasks()
+
+        # Récupérer la taille calculée de la fenêtre
+        bubble_width = bubble.winfo_width()
+        bubble_height = bubble.winfo_height()
+
+        # Calculer les coordonnées pour centrer la bulle au milieu de l'écran
+        screen_width = bubble.winfo_screenwidth()
+        screen_height = bubble.winfo_screenheight()
+        x = (screen_width // 2) - (bubble_width // 2)
+        y = (screen_height // 2) - (bubble_height // 2)
+
+        # Positionner la bulle précisément au centre de l'écran avec la taille adaptée
         bubble.geometry(f"+{x}+{y}")
 
-        # Ajouter un label avec le message
-        label_in_bubble = tk.Label(bubble, text=message, font=("Arial", 10), background="yellow", relief="solid", borderwidth=1)
-        label_in_bubble.pack(padx=10, pady=5)
+
         
+
 def remove_bubble():
     """Ferme la bulle de message si elle est active."""
     global bubble

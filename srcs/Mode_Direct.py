@@ -117,10 +117,10 @@ class Mode_Direct(Mode):
     def stop(self):
         self.stop_client()
 
-    def update_simulate_keyboard(self):
-        self.app.simulate_keyboard = self.simulate_keyboard_var.get()
-        if self.app.simulate_keyboard:
-            self.app.simulator_keyboard.init()
+    # def update_simulate_keyboard(self):
+    #     self.app.simulate_keyboard = self.simulate_keyboard_var.get()
+    #     if self.app.simulate_keyboard:
+    #         self.app.simulator_keyboard.init()
 
     def valid_transcriptions(self):
         self.stop_client()
@@ -172,14 +172,13 @@ class Mode_Direct(Mode):
         """
         Clear the content of the text box.
         """
-        text_to_del, all = self.get_selected_text()
+        _, all = self.get_selected_text()
         self.valid_transcriptions()
        
         if all:
             self.transcription.clear()
             self.text_box.delete('1.0', tk.END)
         else:
-            print(f"{text_to_del} à effacer")
             Simulator([Key.delete])
 
         self.root.update()

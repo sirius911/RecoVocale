@@ -9,7 +9,6 @@ from pynput.keyboard import Key
 class Mode_Reduit(Mode):
     def enter(self):
         self.mode = REDUIT
-        # self.app.simulate_keyboard = REDUIT.simule_keyboard
         self.mod_var.set(REDUIT)
         self.ui()
         #----------------- Lien Client Whisper -----------------------
@@ -60,13 +59,11 @@ class Mode_Reduit(Mode):
         self.status_bar.grid(row=2, column=0, sticky="ew")
 
     def pause(self):
-        if self.app.config.debug:
-            print("Pausing client in Mode Réduit")
+        print("Pausing client in Mode Réduit")
         super().pause()
 
     def unpause(self):
-        if self.app.config.debug:
-            print("UnPausing client in Mode Réduit")
+        print("UnPausing client in Mode Réduit")
         super().unpause()
 
     def stop_client(self):
@@ -75,6 +72,7 @@ class Mode_Reduit(Mode):
 
     def stop(self):
         self.stop_client()
+        remove_bubble()
 
     def valid_transcriptions(self):
         self.stop_client()
@@ -96,7 +94,10 @@ class Mode_Reduit(Mode):
             show_bubble_message(self.root, message)
             self.status_bar.config(text='* Transcription *', bg='lightblue', fg='darkblue', anchor=tk.CENTER)
 
+    def clear_text_box(self):
+        Simulator([Key.delete])
 
     def exit(self):
+        remove_bubble()
         super().exit()
         return self.transcription.get() # on retourne la transcription en cours
