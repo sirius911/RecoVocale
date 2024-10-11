@@ -19,7 +19,6 @@ DefaultGroupName=RecoVocale
 [Files]
 ; Inclure le fichier exécutable et d'autres fichiers nécessaires
 Source: "dist\RecoVocale.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "dist\corrections.json"; DestDir: "{localappdata}\RecoVocale"; Flags: ignoreversion
 Source: "C:\Users\LORCYR\Appdata\Roaming\RecoVocale\user_config.ini"; DestDir: "{localappdata}\RecoVocale"; Flags: ignoreversion
 Source: "srcs\config\micro_actions_config.json"; DestDir: "{localappdata}\RecoVocale"; Flags: ignoreversion
 
