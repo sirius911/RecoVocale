@@ -1,21 +1,26 @@
+import time
 import tkinter as tk
 from tkinter import messagebox
 import tkinter.font as tkFont  # Importer le module pour gérer la police
 import xml.etree.ElementTree as ET
 import xml.dom.minidom as minidom
 import os
+from utils_window import get_config_path
 
 
 class GestionnaireInsertion:
     def __init__(self, fichier_xml):
-        self.fichier_xml = fichier_xml
+        self.fichier_xml = get_config_path(fichier_xml)
+        print(f"Chargement du fichier des insertions -> {self.fichier_xml}")
+
         # Vérifier si le fichier existe
-        if os.path.exists(fichier_xml):
+        if os.path.exists(self.fichier_xml):
             try:
                 self.data = self.charger_donnees()
             except ET.ParseError:
                 self.data = {}
         else:
+            print(f"Absence de {self.fichier_xml}")
             self.data = {}
 
     def charger_donnees(self):
@@ -109,11 +114,7 @@ class FenetreGestion(tk.Toplevel):
         self.liste_insertion.config(yscrollcommand=self.scrollbar_liste.set)
         self.scrollbar_liste.config(command=self.liste_insertion.yview)
 
-
-        # Trier et insérer les noms dans la Listbox
-        noms = sorted(self.gestionnaire.data.items(), key=lambda item: item[1]['name'])
-        for _, insertion in noms:
-            self.liste_insertion.insert(tk.END, insertion['name'])
+        self.remplir_liste_insertion()
 
         # Formulaires à droite
         self.frame_formulaire = tk.Frame(self)
@@ -149,6 +150,7 @@ class FenetreGestion(tk.Toplevel):
         self.entry_phrase.bind("<KeyRelease>", self.on_field_change)
         self.text_contenu.bind("<KeyRelease>", self.on_field_change)
 
+        self.selection_precedente = None  #stock la sélection précédente
         self.liste_insertion.bind("<<ListboxSelect>>", self.afficher_insertion)
 
         # Associer l'événement de fermeture à la méthode fermer_fenetre
@@ -182,15 +184,25 @@ class FenetreGestion(tk.Toplevel):
 
         setattr(self, f'text_{champ}', text)
 
-    def afficher_insertion(self, event):
-        if self.modifications_en_cours:
-            # Empêcher la sélection sans avertissement
-            reponse = messagebox.askyesno("Attention", "Vous avez des modifications non enregistrées. Voulez-vous vraiment annuler ces modifications ?")
-            if not reponse:
-                return  # Annuler la sélection si l'utilisateur refuse de perdre les modifications
-
+    def afficher_insertion(self, event): # appelé par self.liste_insertion.bind("<<ListboxSelect>>", self.afficher_insertion)
+        # Récupérer la nouvelle sélection
         selection = self.liste_insertion.curselection()
+
         if selection:
+            new_selection = self.liste_insertion.get(selection)
+
+            # Vérifier si la sélection a changé par rapport à la précédente
+            if self.selection_precedente == new_selection:
+                return  # Si la sélection est la même, ne rien faire
+            
+            # Mettre à jour la sélection précédente
+            self.selection_precedente = new_selection
+
+            if self.modifications_en_cours:
+                reponse = messagebox.askyesno("Attention", "Vous avez des modifications non enregistrées. Voulez-vous vraiment annuler ces modifications ?")
+                if not reponse:
+                    return
+                
             name = self.liste_insertion.get(selection)
 
             # Rechercher l'insertion correspondant au nom
@@ -206,7 +218,10 @@ class FenetreGestion(tk.Toplevel):
                 self.entry_nom.insert(0, data['name'])
 
                 self.entry_description.delete(0, tk.END)
-                self.entry_description.insert(0, data['description'])
+                description = data.get('description', "") # si il n'y a pas de description renvoi ""
+                if description is None:
+                    description = ''
+                self.entry_description.insert(0, description) # methode insert ne peut pas avoir None 
 
                 self.entry_phrase.delete(0, tk.END)
                 self.entry_phrase.insert(0, full_key)
@@ -220,9 +235,11 @@ class FenetreGestion(tk.Toplevel):
                 # Désactiver le bouton Appliquer après avoir affiché l'insertion
                 self.bouton_appliquer.config(state="disabled")
                 self.modifications_en_cours = False
-
+        else:
+            self.selection_precedente = None
 
     def appliquer_modifications(self):
+        time.sleep(0.1)
         nom = self.entry_nom.get().strip()
         description = self.entry_description.get().strip()
         phrase = self.entry_phrase.get().strip()
@@ -245,18 +262,35 @@ class FenetreGestion(tk.Toplevel):
                 self.gestionnaire.data[phrase]['description'] = description
                 self.gestionnaire.data[phrase]['body'] = contenu
                 messagebox.showinfo("Info", "Modifications appliquées !")
+
         else:
+            # Nouvelle insertion
             self.gestionnaire.ajouter_insertion(nom, description, phrase, contenu)
-            self.liste_insertion.insert(tk.END, nom)
             messagebox.showinfo("Info", "Nouvelle insertion ajoutée !")
         
         # Sauvegarder après modification ou ajout
         self.gestionnaire.sauvegarder_modifications()
 
+        # Recréer la liste d'insertions dans la Listbox
+        self.remplir_liste_insertion()
+
         # Désactiver les champs et le bouton Appliquer après l'application
         self.modifications_en_cours = False
         self.bouton_appliquer.config(state="disabled")
+        self.bouton_nouveau.config(state='normal')
         self.desactiver_champs()
+
+    def remplir_liste_insertion(self):
+        """Vider et remplir la Listbox avec les noms triés des insertions."""
+        # Vider la Listbox
+        self.liste_insertion.delete(0, tk.END)
+
+        # Trier les noms des insertions par ordre alphabétique
+        noms = sorted(self.gestionnaire.data.items(), key=lambda item: item[1]['name'])
+
+        # Réinsérer les éléments triés
+        for _, insertion in noms:
+            self.liste_insertion.insert(tk.END, insertion['name'])
 
 
     def supprimer_insertion(self):
@@ -302,13 +336,14 @@ class FenetreGestion(tk.Toplevel):
 
         self.modifications_en_cours = True
         self.bouton_appliquer.config(state="normal")  # Activer le bouton Appliquer pour une nouvelle insertion
-
+        self.bouton_nouveau.config(state='disable')
         self.old_phrase = None
 
     def on_field_change(self, event):
         # Activer le bouton "Appliquer" quand un champ est modifié
         self.modifications_en_cours = True
         self.bouton_appliquer.config(state="normal")
+        self.bouton_nouveau.config(state='disable')
 
 
     def fermer_fenetre(self):

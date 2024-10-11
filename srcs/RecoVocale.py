@@ -17,6 +17,7 @@ from info import *
 from pynput.keyboard import Key
 from fenetre_debug import DebugWindow
 from insertions import GestionnaireInsertion
+from utils_window import get_config_path
 
 
 class App:
@@ -181,7 +182,7 @@ class App:
         self.console_debug.append_status_with_format(f"{self.root.winfo_y()}\n", color="green")
 
         self.console_debug.append_status_with_format("Fichier des insertions : ", font_style="italic")
-        self.console_debug.append_status_with_format(self.config.insertions, color="green")
+        self.console_debug.append_status_with_format(get_config_path(self.config.insertions), color="green")
 
 
     #---------------------------------------------------------------------------------------------------------------------
