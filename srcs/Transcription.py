@@ -1,5 +1,22 @@
 import tkinter as tk
 
+def first_char_lower(s):
+    """
+    Convertit uniquement le premier caractère d'une chaîne en minuscule,
+    tout en laissant les autres caractères inchangés.
+
+    Args:
+        s (str): La chaîne de caractères à modifier.
+
+    Returns:
+        str: Une nouvelle chaîne avec le premier caractère en minuscule
+             et le reste de la chaîne inchangé. Si la chaîne est vide,
+             elle est renvoyée telle quelle.
+    """
+    return s[:1].lower() + s[1:] if s else s
+
+
+
 def _insert_text(texte_depart, message, pos_curseur=0, cur_selec=(0,0)):
     """
     Insert `message` dans `texte_depart` à la position `pos_curseur`.
@@ -16,17 +33,18 @@ def _insert_text(texte_depart, message, pos_curseur=0, cur_selec=(0,0)):
         tuple: Le texte modifié et la position juste après le texte inséré (fin_insertion).
     """
     start_selection,end_selection = cur_selec
-    if start_selection < end_selection:
+    insertion = start_selection < end_selection
+    if insertion:
         # Si une sélection est présente, on supprime la sélection et insère à la position start_selection
         texte_depart = texte_depart[:start_selection] + texte_depart[end_selection:]
         pos_curseur = start_selection
-        message = message.lower() # essais !! quand on inserre on met en minuscule
-        
+        message = first_char_lower(message) # essais !! quand on inserre on met en minuscule
+   
     # Insérer le message à la position pos_curseur
-    nouveau_text = texte_depart[:pos_curseur] + message + texte_depart[pos_curseur:]
+    nouveau_text = (texte_depart[:pos_curseur] + ' ' + message + ' ' + texte_depart[pos_curseur:]).strip()
     
     # Calculer fin_insertion comme la position juste après l'insertion du message
-    fin_insertion = pos_curseur + len(message)
+    fin_insertion = pos_curseur + len(message) + 2
     
     return nouveau_text, fin_insertion
 
