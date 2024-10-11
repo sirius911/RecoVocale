@@ -14,17 +14,17 @@ class Mode_Reduit(Mode):
         self.ui()
         #----------------- Lien Client Whisper -----------------------
         self.client_manager = ClientManager(
-            self.app.config.server_ip,
-            self.app.config.port,
-            "fr",
-            "small",
-            False,
-            True,
-            False,
-            "",
-            self.update_transcriptions,  # Pass the callback to ClientManager
-            self.app.insertions,
-            self.is_ouverte,
+            host = self.app.config.server_ip,
+            port = self.app.config.port,
+            lang = "fr",
+            model = "small",
+            translate = False,
+            use_vad = True,
+            save_output_recording = False,
+            output_recording_filename = "",
+            update_callback = self.update_transcriptions,  # Pass the callback to ClientManager
+            insertions = self.app.insertions,
+            fenetre_gestion_insertions = self.is_ouverte,
         )
         super().enter()
         self.simulator_keyboard = Simulator(None, True)
@@ -76,37 +76,8 @@ class Mode_Reduit(Mode):
     def stop(self):
         self.stop_client()
 
-    # def update_simulate_keyboard(self):
-    #     self.app.simulate_keyboard = self.simulate_keyboard_var.get()
-    #     if self.app.simulate_keyboard:
-    #         self.app.simulator_keyboard.init()
-
     def valid_transcriptions(self):
         self.stop_client()
-
-    # def get_selected_text(self):
-    #     try:
-    #         # Vérifie s'il y a une sélection
-    #         if self.text_box.tag_ranges("sel"):
-    #             # Récupère le texte sélectionné
-    #             selected_text = self.text_box.get(tk.SEL_FIRST, tk.SEL_LAST)
-    #             return selected_text
-    #         else:
-    #             # si aucune selection on envoi la transcription complète
-    #             return self.transcription.get()
-    #     except tk.TclError:
-    #         # Gestion d'erreur si aucune sélection n'est faite
-    #         return self.transcription.get()
-
-    # def clear_text_box(self):
-    #     """
-    #     Clear the content of the text box.
-    #     """
-    #     self.valid_transcriptions()
-    #     self.transcription.clear()
-
-    #     self.text_box.delete('1.0', tk.END)
-    #     self.root.update()
 
     def update_transcriptions(self, message, ending):
         self.transcription.update(message, -1)

@@ -53,17 +53,17 @@ class Mode_Direct(Mode):
         self.ui()
         #----------------- Lien Client Whisper -----------------------
         self.client_manager = ClientManager(
-            self.app.config.server_ip,
-            self.app.config.port,
-            "fr",
-            "small",
-            False,
-            True,
-            False,
-            "",
-            self.update_transcriptions,  # Pass the callback to ClientManager
-            self.app.insertions,
-            self.is_ouverte,
+            host = self.app.config.server_ip,
+            port = self.app.config.port,
+            lang = "fr",
+            model = "small",
+            translate = False,
+            use_vad = True,
+            save_output_recording = False,
+            output_recording_filename = "",
+            update_callback = self.update_transcriptions,  # Pass the callback to ClientManager
+            insertions = self.app.insertions,
+            fenetre_gestion_insertions = self.is_ouverte,
         )
         super().enter()
         self.flag_begin = True
