@@ -1,4 +1,7 @@
 Voici un rappel rapide des commandes pour utiliser `venv` :
+1. installer Python 3.12.6 avec pyenv :
+pyenv install 3.12.6
+
 
 1. Créer un environnement virtuel :
 
@@ -6,7 +9,12 @@ Placez-vous dans le répertoire de votre projet et exécutez la commande suivant
 
 python -m venv _env
 
-2. Activer l'environnement virtuel :
+2. Définir Python 3.12.6 comme version locale dans votre répertoire :
+
+pyenv local 3.12.6
+
+
+3. Activer l'environnement virtuel :
 
 Sous Windows, activez l'environnement avec la commande suivante :
 
@@ -17,13 +25,13 @@ source _env/bin/activate
 
 Vous devriez voir le nom de l'environnement virtuel apparaître dans l'invite de commandes, indiquant que l'environnement est activé.
 
-3. Installer des paquets dans cet environnement :
+4. Installer des paquets dans cet environnement :
 
 Une fois l'environnement activé, vous pouvez installer des paquets de manière isolée en utilisant `pip` :
 
 pip install <nom_du_paquet>
 
-4. Désactiver l'environnement virtuel :
+5. Désactiver l'environnement virtuel :
 
 Lorsque vous avez fini de travailler, vous pouvez désactiver l'environnement avec :
 

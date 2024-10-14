@@ -11,8 +11,8 @@
             "64": {"class": "Keyboard", "arg":["\u0001","v"]},
             "8": {"class": "Keyboard", "arg":["\u0003"]},
             "16": {"class": "Keyboard", "arg":["\u0002"]},
-            "512": {"class": "NoAction"},
-            "1024": {"class": "NoAction"},
+            "512": {"class": "Clear"},
+            "1024": {"class": "Keyboard", "arg":["\u0001","a"]},
             "2048": {"class": "NoAction"}
         }
     },
@@ -28,8 +28,8 @@
             "64": {"class": "Keyboard", "arg":["\u0001","v"]},
             "8": {"class": "Keyboard", "arg":["\u0003"]},
             "16": {"class": "Keyboard", "arg":["\u0002"]},
-            "512": {"class": "NoAction"},
-            "1024": {"class": "NoAction"},
+            "512": {"class": "Clear"},
+            "1024": {"class": "Keyboard", "arg":["\u0001","a"]},
             "2048": {"class": "NoAction"}
         }
     },
@@ -40,15 +40,15 @@
         "actions": {
             "0": {"class": "Pause"},
             "1024": {"class": "Unpause"},
-            "256": {"class": "ValidTranscriptions"},
-            "512": {"class": "NoAction"},
-            "2048": {"class": "NoAction"},
-            "8192": {"class": "NoAction"},
+            "256": {"class": "CopierColler"},
+            "512": {"class": "Copie_clipboard"},
+            "2048": {"class": "Keyboard", "arg":["\u0001","v"]},
+            "8192": {"class": "Keyboard", "arg":["\u0003"]},
             "16384": {"class": "NoAction"},
-            "4096": {"class": "NoAction"},
-            "32768": {"class": "Copie_clipboard"},
+            "4096": {"class":  "Keyboard", "arg":["\u0002"]},
+            "32768": {"class": "Clear"},
             "1": {"class": "ValidTranscriptions"},
-            "2": {"class": "Keyboard", "arg":"\u0001v"}
+            "2": {"class": "Keyboard", "arg":["\u0001","a"]}
         }
     },
     "Jabra": {
