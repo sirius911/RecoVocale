@@ -59,7 +59,7 @@ def intercept(phrases, dico_insertion):
         r"[., ]*[àa] la ligne": "\n",
         r"[., ]*v[ieè]rgule[,. ]*": ", ",
         r"[., ]*point[s,. ]*": ". ",
-        r"[., ]*sl[aâ][sc]h[e]?[,. ]*": "/",
+        r"[., ]*sl[aâ](s?ch|sh)[e]?[,. ]*": "/",
     }
     
     # Ponctuations à enlever
