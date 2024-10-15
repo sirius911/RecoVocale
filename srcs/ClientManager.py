@@ -74,15 +74,15 @@ class ClientManager:
             self.compteur = 0
         ending = ending or (self.compteur > 1) # fin demandé par intercept() ou 2 fois le meme text en mode pause
         if combined_text != "":
-                if not self.fenetre_gestion_insertions():
-                    # on appelle la fonction du mode
-                    self.update_callback(combined_text, ending)
-        if ending:
-                print("Fin de transcription demandée")
-                if self.fenetre_gestion_insertions():
-                    Simulator(combined_text)
-                self.running = False
-                return False # recording = False
+            if not self.fenetre_gestion_insertions():
+                # on appelle la fonction du mode
+                self.update_callback(combined_text, ending)
+            if ending:
+                    print("Fin de transcription demandée")
+                    if self.fenetre_gestion_insertions():
+                        Simulator(combined_text)
+                    self.running = False
+                    return False # recording = False
         return True
 
     def stop_client(self):
