@@ -32,7 +32,8 @@ class BaseMic:
         asyncio.run_coroutine_threadsafe(self.monitor(), self.loop)
 
     async def check_connection(self):
-        all_hids = hid.HidDeviceFilter(vendor_id=self.vendor_id, product_id=self.product_id, version_number=self.version).get_devices()
+        # all_hids = hid.HidDeviceFilter(vendor_id=self.vendor_id, product_id=self.product_id, version_number=self.version).get_devices()
+        all_hids = hid.HidDeviceFilter(vendor_id=self.vendor_id, product_id=self.product_id).get_devices()
         if all_hids:
             if not self.connected:
                 self.device = all_hids[0]
@@ -123,7 +124,8 @@ def Micro(loop, app, call_back):
             print(f"Erreur dans la lecture du fichier [{file}]\n{e}\n Il faut mettre à jour le fichier json !")
             return None
         temp_mic = BaseMic(loop, vendor_id, product_id, firmware_revision, actions, app, micro_name, call_back)
-        all_hids = hid.HidDeviceFilter(vendor_id=vendor_id, product_id=product_id, version_number=firmware_revision).get_devices()
+        # all_hids = hid.HidDeviceFilter(vendor_id=vendor_id, product_id=product_id, version_number=firmware_revision).get_devices()
+        all_hids = hid.HidDeviceFilter(vendor_id=vendor_id, product_id=product_id).get_devices()
         if all_hids:
             return temp_mic  # Retourne l'instance de la classe détectée
 
