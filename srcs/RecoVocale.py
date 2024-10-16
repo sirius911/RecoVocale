@@ -1,3 +1,4 @@
+import time
 import tkinter as tk
 from tkinter import messagebox
 import asyncio
@@ -5,58 +6,83 @@ import threading
 import keyboard
 
 from UserConfig import UserConfig
-from Direct_Mode import Direct_Mode
-from Record_Mode import Record_Mode
+from Mode_Direct import Mode_Direct
+from Mode_Apprenti import Mode_Apprenti
+from Mode_Record import Mode_Record
+from Mode_Reduit import Mode_Reduit
 from utils_socket import check_server_status
 from utils_keyboard import Simulator
 from Micro import Micro
 from info import *
-import sys
-import os
-
-sys.stdout = open(os.devnull, 'w')  # Enregistre les sorties dans un fichier log
-sys.stderr = open(os.devnull, 'w')   # Enregistre les erreurs dans un fichier log
+from pynput.keyboard import Key
+from fenetre_debug import DebugWindow
+from insertions import GestionnaireInsertion
+from utils_window import get_config_path
 
 
 class App:
     def __init__(self, root, loop):
         self.config = UserConfig()
-        mode = self.config.mode
+        self.insertions = GestionnaireInsertion(self.config.insertions)
+        self.console_debug = DebugWindow(root)
+        if self.config.debug:
+           self.console_debug.debug_window.deiconify()  # Afficher la fenêtre de débogage
+        else:
+            self.console_debug.debug_window.withdraw()
+       
         self.root = root
+        
+        # Use the provided asyncio event loop
+        self.loop = loop
         self.recording = False
-        # self.root.title(f"RecoVocale [{self.config.server_ip}:{self.config.port}] (v{VERSION})")
         self.root.attributes("-topmost", True)  # Keep the window on top of others
  
         #-------------------check serveur-----------------------
         self.status_server = check_server_status(self.config.server_ip, self.config.port)
-        self.root.title(f"RecoVocale [{self.config.server_ip}:{self.config.port}] (v{VERSION}) {"" if self.status_server else "not"} connected")
+
         #-----------------Shortcut------------------------------
         self.keyboard_shortcut = self.config.shortcut
         #----------------------MODE----------------------------
-        print(f"mode = {mode}")
+        mode = self.config.mode
         if mode == "RECORD":
-            self.current_mode = Record_Mode(self)
-            # self.client_manager = None
+            self.current_mode = Mode_Record(self)
+        elif mode == "APPRENTI":
+            self.current_mode = Mode_Apprenti(self)
+        elif mode == "REDUIT":
+            self.current_mode = Mode_Reduit(self)
         else:
-            self.current_mode = Direct_Mode(self)
-
-        self.simulate_keyboard = False
-        self.simulator_keyboard = Simulator(text=None, debug=self.config.debug)
-        keyboard.add_hotkey(self.keyboard_shortcut, self.current_mode.toggle_start_stop)
-
-        # Use the provided asyncio event loop
-        self.loop = loop
+            self.current_mode = Mode_Direct(self)
+       
+        try: #Verifier le raccourcis qui peut planter
+            keyboard.add_hotkey(self.keyboard_shortcut, self.current_mode.toggle_start_stop)
+        except Exception:
+            keyboard.add_hotkey("F3", self.current_mode.toggle_start_stop)
 
         self.root.protocol("WM_DELETE_WINDOW", self.current_mode.exit_app)
 
         # #---------------------------MICRO----------------------------
         # Initialize the microphone 
-        self.mic = Micro(loop, app=self.current_mode)
+        # self.mic = Micro(loop, app=self.current_mode)
+        self.mic = None
+        self.root.after(100, self.start_micro_monitoring)  # Démarrer l'intégration asyncio/tkinter
+        self.info()
 
-        # self.current_mode.start()
+    def start_micro_monitoring(self):
+        """Démarre la surveillance du micro via la méthode monitor() de Micro."""
+        if self.mic is None:
+            try:
+                self.mic = Micro(loop=self.loop, app=self.current_mode, call_back=self.info)
+                self.current_mode.status_bar.config(text=f'[{self.mic.micro_name}] connecté', bg='lightblue', fg='darkblue', anchor=tk.CENTER)
+            except Exception as e:
+                self.current_mode.status_bar.config(text='Micro déconnecté', bg='lightblue', fg='darkblue', anchor=tk.CENTER)
+        if self.mic:
+            asyncio.run_coroutine_threadsafe(self.mic.monitor(), self.loop)
 
     def paste_from_clipboard(self):
-        Simulator('\u0001v')
+        self.current_mode.status_bar.config(text='- Coller -', bg='lightblue', fg='darkblue', anchor=tk.CENTER)
+        Simulator([Key.ctrl, 'v'])
+        time.sleep(0.5)
+        self.current_mode._update_barre_status()
             
     def running(self):
         return self.client_manager.running
@@ -64,6 +90,7 @@ class App:
     def update(self):
         if self.current_mode:
             self.current_mode.update() 
+            self.info()
 
     def on_closing(self):
         self.current_mode.stop()
@@ -76,30 +103,88 @@ class App:
         self.config.x_window = self.root.winfo_rootx()
         self.config.y_window = self.root.winfo_rooty()
         self.config.save_config(self.root)
-        self.root.quit()
         self.loop.stop()
+        self.root.quit()
 
     def switch_mode(self, mode):
-        print(f"switch_mode({mode.name})")
+        if self.config.debug:
+            print(f"switch_mode({mode.name})")
         if self.current_mode:
             if self.current_mode.mode != mode:
                 self.current_mode.stop()
-                self.current_mode.exit()
+                log_en_cours = self.console_debug.get_log_message()
+                text_en_cours = self.current_mode.exit()
                 self.current_mode = None
                 if mode == DIRECT:
-                    self.current_mode = Direct_Mode(self)
+                    self.current_mode = Mode_Direct(self)
+                    self.current_mode.update_transcriptions(message=text_en_cours, ending=True)
+                elif mode == APPRENTI:
+                    self.current_mode = Mode_Apprenti(self)
                 elif mode == RECORD:
-                    self.current_mode = Record_Mode(self)
+                    self.current_mode = Mode_Record(self)
+                elif mode == REDUIT:
+                    self.current_mode = Mode_Reduit(self)
+                    self.current_mode.update_transcriptions(message=text_en_cours, ending=True)
                 else:
-                    print("Erreur de Mode dans App")
+                    self.console_debug.log_message("Erreur de Mode dans App")
                     self.on_closing()
-                # self.current_mode.start()
-                # self.current_mode.update()
+
                 # Utiliser after_idle pour s'assurer que geometry est bien appliqué
                 self.root.after_idle(lambda: self.root.geometry(f"{self.current_mode.mode.window_width}x{self.current_mode.mode.window_height}+{self.config.x_window}+{self.config.y_window}"))
-                self.mic.change_mode(self.current_mode)
+                if self.mic:
+                    self.mic.change_mode(self.current_mode)
                 keyboard.clear_all_hotkeys()
                 keyboard.add_hotkey(self.keyboard_shortcut, self.current_mode.toggle_start_stop)
+
+                # recréation de la fenetre debug
+                self.console_debug = DebugWindow(root)
+                if self.config.debug:
+                    self.console_debug.debug_window.deiconify()  # Afficher la fenêtre de débogage
+                else:
+                    self.console_debug.debug_window.withdraw()
+                self.info()
+                self.console_debug.log_message(log_en_cours)
+    
+    def info(self):
+        self.console_debug.delete_status()
+        self.console_debug.append_status_with_format("Version : ", font_style="italic")
+        self.console_debug.append_status_with_format(f"v{VERSION}\n", color="green")
+        self.console_debug.append_status_with_format("Modèle : ", font_style="italic")
+        if self.current_mode.client_manager.client:
+            self.console_debug.append_status_with_format(f"{self.current_mode.client_manager.client.get_model_path()}\n", color="green")
+        else:
+           self.console_debug.append_status_with_format("None\n", color="blue")
+        self.console_debug.append_status_with_format("Serveur : ", font_style="italic")
+        if check_server_status(self.config.server_ip, self.config.port):
+            self.console_debug.append_status_with_format(f"Connected @{self.config.server_ip}:{self.config.port} \n", color="green")
+        else:
+            self.console_debug.append_status_with_format(f"NOT Connected @{self.config.server_ip}:{self.config.port} \n", color="red")
+        self.console_debug.append_status_with_format("Micro : ", font_style="italic")
+        if self.mic and self.mic.is_connected():
+            self.console_debug.append_status_with_format(f"{self.mic.micro_name}\n", color="green")
+        else:
+            self.console_debug.append_status_with_format("Aucun\n", color="red")
+
+        self.console_debug.append_status_with_format("Mode : ", font_style="italic")
+        self.console_debug.append_status_with_format(self.current_mode.name(), color="green")
+        self.console_debug.append_status_with_format(" - Simul Clavier : ", font_style="italic")
+        self.console_debug.append_status_with_format(f" {'Oui' if self.current_mode.simulator_keyboard else 'Non'}\n", color="green")
+        
+        self.console_debug.append_status_with_format("Raccourci : ", font_style="italic")
+        self.console_debug.append_status_with_format(f"{self.keyboard_shortcut}\n", color="green")
+
+        self.console_debug.append_status_with_format("Debug : ", font_style="italic")
+        self.console_debug.append_status_with_format(f"{self.config.debug}\n", color="green")
+
+        self.console_debug.append_status_with_format("Position actuelle de la fenêtre : x=", font_style="italic")
+        self.console_debug.append_status_with_format(self.root.winfo_x(), color="green")
+        self.console_debug.append_status_with_format(", y=", font_style="italic")
+        self.console_debug.append_status_with_format(f"{self.root.winfo_y()}\n", color="green")
+
+        self.console_debug.append_status_with_format("Fichier des insertions : ", font_style="italic")
+        self.console_debug.append_status_with_format(get_config_path(self.config.insertions), color="green")
+
+
     #---------------------------------------------------------------------------------------------------------------------
 #               Fenetre shorcut a détacher dans une autre class 
     def change_shortcut(self):
@@ -133,9 +218,6 @@ class App:
             if self.is_valid_shortcut(self.keyboard_shortcut.split('+')):
                 keyboard.clear_all_hotkeys()
                 keyboard.add_hotkey(self.keyboard_shortcut, self.current_mode.toggle_start_stop)
-                # self.start_button.config(text=f"Start ({self.keyboard_shortcut})")
-                # self.stop_button.config(text=f"Stop ({self.keyboard_shortcut})")
-                # self.icon.title = f"RecoVocale (v{VERSION})[{self.keyboard_shortcut}]"
                 self.on_close_shortcut_window()  # Fermer la fenêtre et réactiver "toujours au-dessus"
             else:
                 messagebox.showerror("Raccourci invalide", "La combinaison de touches n'est pas valide.")
@@ -194,13 +276,22 @@ def start_loop(loop):
     asyncio.set_event_loop(loop)
     loop.run_forever()
 
-# def on_resize(event):
-#         # Afficher les dimensions de la fenêtre dans la barre de titre
-#         width = event.width
-#         height = event.height
-#         print(f"Ma fenêtre Tkinter - Dimensions: {width}x{height}")
+def on_resize(event):
+        width = event.width
+        height = event.height
+        print(f"Ma fenêtre Tkinter - Dimensions: {width}x{height}")
 
 if __name__ == "__main__":
+     # Récupérer l'ID du processus du splash screen passé en argument
+    # if len(sys.argv) > 1:
+    #     splash_pid = sys.argv[1]
+    #     try:
+    #         os.kill(int(splash_pid), signal.SIGTERM)
+    #         print(f"Splash screen (PID {splash_pid}) fermé avec succès.")
+    #     except Exception as e:
+    #         print(f"Erreur lors de la fermeture du splash screen : {e}")
+    #         pass
+    
     try:
         root = tk.Tk()
         # Create a new event loop

@@ -7,12 +7,15 @@ import pyaudio
 import threading
 import json
 import websocket
-from websocket import WebSocketApp  
+# from websocket import WebSocketApp  
 import uuid
 import time
 import ffmpeg
 import utils as utils
 import audioop
+import tempfile
+
+TEMP_DIR = tempfile.gettempdir()  # Utiliser le répertoire temporaire du système
 
 
 class Client:
@@ -30,7 +33,8 @@ class Client:
         translate=False,
         model=None,
         srt_file_path="output.srt",
-        use_vad=True
+        use_vad=True,
+        call_back=None
     ):
         """
         Initializes a Client instance for audio recording and streaming to a server.
@@ -64,6 +68,7 @@ class Client:
 
         #add by sirius
         self.transcripted = ''
+        self.call_back=call_back
 
         if translate:
             self.task = "translate"
@@ -134,6 +139,8 @@ class Client:
         self.transcripted = text
         
         utils.print_transcript(text)
+        # Call back
+        self.recording = self.call_back(text)
 
     def on_message(self, ws, message):
         """
@@ -297,7 +304,11 @@ class TranscriptionTeeClient:
     Attributes:
         clients (list): the underlying Client instances responsible for handling WebSocket connections.
     """
-    def __init__(self, clients, save_output_recording=False, output_recording_filename="./output_recording.wav"):
+    def __init__(self,
+                 clients,
+                 save_output_recording=False,
+                 output_recording_filename="./output_recording.wav",
+                ):
         self.clients = clients
         if not self.clients:
             raise Exception("At least one client is required.")
@@ -310,12 +321,21 @@ class TranscriptionTeeClient:
         self.output_recording_filename = output_recording_filename
         self.frames = b""
         self.p = pyaudio.PyAudio()
+
+        # Répertoire temporaire pour les fichiers chunks
+        self.chunk_dir = os.path.join(TEMP_DIR, "chunks")
+
+        # Supprimer le répertoire chunks s'il existe
+        if self.save_output_recording:
+            if os.path.exists(self.chunk_dir):
+                shutil.rmtree(self.chunk_dir)
+            os.makedirs(self.chunk_dir)
+
         #-------------------------------------------------------------------------------
         self.silence_threshold = 1000  # Adjust this threshold according to your needs
         self.silence_duration = 5  # Duration of silence in seconds to consider the end
         self.silence_counter = 0
         #-------------------------------------------------------------------------------
-
         try:
             self.stream = self.p.open(
                 format=self.format,
@@ -543,7 +563,7 @@ class TranscriptionTeeClient:
         """
         t = threading.Thread(
             target=self.write_audio_frames_to_file,
-            args=(self.frames[:], f"chunks/{n_audio_file}.wav",),
+            args=(self.frames[:],os.path.join(self.chunk_dir, f"{n_audio_file}.wav")),
         )
         t.start()
 
@@ -558,7 +578,7 @@ class TranscriptionTeeClient:
         """
         if self.save_output_recording and len(self.frames):
             self.write_audio_frames_to_file(
-                self.frames[:], f"chunks/{n_audio_file}.wav"
+                self.frames[:], os.path.join(self.chunk_dir, f"{n_audio_file}.wav")
             )
             n_audio_file += 1
         self.stream.stop_stream()
@@ -568,7 +588,7 @@ class TranscriptionTeeClient:
         self.close_all_clients()
         if self.save_output_recording:
             self.write_output_recording(n_audio_file)
-        self.write_all_clients_srt()
+        # self.write_all_clients_srt()
 
     def record(self):
         """
@@ -584,10 +604,12 @@ class TranscriptionTeeClient:
         the method combines all the saved audio chunks into the specified `out_file`.
         """
         n_audio_file = 0
+       # Vérification si l'option de sauvegarde est activée
         if self.save_output_recording:
-            if os.path.exists("chunks"):
-                shutil.rmtree("chunks")
-            os.makedirs("chunks")
+            # Utilisation du répertoire temporaire pour les fichiers chunks
+            if os.path.exists(self.chunk_dir):
+                shutil.rmtree(self.chunk_dir)  # Supprimez le répertoire s'il existe déjà
+            os.makedirs(self.chunk_dir)  # Créez le répertoire temporaire "chunks"
         try:
             # for _ in range(0, int(self.rate / self.chunk * self.record_seconds)):
             while True:
@@ -617,8 +639,11 @@ class TranscriptionTeeClient:
                             self.save_chunk(n_audio_file)
                             n_audio_file += 1
                         self.frames = b""
-            self.write_all_clients_srt()
-
+            # self.write_all_clients_srt()
+            print(f"sortie de la boucle while record() : {self.save_output_recording}")
+            self.finalize_recording(n_audio_file)
+            # if self.save_output_recording:
+            #      self.finalize_recording(n_audio_file)
         except KeyboardInterrupt:
             self.finalize_recording(n_audio_file)
 
@@ -662,9 +687,9 @@ class TranscriptionTeeClient:
 
         """
         input_files = [
-            f"chunks/{i}.wav"
+            os.path.join(self.chunk_dir, f"{i}.wav")
             for i in range(n_audio_file)
-            if os.path.exists(f"chunks/{i}.wav")
+            if os.path.exists(os.path.join(self.chunk_dir, f"{i}.wav"))
         ]
         with wave.open(self.output_recording_filename, "wb") as wavfile:
             wavfile: wave.Wave_write
@@ -681,9 +706,9 @@ class TranscriptionTeeClient:
                 # remove this file
                 os.remove(in_file)
         wavfile.close()
-        # clean up temporary directory to store chunks
-        if os.path.exists("chunks"):
-            shutil.rmtree("chunks")
+        # Nettoyer le répertoire temporaire chunks
+        if os.path.exists(self.chunk_dir):
+            shutil.rmtree(self.chunk_dir)
 
     def get_model_path(self):
         for client in self.clients:
@@ -735,8 +760,8 @@ class TranscriptionClient(TranscriptionTeeClient):
         transcription_client()
         ```
     """
-    def __init__(self, host, port,lang=None,translate=False,model=None,use_vad=True,save_output_recording=False,output_recording_filename="./output_recording.wav",output_transcription_path="./output.srt"):
-        self.client = Client(host, port, lang, translate, model, srt_file_path=output_transcription_path, use_vad=use_vad)
+    def __init__(self, host, port,lang=None,translate=False,model=None,use_vad=True,save_output_recording=False,output_recording_filename="./output_recording.wav",output_transcription_path="./output.srt", call_back=None):
+        self.client = Client(host, port, lang, translate, model, srt_file_path=output_transcription_path, use_vad=use_vad, call_back=call_back)
         if save_output_recording and not output_recording_filename.endswith(".wav"):
             raise ValueError(f"Please provide a valid `output_recording_filename`: {output_recording_filename}")
         if not output_transcription_path.endswith(".srt"):
@@ -745,12 +770,22 @@ class TranscriptionClient(TranscriptionTeeClient):
             self,
             [self.client],
             save_output_recording=save_output_recording,
-            output_recording_filename=output_recording_filename
+            output_recording_filename=output_recording_filename,
         )
 
 class EnhancedTranscriptionClient(TranscriptionClient):
-    def __init__(self, host, port, lang=None, model="small",translate=False, use_vad=True, save_output_recording=False, output_recording_filename="./output_recording.wav", output_transcription_path="./output.srt"):
-        super().__init__(host=host,port=port, lang=lang, model=model, translate=translate, use_vad=use_vad, save_output_recording=save_output_recording, output_recording_filename=output_recording_filename, output_transcription_path=output_transcription_path)
+    def __init__(self, host, port, lang=None, model="small",translate=False, use_vad=True, save_output_recording=False, output_recording_filename="./output_recording.wav", output_transcription_path="./output.srt", call_back=None):
+        super().__init__(host=host,
+                         port=port,
+                         lang=lang,
+                         model=model,
+                         translate=translate,
+                         use_vad=use_vad,
+                         save_output_recording=save_output_recording,
+                         output_recording_filename=output_recording_filename,
+                         output_transcription_path=output_transcription_path,
+                         call_back=call_back,
+                         )
         self.pause = True
 
     def stop(self):

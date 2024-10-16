@@ -15,7 +15,7 @@ def hash_code(data):
     return hash_code
 
 class BaseMic:
-    def __init__(self, loop, vendor_id, product_id, firmware, actions, app, micro_name):
+    def __init__(self, loop, vendor_id, product_id, firmware, actions, app, micro_name, on_connect_disconnect=None):
         self.vendor_id = vendor_id
         self.product_id = product_id
         self.version = firmware
@@ -26,12 +26,14 @@ class BaseMic:
         self.connected = False
         self.device = None
         self.prev_data = None
+        self.call_back = on_connect_disconnect 
 
         # Démarre la coroutine monitor dans une tâche
         asyncio.run_coroutine_threadsafe(self.monitor(), self.loop)
 
     async def check_connection(self):
-        all_hids = hid.HidDeviceFilter(vendor_id=self.vendor_id, product_id=self.product_id, version_number=self.version).get_devices()
+        # all_hids = hid.HidDeviceFilter(vendor_id=self.vendor_id, product_id=self.product_id, version_number=self.version).get_devices()
+        all_hids = hid.HidDeviceFilter(vendor_id=self.vendor_id, product_id=self.product_id).get_devices()
         if all_hids:
             if not self.connected:
                 self.device = all_hids[0]
@@ -43,6 +45,7 @@ class BaseMic:
                 self.connected = False
                 self.disconnect()
                 print(f"{self.__class__.__name__} non trouvé. En attente de connexion...")
+        self.call_back()
 
     def connect(self):
         if self.connected and self.device:
@@ -55,6 +58,9 @@ class BaseMic:
             self.device.close()
             self.connected = False
             print(f"{self.micro_name} déconnecté")
+
+    def is_connected(self):
+        return self.connected
 
     def change_mode(self, mode):
         self.app = mode
@@ -88,9 +94,9 @@ class BaseMic:
     async def monitor(self):
         while True:
             await self.check_connection()
-            await asyncio.sleep(1)
+            await asyncio.sleep(5)
 
-def Micro(loop, app):
+def Micro(loop, app, call_back):
     # Charger le fichier JSON depuis le répertoire utilisateur
     config_path = get_config_path("micro_actions_config.json")
     # Vérifier si le fichier de config existe dans %APPDATA%, sinon le copier depuis le package
@@ -117,8 +123,9 @@ def Micro(loop, app):
         except Exception as e:
             print(f"Erreur dans la lecture du fichier [{file}]\n{e}\n Il faut mettre à jour le fichier json !")
             return None
-        temp_mic = BaseMic(loop, vendor_id, product_id, firmware_revision, actions, app, micro_name)
-        all_hids = hid.HidDeviceFilter(vendor_id=vendor_id, product_id=product_id, version_number=firmware_revision).get_devices()
+        temp_mic = BaseMic(loop, vendor_id, product_id, firmware_revision, actions, app, micro_name, call_back)
+        # all_hids = hid.HidDeviceFilter(vendor_id=vendor_id, product_id=product_id, version_number=firmware_revision).get_devices()
+        all_hids = hid.HidDeviceFilter(vendor_id=vendor_id, product_id=product_id).get_devices()
         if all_hids:
             return temp_mic  # Retourne l'instance de la classe détectée
 

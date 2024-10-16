@@ -3,7 +3,7 @@ import sys
 import tkinter as tk
 from tkinter import BooleanVar
 from PIL import Image, ImageTk
-from info import DIRECT, RECORD
+from info import DIRECT, RECORD, REDUIT, APPRENTI
 from ToolTip import ToolTip
 
 def get_config_path(file:str):
@@ -29,24 +29,51 @@ def _load_and_resize_image(path, size):
      return ImageTk.PhotoImage(image)
 
 def create_buttons(self):
-     #--------------------------------BOUTON -------------------------------------
+    padx = 2 if self.mode == REDUIT else 5
+    pady = 10 if self.mode == REDUIT else 10
+    # Load, resize and convert images using Pillow
+    button_width = self.mode.button_width
+    self.record_image = _load_and_resize_image(resource_path("Icons/rec.png"), (button_width, button_width))
+    self.pause_image = _load_and_resize_image(resource_path("Icons/pause.png"), (button_width, button_width))
+    self.trash_image = _load_and_resize_image(resource_path("Icons/trash.png"), (button_width, button_width))
+    self.learn_image = _load_and_resize_image(resource_path("Icons/learn.jpg"), (button_width, button_width))
+    self.play_image = _load_and_resize_image(resource_path("Icons/play.png"), (button_width, button_width))
 
-     # Load, resize and convert images using Pillow
-     button_width = self.mode.button_width
-     self.record_image = _load_and_resize_image(resource_path("Icons/pause.png"), (button_width, button_width))
-     self.pause_image = _load_and_resize_image(resource_path("Icons/rec.png"), (button_width, button_width))
-     
-     self.button_frame = tk.Frame(self.root)
-     self.button_frame.pack(pady=10)
+    # Create a frame to hold the buttons and place it in the center
+    self.button_frame = tk.Frame(self.root)
+    self.button_frame.grid(row=0, column=0, pady=pady)
 
-     self.rec_button = tk.Button(self.button_frame, image=self.record_image, command=self.toggle_start_stop)
-     self.rec_button.pack(side=tk.RIGHT, padx=5, pady=10)
+    # Configure grid layout for centering the buttons
+    self.root.grid_columnconfigure(0, weight=1)  # Center the frame in the window
 
-     ToolTip(self.rec_button, f"({self.app.keyboard_shortcut})")
+    # Add buttons and center them within the frame
+    self.rec_button = tk.Button(self.button_frame, image=self.record_image, command=self.toggle_start_stop, state=tk.DISABLED)
+    self.rec_button.grid(row=0, column=0, padx=padx)
+    if self.app.status_server == True:
+        self.rec_button.config(state=tk.NORMAL)
 
-     self.rec_canvas = tk.Canvas(self.button_frame, width=button_width, height=button_width)
-     self.rec_circle = self.rec_canvas.create_oval(2, 2, button_width, button_width, fill="grey")
-     self.rec_canvas.pack(side=tk.LEFT, padx=5)
+    ToolTip(self.rec_button, f"({self.app.keyboard_shortcut})")
+
+    self.rec_canvas = tk.Canvas(self.button_frame, width=button_width, height=button_width)
+    self.rec_circle = self.rec_canvas.create_oval(2, 2, button_width, button_width, fill="grey")
+    self.rec_canvas.grid(row=0, column=1, padx=padx)
+
+    if self.mode == DIRECT or self.mode == APPRENTI:
+        self.trash_button = tk.Button(self.button_frame, image=self.trash_image, command=self.clear_text_box)
+        self.trash_button.grid(row=0, column=2, padx=padx)
+    if self.mode == APPRENTI:
+        self.learning_button = tk.Button(self.button_frame, image=self.learn_image, command=self.learning, state=tk.DISABLED)
+        self.learning_button.grid(row=0, column=3, padx=padx)
+        self.play_button = tk.Button(self.button_frame, image=self.play_image, command=self.play, state=tk.DISABLED)
+        self.play_button.grid(row=0, column=4, padx=padx)
+    # Center the buttons within the button_frame by configuring columns in button_frame
+    self.button_frame.grid_columnconfigure(0, weight=1)
+    self.button_frame.grid_columnconfigure(1, weight=1)
+    self.button_frame.grid_columnconfigure(2, weight=1)
+
+    # Optional: If you want the frame to be centered horizontally in the window
+    # self.button_frame.grid(row=0, column=0, sticky="n")  # This will keep it centered
+
 
 def create_menus(self):
     self.menu_bar = tk.Menu(self.root)
@@ -61,26 +88,37 @@ def create_menus(self):
     
     # Mode
     self.mode_menu = tk.Menu(self.settings_menu, tearoff=0)
-    # self.mod_var = tk.StringVar()
+
     self.settings_menu.add_cascade(label="Mode", menu=self.mode_menu)
     self.mode_menu.add_radiobutton(label='Direct',
                                    variable=self.mod_var,
                                    value=DIRECT,
                                    command= lambda: self.app.switch_mode(DIRECT))
+    
+    self.mode_menu.add_radiobutton(label='Réduit',
+                                   variable=self.mod_var,
+                                   value=REDUIT,
+                                   command= lambda: self.app.switch_mode(REDUIT))
+
     self.mode_menu.add_radiobutton(label='Enregistrement',
                                    variable=self.mod_var,
                                    value=RECORD,
                                    command= lambda: self.app.switch_mode(RECORD))
+    self.mode_menu.entryconfig('Enregistrement', state=tk.DISABLED) 
+
+    self.mode_menu.add_radiobutton(label='Apprentissage',
+                                   variable=self.mod_var,
+                                   value=APPRENTI,
+                                   command= lambda: self.app.switch_mode(APPRENTI))
 
     # Autres options du menu Paramètres
     self.settings_menu.add_separator()
-    self.settings_menu.add_command(label="Info", command=self.info)
+    self.settings_menu.add_command(label="Gestion des Insertions", command=self.ouvrir_gestion_insertions)
     self.settings_menu.add_separator()
-    # self.settings_menu.add_command(label="Connecte", command=self.start_client)
-    self.settings_menu.add_command(label="Deconnect", command=self.stop_client)
+
     self.debug_var = BooleanVar(value=self.app.config.debug)
     self.settings_menu.add_checkbutton(label="Debug", variable=self.debug_var, 
-                                   command=lambda:setattr(self.app.config, 'debug', self.debug_var.get()))
+                                   command=self.toggle_debug)
     self.settings_menu.add_separator()
     self.settings_menu.add_command(label="Quitter", command=self.exit_app)
 
@@ -91,3 +129,70 @@ def create_menus(self):
     # Options du menu Édition
     self.edit_menu.add_command(label="Copier", command=self.copy_to_clipboard)
     self.edit_menu.add_command(label="Coller", command=self.app.paste_from_clipboard)
+    if self.mode == DIRECT:
+        self.edit_menu.add_command(label="Effacer", command=self.clear_text_box)
+
+bubble = None
+label_in_bubble = None
+
+def show_bubble_message(parent, message):
+    """Affiche ou met à jour la bulle de message avec une taille dynamique."""
+    global bubble, label_in_bubble
+
+    # Si la bulle existe déjà, on met à jour le message et redimensionne
+    if bubble is not None:
+        label_in_bubble.config(text=message)
+        
+        # Mise à jour pour recalculer la taille réelle du label après la modification du texte
+        bubble.update_idletasks()
+
+        # Récupérer la taille calculée de la fenêtre
+        bubble_width = bubble.winfo_width()
+        bubble_height = bubble.winfo_height()
+
+        # Recalculer la position pour recentrer la bulle après le changement de taille
+        screen_width = bubble.winfo_screenwidth()
+        screen_height = bubble.winfo_screenheight()
+        x = (screen_width // 2) - (bubble_width // 2)
+        y = (screen_height // 2) - (bubble_height // 2)
+
+        # Repositionner la bulle avec la nouvelle taille
+        bubble.geometry(f"+{x}+{y}")
+        
+    else:
+        # Sinon, on crée la bulle
+        bubble = tk.Toplevel(parent)
+        bubble.wm_overrideredirect(True)  # Fenêtre sans bordure
+
+        # Assurez-vous que la bulle soit toujours au-dessus des autres fenêtres
+        bubble.attributes("-topmost", True)
+
+        # Créer un label avec le message (sans fixer de dimensions)
+        label_in_bubble = tk.Label(bubble, text=message, font=("Arial", 10), background="yellow", fg="black", borderwidth=0)
+        label_in_bubble.pack(padx=10, pady=5)
+
+        # Mise à jour pour calculer la taille réelle du label une fois créé
+        bubble.update_idletasks()
+
+        # Récupérer la taille calculée de la fenêtre
+        bubble_width = bubble.winfo_width()
+        bubble_height = bubble.winfo_height()
+
+        # Calculer les coordonnées pour centrer la bulle au milieu de l'écran
+        screen_width = bubble.winfo_screenwidth()
+        screen_height = bubble.winfo_screenheight()
+        x = (screen_width // 2) - (bubble_width // 2)
+        y = (screen_height // 2) - (bubble_height // 2)
+
+        # Positionner la bulle précisément au centre de l'écran avec la taille adaptée
+        bubble.geometry(f"+{x}+{y}")
+
+
+        
+
+def remove_bubble():
+    """Ferme la bulle de message si elle est active."""
+    global bubble
+    if bubble:
+        bubble.destroy()
+        bubble = None

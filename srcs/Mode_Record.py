@@ -62,10 +62,9 @@ class AudioManager:
     def unpause_recording(self):
         if self.is_recording:
             self.is_paused = False
+            
 
-
-
-class Record_Mode(Mode):
+class Mode_Record(Mode):
     def enter(self):
         self.mode = RECORD
         # self.app.simulate_keyboard = RECORD.simule_keyboard
@@ -90,9 +89,6 @@ class Record_Mode(Mode):
     def sauvegarde(self):
         self.audio_manager.start_recording(self.app.loop)
 
-    # def stop(self):
-    #     print("STOP")
-
     def stop(self):
         print("Enregistrement arrêté")
         self.audio_manager.stop_recording()
@@ -109,6 +105,9 @@ class Record_Mode(Mode):
         if self.audio_manager.is_recording:
             print("Enregistrement en pause")
             self.audio_manager.pause_recording()
+
+    def copy_to_clipboard(self):
+        pass
 
     async def start_audio_recording(self):
         self.audio_manager.start_recording(self.app.loop)

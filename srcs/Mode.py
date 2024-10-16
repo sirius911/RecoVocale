@@ -1,9 +1,9 @@
-# import pystray
-# from pystray import MenuItem as item
-from utils_socket import check_server_status
+# from utils_socket import check_server_status
+import time
 from info import *
 from Transcription import Transcription
 import tkinter as tk
+from insertions import FenetreGestion
 
 class Mode:
     def __init__(self, app):
@@ -11,43 +11,54 @@ class Mode:
         self.root = app.root
         self.mod_var = tk.StringVar()
         self.transcription = Transcription()
+        self.fenetre_gestion_ouverte = False  # Attribut pour savoir si la fenêtre est ouverte
+        self.simulator_keyboard = None
         self.enter()
 
     def enter(self):
         self.root.resizable(self.mode.resizable, self.mode.resizable)
         self.root.attributes("-topmost", self.mode.topmost)
         self.root.geometry(f"{self.mode.window_width}x{self.mode.window_height}+{self.app.config.x_window}+{self.app.config.y_window}")
-        # self.create_systray_icon()
-
-    def show_window(self, icon, item):
-        # self.simulate_keyboard_var.set(False)
-        self.root.deiconify()
-        self.is_hidden = False
-
-    # def update_status(self):
-    #     self.update_icon()
-    #     self.update_icon_image(self.create_error_image())
-
-    def update_transcription(self, transcriptions):
-        pass
+        if self.mode == REDUIT:
+            self.root.title(f"RV v{VERSION}")
+        else:
+            self.root.title(f"RecoVocale [{self.app.config.server_ip}:{self.app.config.port}] (v{VERSION}) {"" if self.app.status_server else "not"} connected")
 
     def get_selected_text(self):
         return self.transcription.get()
     
-    # def start_client(self):
-    #     pass
+    def valid_transcriptions(self):
+        self.stop_client()
     
     def stop_client(self):
-        pass
+        self.transcription.validation()
+        if self.client_manager:
+            self.client_manager.stop_client()
+        self.app.recording = False
+        self.update()
 
     def copy_to_clipboard(self):
+        self.status_bar.config(text='- Copie -', bg='lightblue', fg='darkblue', anchor=tk.CENTER)
         self.root.clipboard_clear()
         self.root.clipboard_append(self.transcription.get())
+        time.sleep(0.5)
+        self._update_barre_status()
 
-    def hide_window(self):
-        self.simulate_keyboard_var.set(True)
-        self.is_hidden = True
-    
+    def pause(self):
+        self.client_manager.pause()
+        self.app.recording = False
+        self.update()
+
+    def unpause(self):
+        if self.app.status_server == True:
+            if not self.app.recording:
+                if self.client_manager.client:
+                    self.client_manager.client.set_pause(False)
+                else:
+                    self.client_manager.start_client(self.app.loop)
+                self.app.recording = True
+        self.update()
+
     def exit_app(self):
         # self.icon.stop()
         self.app.on_closing()
@@ -58,106 +69,75 @@ class Mode:
 
     def _update_image_button(self):
         if self.app.recording:
-            self.rec_button.config(image=self.record_image)
-        else:
             self.rec_button.config(image=self.pause_image)
+        else:
+            self.rec_button.config(image=self.record_image)
+
+    def _update_barre_status(self):
+        if self.app.recording:
+            message = "RECORDING ..."
+        else:
+            if self.mode == REDUIT:
+                message = f"RecoVocale {VERSION}"
+            else:
+                message = f"RecoVocale [{self.app.config.server_ip}:{self.app.config.port}] (v{VERSION}) {"" if self.app.status_server else "not"} connected"
+
+        if self.app.status_server == False:
+            self.status_bar.config(text=message, fg='red', anchor=tk.W)
+        elif self.app.recording:
+            self.status_bar.config(text=message, fg='black', bg='red', anchor=tk.CENTER)
+        else:
+            self.status_bar.config(text=message, bg='lightblue', fg='darkblue', anchor=tk.W)
 
     def update(self):
         self._update_rec_circle()
         self._update_image_button()
-
-    def info(self):
-        #print info TODO: A mettre en fênetre
-        print('--------------------------------------------------------------------')
-        print(f"Version : v{VERSION}")
-        if check_server_status(self.app.config.server_ip, self.app.config.port):
-            _serv = f"Connected @{self.app.config.server_ip}:{self.app.config.port}"
-        else:
-            _serv = f"Not Connected @{self.app.config.server_ip}:{self.app.config.port}"
-        print(f"Model = {self.client_manager.client.get_model_path()}")
-        print(f"Serveur : {_serv}")
-        print(f"Micro : {self.app.mic.micro_name if self.app.mic else None}")
-        print(f"Mode = {self.name()} - Simulation Clavier: {self.app.simulate_keyboard}")
-        print(f"Raccourci : {self.app.keyboard_shortcut}")
-        print(f"Debug : {self.app.config.debug}")
-        print(f"Position actuelle de la fenêtre : x={self.app.root.winfo_x()}, y={self.app.root.winfo_y()}")
-        print('--------------------------------------------------------------------')
+        self._update_barre_status()
+        self.app.info()
 
     def name(self):
         return self.mode.name
+    
+    def select_text_box(self, dir = "left"):
+        pass
     
     def toggle_start_stop(self):
         """
         Toggle the start/stop state of the transcription client.
         """
-        # print(f"mode = {self.name()}")
         if self.app.recording:
             self.pause()
         else:
             self.unpause()
 
+    def toggle_debug(self):
+        #maj de la variable config
+        self.app.config.debug = self.debug_var.get()
+        if self.app.config.debug:
+            self.app.console_debug.debug_window.deiconify()
+        else:
+            self.app.console_debug.debug_window.withdraw()
+
     def exit(self):
         for widget in self.root.winfo_children():
             widget.destroy()
-#-----------------------------------------------------------------------
-#                                  MODE SYSTRAY
-#-----------------------------------------------------------------------
-    # def create_systray_icon(self):
-    #     self.icon = pystray.Icon("RecoVocale")
-    #     self.icon.icon = self.create_image(50)
-    #     self.icon.menu = pystray.Menu(
-    #         item('Show', self.show_window),
-    #         # item('Raccourci Clavier', self.app.change_shortcut),
-    #         item('Exit', self.exit_app)
-    #     )
-    #     self.icon.run_detached()
-    #     self.update_icon()
+        # return self.transcription.get() # on retourne la transcription en cours
 
-    # def update_icon(self):
-    #     status_serveur = 'Connected' if self.app.status_server else 'Not connected'
-    #     text = f"RecoVocale (v{VERSION})[{self.app.keyboard_shortcut}] {status_serveur}"
-    #     self.icon.title = text
-    #     if not self.app.status_server:
-    #         self.update_icon_image(self.create_error_image())
+    def ouvrir_gestion_insertions(self):
+        """Ouvre la fenêtre de gestion des insertions"""
+        if not self.fenetre_gestion_ouverte:
+            self.fenetre_gestion = FenetreGestion(self.root, self.app.insertions, self.fermer_gestion_insertions)
+            self.fenetre_gestion.protocol("WM_DELETE_WINDOW", self.fermer_gestion_insertions)
+            self.fenetre_gestion_ouverte = True
 
-    # def create_image(self, niveau:int):
-    #     """
-    #     Creates a 64x64 image with a rectangle of specified color and height.
+    def fermer_gestion_insertions(self):
+        """Méthode appelée lorsque la fenêtre de gestion est fermée"""
+        if self.fenetre_gestion:
+            self.fenetre_gestion.destroy()
+        self.fenetre_gestion_ouverte = False
 
-    #     Parameters:
-    #     self (object): A reference to the instance of the class.
-    #     niveau (int): The height of the rectangle as a percentage of 64 pixels.
-    #     record (int): True if the client is recording 
-    #     Returns:
-    #     Image: The generated image with the colored rectangle.
-    #     """
-    #     # Create a 64x64 pixel image with a white background
-    #     img = Image.new('RGB', (64, 64), "white")
-    #     draw = ImageDraw.Draw(img)
-    #     if self.app.running():
-    #         # Dessiner un cercle rouge au centre
-    #         draw.ellipse((16, 16, 50, 50), fill="red")
-    #     else:
-    #         # Calculate the height of the rectangle to be drawn
-    #         height = int(niveau / 2000 * 64)
-
-    #         # Draw the rectangle with the specified color
-    #         draw.rectangle([0, 64 - height, 64, 64], fill="blue")
-
-    #     return img
+    def is_ouverte(self):
+        return self.fenetre_gestion_ouverte
     
-    # def create_error_image(self):
-    #     # Create a 64x64 pixel image with a white background
-    #     img = Image.new('RGB', (64, 64), "white")
-    #     draw = ImageDraw.Draw(img)
-
-    #     # Draw the first diagonal line from top-left to bottom-right
-    #     draw.line((0, 0, 64, 64), fill="red", width=10)
-
-    #     # Draw the second diagonal line from top-right to bottom-left
-    #     draw.line((64, 0, 0, 64), fill="red", width=10)
-
-    #     return img
-    
-    # def update_icon_image(self, image):
-    #     self.icon.icon = image
+    def clear_text_box(self):
+        pass
