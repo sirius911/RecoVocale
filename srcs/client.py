@@ -138,9 +138,12 @@ class Client:
 
         self.transcripted = text
         
-        utils.print_transcript(text)
+        utils.print_transcript(text, self.recording)
         # Call back
-        self.recording = self.call_back(text)
+        if self.recording:
+            # on verifie qu'on est bien encore en recording pour ne pas envoyer à la fonction
+            # call_back si la transcription est terminé mais qu'on a encore des retours serveurs
+            self.recording = self.call_back(text)
 
     def on_message(self, ws, message):
         """

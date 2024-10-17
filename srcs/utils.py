@@ -9,12 +9,12 @@ def clear_screen():
     os.system("cls" if os.name == "nt" else "clear")
 
 
-def print_transcript(text):
+def print_transcript(text, recording=None):
     """Prints formatted transcript text."""
     wrapper = textwrap.TextWrapper(width=60)
     for line in wrapper.wrap(text="".join(text)):
         pass
-        print(f"[{line}]")
+        print(f"[{line}] with recording={recording}")
 
 
 def format_time(s):

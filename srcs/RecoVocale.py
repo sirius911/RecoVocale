@@ -314,5 +314,8 @@ if __name__ == "__main__":
         app = App(root, new_loop)  # Pass the new loop to the app
         # root.bind("<Configure>", on_resize)
         root.mainloop()
+        # Une fois terminé, relâchez le mutex
+        win32api.CloseHandle(mutex)
+        print("Bye!")
     except Exception as e:
         print(e)
