@@ -18,6 +18,10 @@ from pynput.keyboard import Key
 from fenetre_debug import DebugWindow
 from insertions import GestionnaireInsertion
 from utils_window import get_config_path
+import win32api
+import sys
+import win32event
+import winerror
 
 
 class App:
@@ -290,8 +294,17 @@ if __name__ == "__main__":
     #         print(f"Splash screen (PID {splash_pid}) fermé avec succès.")
     #     except Exception as e:
     #         print(f"Erreur lors de la fermeture du splash screen : {e}")
-    #         pass
+    #         
     
+    #mutex unique pour l'application
+    mutex_name = "recovocale_mutex"
+    mutex = win32event.CreateMutex(None, False, mutex_name)
+
+    # Si le mutex existe déjà, cela signifie que l'application est déjà en cours d'exécution
+    if win32api.GetLastError() == winerror.ERROR_ALREADY_EXISTS:
+        print("Le programme est déjà en cours d'exécution.")
+        sys.exit(0)
+
     try:
         root = tk.Tk()
         # Create a new event loop
