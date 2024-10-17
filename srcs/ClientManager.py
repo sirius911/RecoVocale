@@ -1,12 +1,11 @@
 from client import EnhancedTranscriptionClient
-from Correcteur import intercept
+from Correcteur import intercept, corrige_ponctuation
 from utils_keyboard import Simulator
 import threading
-import asyncio
-import traceback
+from info import APPRENTI
 
 class ClientManager:
-    def __init__(self, host, port, lang, model, translate, use_vad, save_output_recording, output_recording_filename, update_callback, insertions, fenetre_gestion_insertions):
+    def __init__(self, host, port, lang, model, translate, use_vad, save_output_recording, output_recording_filename, update_callback, insertions, fenetre_gestion_insertions, mode):
         self.host = host
         self.port = port
         self.lang = lang
@@ -24,6 +23,7 @@ class ClientManager:
         self.insertions = insertions
         self.fenetre_gestion_insertions = fenetre_gestion_insertions
         self.ancienne_transcription = ""
+        self.mode = mode
 
     def start_client(self, loop):
         print("Starting client in ClientManager")
@@ -60,7 +60,7 @@ class ClientManager:
     def call_back(self, texte):
         # Fonction appelé par Client.py suite a evenement websocket serveur WhisperLive
         transcriptions = texte if self.client else []
-        if self.fenetre_gestion_insertions():
+        if self.fenetre_gestion_insertions() or self.mode == APPRENTI:
             # la fenetre des insertions est ouverte donc on n'intercepte pas 
             combined_text = ''.join(transcriptions).lstrip()
             ending = False
@@ -74,6 +74,8 @@ class ClientManager:
             self.compteur = 0
         ending = ending or (self.compteur > 1) # fin demandé par intercept() ou 2 fois le meme text en mode pause
         if combined_text != "":
+            if ending and self.mode != APPRENTI:
+                combined_text = corrige_ponctuation(combined_text)
             if not self.fenetre_gestion_insertions():
                 # on appelle la fonction du mode
                 self.update_callback(combined_text, ending)

@@ -24,6 +24,7 @@ class Mode_Reduit(Mode):
             update_callback = self.update_transcriptions,  # Pass the callback to ClientManager
             insertions = self.app.insertions,
             fenetre_gestion_insertions = self.is_ouverte,
+            mode=self.mode
         )
         super().enter()
         self.simulator_keyboard = Simulator(None, True)
