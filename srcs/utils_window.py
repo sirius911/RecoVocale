@@ -123,12 +123,16 @@ def create_menus(self):
     self.settings_menu.add_command(label="Quitter", command=self.exit_app)
 
     # Nouveau menu Édition
-    self.edit_menu = tk.Menu(self.menu_bar, tearoff=0)
+    self.edit_menu = tk.Menu(self.menu_bar, tearoff=False)
     self.menu_bar.add_cascade(label="Édition", menu=self.edit_menu)
 
     # Options du menu Édition
-    self.edit_menu.add_command(label="Copier", command=self.copy_to_clipboard)
-    self.edit_menu.add_command(label="Coller", command=self.app.paste_from_clipboard)
+    self.undo_menu = self.edit_menu.add_command(label="Undo (Ctrl+Z)", command=self.undo)
+    self.root.bind_all("<Control-z>", self.undo)
+    self.edit_menu.entryconfig(0, state='disabled')
+    self.edit_menu.add_separator()
+    self.edit_menu.add_command(label="Copier (Ctrl+C)", command=self.copy_to_clipboard)
+    self.edit_menu.add_command(label="Coller (Ctrl+V)", command=self.app.paste_from_clipboard)
     if self.mode == DIRECT:
         self.edit_menu.add_command(label="Effacer", command=self.clear_text_box)
 

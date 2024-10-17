@@ -68,7 +68,7 @@ class Mode_Direct(Mode):
         )
         super().enter()
         self.flag_begin = True
-
+        self.pile = ['']
     def ui(self):
         create_menus(self)
         create_buttons(self)
@@ -96,7 +96,7 @@ class Mode_Direct(Mode):
         self.text_box_scrollbar.config(command=self.text_box.yview)
 
         # Attacher l'événement à la Text box
-        self.text_box.bind("<KeyRelease>", self.on_text_change)
+        self.text_box.bind("<Key>", self.on_text_change)
 
         # Create the status bar at the bottom of the window
         self.status_bar = tk.Label(self.root, text="Bienvenue dans l'application", bd=1, relief=tk.SUNKEN, anchor=tk.W)
@@ -114,21 +114,24 @@ class Mode_Direct(Mode):
         print(f"Stop client in Mode Direct")
         super().stop_client()
 
-
     def stop(self):
         self.stop_client()
-
-    # def update_simulate_keyboard(self):
-    #     self.app.simulate_keyboard = self.simulate_keyboard_var.get()
-    #     if self.app.simulate_keyboard:
-    #         self.app.simulator_keyboard.init()
 
     def valid_transcriptions(self):
         self.stop_client()
 
-    # def copy_to_clipboard(self):
-    #     self.root.clipboard_clear()
-    #     self.root.clipboard_append(self .get_selected_text()[0])
+    def undo(self, event=None):
+        if event and event.keysym in ("Shift_L", "Shift_R", "Control_L", "Control_R", "Alt_L", "Alt_R") :
+            return
+        if self.pile:
+            dernier_etat = self.pile.pop()
+            self.text_box.delete('1.0', tk.END)
+            self.text_box.insert('1.0', dernier_etat)
+            self.transcription.set(dernier_etat)
+        if not self.pile:
+            self.pile = ['']
+            self.edit_menu.entryconfig(0, state='disabled')
+        print(f"Pile après undo: {self.pile}")
 
     def get_selected_text(self):
         """
@@ -173,6 +176,8 @@ class Mode_Direct(Mode):
         """
         Clear the content of the text box.
         """
+        time.sleep(0.5)
+        self.save_text_box()
         _, all = self.get_selected_text()
         self.valid_transcriptions()
        
@@ -200,16 +205,30 @@ class Mode_Direct(Mode):
         
         # S'assurer que le curseur est visible
         self.text_box.see("insert")
+    
+    def save_text_box(self):
+        # Sauvegarder uniquement si le texte a changé
+        text_box = self.text_box.get("1.0", tk.END).strip()
+        if not self.pile or text_box != self.pile[-1]:
+            self.pile.append(text_box)
+            self.edit_menu.entryconfig(0, state='normal')
+            print("État sauvegardé:", self.pile)
 
     def on_text_change(self, event):
-        self.transcription.text_box = self.text_box.get("1.0", tk.END)
+        if event and (event.keysym in ("Shift_L", "Shift_R", "Control_L", "Control_R", "Alt_L", "Alt_R") or
+                      (event.state & 0x4 and event.keysym == "z")):
+            return
+        self.save_text_box()
+        self.transcription.set(self.text_box.get("1.0", tk.END).strip())
         self.transcription.pos_cur = self.get_pos_curseur()
+        
 
     def update_transcriptions(self, message, ending):
         if self.flag_begin:
             self.flag_begin = False
             self.transcription.pos_cur = self.get_pos_curseur()
             self.transcription.cur_selec = self.get_pos_select()
+            self.save_text_box()
 
         self.transcription.update(message)
 

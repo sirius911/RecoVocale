@@ -38,7 +38,7 @@ def _insert_text(texte_depart, message, pos_curseur=0, cur_selec=(0,0)):
         # Si une sélection est présente, on supprime la sélection et insère à la position start_selection
         texte_depart = texte_depart[:start_selection] + texte_depart[end_selection:]
         pos_curseur = start_selection
-        message = first_char_lower(message) # essais !! quand on inserre on met en minuscule
+        message = first_char_lower(message) # essais !! quand on insert on met en minuscule
    
     # Insérer le message à la position pos_curseur
     nouveau_text = (texte_depart[:pos_curseur] + ' ' + message + ' ' + texte_depart[pos_curseur:]).strip()
@@ -59,9 +59,10 @@ class Transcription:
         self.pos_cur = 0
         self.fin_insertion = 0
         self.cur_selec = (0, 0)
+        self.pile = [''] # pour le undo
 
     def validation(self):
-        self.text_box = self.text_box_en_cours
+        self.set(self.text_box_en_cours)
         self.text_transcription += self.text_en_cours
 
     def update(self, message, pos_curseur=0):
@@ -79,7 +80,7 @@ class Transcription:
     def clear(self):
         self.text_transcription = ""
         self.text_en_cours = ""
-        self.text_box = ""
+        self.set("")
         self.text_box_en_cours = ""
         self.pos_cur = 0
         self.fin_insertion = 0
@@ -87,6 +88,5 @@ class Transcription:
     def get(self) -> str :
         return (self.text_box)
     
-    # def supp(self, text_to_del:str):
-    #     # todo Simule Del
-    #     pass
+    def set(self, text:str):
+        self.text_box = text

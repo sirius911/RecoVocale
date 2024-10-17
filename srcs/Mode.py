@@ -100,6 +100,9 @@ class Mode:
     
     def select_text_box(self, dir = "left"):
         pass
+
+    def undo(self, event=None):
+        pass
     
     def toggle_start_stop(self):
         """
