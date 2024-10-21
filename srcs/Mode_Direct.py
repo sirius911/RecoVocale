@@ -132,7 +132,7 @@ class Mode_Direct(Mode):
         if not self.pile:
             self.pile = ['']
             self.edit_menu.entryconfig(0, state='disabled')
-        print(f"Pile après undo: {self.pile}")
+        # print(f"Pile après undo: {self.pile}")
 
     def get_selected_text(self):
         """
@@ -213,7 +213,7 @@ class Mode_Direct(Mode):
         if not self.pile or text_box != self.pile[-1]:
             self.pile.append(text_box)
             self.edit_menu.entryconfig(0, state='normal')
-            print("État sauvegardé:", self.pile)
+            # print("État sauvegardé:", self.pile)
 
     def on_text_change(self, event):
         if event and (event.keysym in ("Shift_L", "Shift_R", "Control_L", "Control_R", "Alt_L", "Alt_R") or

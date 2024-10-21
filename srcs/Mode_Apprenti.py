@@ -264,6 +264,7 @@ class Mode_Apprenti(Mode):
         self.status_bar.config(text="Merci.")
         time.sleep(1)
         self.clear_text_box()
+        self.pile = ['']
 
     def check_pygame_events(self):
         """
@@ -344,7 +345,7 @@ class Mode_Apprenti(Mode):
         if not self.pile:
             self.pile = ['']
             self.edit_menu.entryconfig(0, state='disabled')
-        print(f"Pile après undo: {self.pile}")
+        # print(f"Pile après undo: {self.pile}")
 
     def save_text_box(self):
         # Sauvegarder uniquement si le texte a changé
@@ -352,4 +353,4 @@ class Mode_Apprenti(Mode):
         if not self.pile or text_box != self.pile[-1]:
             self.pile.append(text_box)
             self.edit_menu.entryconfig(0, state='normal')
-            print("État sauvegardé:", self.pile)
+            # print("État sauvegardé:", self.pile)
