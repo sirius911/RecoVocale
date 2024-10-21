@@ -38,25 +38,10 @@ class Mode_Apprenti(Mode):
         )
         super().enter()
         self.flag_begin = True
-        
+        self.pile = ['']
+
         self.ready_to_learn = False
         self.audio_playing = False
-
-        # Initialisation de pygame.mixer
-        self.init_pygame_mixer()
-        # # Initialiser pygame.mixer et pygame.display pour la gestion des événements
-        # try:
-        #     pygame.mixer.init()
-        #     pygame.display.set_mode((1, 1))  # Créer une fenêtre minimaliste pour gérer les événements
-        #     print("Pygame mixer et affichage initialisés.")
-        # except pygame.error as e:
-        #     print(f"Erreur d'initialisation de pygame : {e}")
-        # self.pos_lecture = 0 # position de lecture
-        #  # Configurer l'événement de fin de lecture audio
-        # self.end_event = pygame.USEREVENT + 1
-        # pygame.mixer.music.set_endevent(self.end_event)
-        # self.monitoring_events = False  # Flag pour savoir si on surveille les événements pygame
-
 
     def ui(self):
        
@@ -195,6 +180,8 @@ class Mode_Apprenti(Mode):
         """
         Clear the content of the text box.
         """
+        time.sleep(0.5)
+        self.save_text_box()
         self.transcription.clear()
         self.text_box.delete('1.0', tk.END)
         self.rec_button.config(state=tk.NORMAL)
@@ -235,7 +222,11 @@ class Mode_Apprenti(Mode):
         self.text_box.see("insert")
 
     def on_text_change(self, event):
-        self.transcription.text_box = self.text_box.get("1.0", tk.END)
+        if event and (event.keysym in ("Shift_L", "Shift_R", "Control_L", "Control_R", "Alt_L", "Alt_R") or
+                (event.state & 0x4 and event.keysym == "z")):
+            return
+        self.save_text_box()
+        self.transcription.set(self.text_box.get("1.0", tk.END).strip())
         self.transcription.pos_cur = self.get_pos_curseur()
 
     def update_transcriptions(self, message, ending):
@@ -243,6 +234,7 @@ class Mode_Apprenti(Mode):
             self.flag_begin = False
             self.transcription.pos_cur = self.get_pos_curseur()
             self.transcription.cur_selec = self.get_pos_select()
+            self.save_text_box()
 
         self.transcription.update(message)
 
@@ -340,3 +332,24 @@ class Mode_Apprenti(Mode):
         retour = self.text_box.get("1.0", tk.END) # on retourne la transcription en cours
         super().exit()
         return retour
+    
+    def undo(self, event=None):
+        if event and event.keysym in ("Shift_L", "Shift_R", "Control_L", "Control_R", "Alt_L", "Alt_R") :
+            return
+        if self.pile:
+            dernier_etat = self.pile.pop()
+            self.text_box.delete('1.0', tk.END)
+            self.text_box.insert('1.0', dernier_etat)
+            self.transcription.set(dernier_etat)
+        if not self.pile:
+            self.pile = ['']
+            self.edit_menu.entryconfig(0, state='disabled')
+        print(f"Pile après undo: {self.pile}")
+
+    def save_text_box(self):
+        # Sauvegarder uniquement si le texte a changé
+        text_box = self.text_box.get("1.0", tk.END).strip()
+        if not self.pile or text_box != self.pile[-1]:
+            self.pile.append(text_box)
+            self.edit_menu.entryconfig(0, state='normal')
+            print("État sauvegardé:", self.pile)

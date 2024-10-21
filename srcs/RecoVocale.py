@@ -186,7 +186,10 @@ class App:
         self.console_debug.append_status_with_format(f"{self.root.winfo_y()}\n", color="green")
 
         self.console_debug.append_status_with_format("Fichier des insertions : ", font_style="italic")
-        self.console_debug.append_status_with_format(get_config_path(self.config.insertions), color="green")
+        self.console_debug.append_status_with_format(f"{get_config_path(self.config.insertions)}\n", color="green")
+
+        self.console_debug.append_status_with_format("Nb répétitions : ", font_style="italic")
+        self.console_debug.append_status_with_format(f"{self.config.nb_repeat}", color="green")
 
 
     #---------------------------------------------------------------------------------------------------------------------

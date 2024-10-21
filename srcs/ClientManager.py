@@ -5,7 +5,7 @@ import threading
 from info import APPRENTI
 
 class ClientManager:
-    def __init__(self, host, port, lang, model, translate, use_vad, save_output_recording, output_recording_filename, update_callback, insertions, fenetre_gestion_insertions, mode):
+    def __init__(self, host, port, lang, model, translate, use_vad, save_output_recording, output_recording_filename, update_callback, insertions, fenetre_gestion_insertions, mode, nb_repeat=2):
         self.host = host
         self.port = port
         self.lang = lang
@@ -24,6 +24,7 @@ class ClientManager:
         self.fenetre_gestion_insertions = fenetre_gestion_insertions
         self.ancienne_transcription = ""
         self.mode = mode
+        self.nb_repeat = nb_repeat # nb de fois que la transcription doit etre répété pour demander un fin de transcription
 
     def start_client(self, loop):
         print("Starting client in ClientManager")
@@ -72,7 +73,7 @@ class ClientManager:
         else:
             self.ancienne_transcription = combined_text
             self.compteur = 0
-        ending = ending or (self.compteur > 1) # fin demandé par intercept() ou 2 fois le meme text en mode pause
+        ending = ending or (self.compteur >= self.nb_repeat) # fin demandé par intercept() ou nb_repeat fois le meme text en mode pause
         if combined_text != "":
             if ending and self.mode != APPRENTI:
                 combined_text = corrige_ponctuation(combined_text)

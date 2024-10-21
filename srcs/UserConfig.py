@@ -16,6 +16,7 @@ class UserConfig:
         self.y_window = "10"
         self.debug = False
         self.insertions = "config/insertions.xml"
+        self.nb_repeat = 2
         # Lire la configuration si le fichier existe, sinon la créer
         if os.path.exists(self.config_file):
             self.load_config()
@@ -35,6 +36,7 @@ class UserConfig:
         self.y_window = config.get('SETTINGS', 'Y_WINDOW', fallback=self.y_window)
         self.debug = (config.get('SETTINGS', 'DEBUG', fallback=self.debug) == 'True')
         self.insertions = config.get('SETTINGS', 'INSERTIONS', fallback=self.insertions)
+        self.nb_repeat = int(config.get('SETTINGS', 'NB_REPEAT', fallback=self.nb_repeat))
         
     def save_config(self, root):
         """Sauvegarde la configuration dans un fichier."""
@@ -50,7 +52,8 @@ class UserConfig:
             'X_WINDOW': root.winfo_x() if root else 0,
             'Y_WINDOW': root.winfo_y() if root else 0,
             'DEBUG': 'True' if self.debug else 'False',
-            'INSERTIONS': self.insertions
+            'INSERTIONS': self.insertions,
+            'NB_REPEAT': self.nb_repeat
         }
         print(f"Sauvegarde {self.config_file} ...", end =' ')
 
