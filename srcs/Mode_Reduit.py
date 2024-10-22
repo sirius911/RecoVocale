@@ -37,24 +37,6 @@ class Mode_Reduit(Mode):
         self.root.grid_rowconfigure(1, weight=1)
         self.root.grid_columnconfigure(0, weight=1)
 
-        # # Create the text box frame
-        # self.text_box_frame = tk.Frame(self.root)
-        # self.text_box_frame.grid(row=1, column=0, sticky="nsew")
-
-        # # Add scrollbar to the text box
-        # self.text_box_scrollbar = tk.Scrollbar(self.text_box_frame)
-        # self.text_box_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-
-        # # Add the text box
-        # self.text_box = tk.Text(self.text_box_frame, yscrollcommand=self.text_box_scrollbar.set)
-        # self.text_box.pack(fill=tk.BOTH, expand=True)
-
-        # # Configure the selection tag
-        # self.text_box.tag_configure("sel", background="yellow", foreground="black")
-
-        # # Attach the scrollbar to the text box
-        # self.text_box_scrollbar.config(command=self.text_box.yview)
-
         # Create the status bar at the bottom of the window
         self.status_bar = tk.Label(self.root, text=f"RecoVocale {VERSION}", bd=1, relief=tk.SUNKEN, anchor=tk.W)
         self.status_bar.grid(row=2, column=0, sticky="ew")

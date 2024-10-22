@@ -222,6 +222,14 @@ class Client:
                     "task": self.task,
                     "model": self.model,
                     "use_vad": self.use_vad,
+                    # "beam_size": '1',
+                    # "initial_prompt": 'point, rapport, médic',
+                    # "repetition_penality": '2.1',
+                    # "no_repeat_ngram_size": '2',
+                    # "no_speech_threshold": '0.1',
+                    # "log_prob_threshold": '-1.0',
+                    # "condition_on_previous_text": 'True',
+                    # "compression_ratio_threshold": '2.4'
                 }
             )
         )

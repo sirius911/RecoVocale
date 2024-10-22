@@ -253,6 +253,7 @@ class Mode_Apprenti(Mode):
 
     def learning(self):
         transcription = self.text_box.get("1.0", tk.END)
+        self.copy_to_clipboard()
         with open(self.temp_txt_file, "w", encoding="utf-8") as fichier_text:
             fichier_text.write(transcription)
         filename = datetime.now().strftime("%Y%m%d%H%M%S%f")[:-4]

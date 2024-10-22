@@ -209,7 +209,7 @@ class Mode_Direct(Mode):
     
     def save_text_box(self):
         # Sauvegarder uniquement si le texte a changé
-        text_box = self.text_box.get("1.0", tk.END).strip()
+        text_box = self.text_box.get("1.0", tk.END)
         if not self.pile or text_box != self.pile[-1]:
             self.pile.append(text_box)
             self.edit_menu.entryconfig(0, state='normal')
