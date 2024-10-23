@@ -101,6 +101,7 @@ def proteger_points_speciaux(phrases):
 
 def remplacement_normal(phrases):
     expression_remplacement = {
+        r"[.,]*tir(ée|é|è|er|et|ez)[., ]*": " - ",
         r"[., ]*trois point[s]? de suspension[s]?[., ]*": "...",
         r"[., ]*3 point[s]? de suspension[s]?[., ]*": "...",
         r"[., ]*3 petit[s]?.": "...",r"[., ]*trois petit[s]?.": "...",
