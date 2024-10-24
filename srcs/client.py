@@ -152,7 +152,10 @@ class Client:
             ending = True
             print("fin dans client()")
         # Call back
-        self.recording = self.call_back(text, ending)
+        if self.recording:
+            self.recording = self.call_back(text, ending)
+        else:
+            self.call_back(None, True)
         # if self.recording:
             # on verifie qu'on est bien encore en recording pour ne pas envoyer à la fonction
             # call_back si la transcription est terminé mais qu'on a encore des retours serveurs

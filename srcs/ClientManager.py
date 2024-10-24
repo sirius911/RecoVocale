@@ -61,6 +61,9 @@ class ClientManager:
 
     def call_back(self, texte, ending):
         # Fonction appelé par Client.py suite a evenement websocket serveur WhisperLive
+        if texte is None:
+            self.update_callback(None, True)
+            return
         transcriptions = texte if self.client else []
         if self.fenetre_gestion_insertions() or self.mode == APPRENTI:
             # la fenetre des insertions est ouverte donc on n'intercepte pas 

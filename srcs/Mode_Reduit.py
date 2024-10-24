@@ -61,7 +61,8 @@ class Mode_Reduit(Mode):
         self.stop_client()
 
     def update_transcriptions(self, message, ending):
-        self.transcription.update(message, -1)
+        if message is not None:
+            self.transcription.update(message, -1)
         if ending:
             remove_bubble()
             # copie dans clipboard

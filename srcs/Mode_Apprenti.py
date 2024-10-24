@@ -181,9 +181,11 @@ class Mode_Apprenti(Mode):
         """
         Clear the content of the text box.
         """
+        print("Clear_text_box()")
         time.sleep(0.5)
         self.save_text_box()
         self.transcription.clear()
+        self.text_box.config(state=tk.NORMAL)
         self.text_box.delete('1.0', tk.END)
         self.rec_button.config(state=tk.NORMAL)
         self.learning_button.config(state=tk.DISABLED)
@@ -232,17 +234,19 @@ class Mode_Apprenti(Mode):
         self.transcription.pos_cur = self.get_pos_curseur()
 
     def update_transcriptions(self, message, ending):
-        if self.flag_begin:
-            self.flag_begin = False
-            self.transcription.pos_cur = self.get_pos_curseur()
-            self.transcription.cur_selec = self.get_pos_select()
-            self.save_text_box()
+        if message is not None:
+            if self.flag_begin:
+                self.flag_begin = False
+                self.transcription.pos_cur = self.get_pos_curseur()
+                self.transcription.cur_selec = self.get_pos_select()
+                self.save_text_box()
 
-        self.transcription.update(message)
-        self.text_box.config(state=tk.NORMAL)
-        self.text_box.delete('1.0', tk.END)
-        self.text_box.insert(tk.END, self.transcription.text_box_en_cours)
+            self.transcription.update(message)
+            self.text_box.config(state=tk.NORMAL)
+            self.text_box.delete('1.0', tk.END)
+            self.text_box.insert(tk.END, self.transcription.text_box_en_cours)
         if ending:
+            self.text_box.config(state=tk.NORMAL)
             self.flag_begin = True
             self.transcription.validation()
             self.set_pos_curseur(self.transcription.fin_insertion)
