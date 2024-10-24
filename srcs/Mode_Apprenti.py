@@ -61,6 +61,7 @@ class Mode_Apprenti(Mode):
         # Add the text box
         self.text_box = tk.Text(self.text_box_frame, yscrollcommand=self.text_box_scrollbar.set)
         self.text_box.pack(fill=tk.BOTH, expand=True)
+        self.text_box.config(state=tk.DISABLED)
 
         # Configure the selection tag
         self.text_box.tag_configure("sel", background="yellow", foreground="black")
@@ -187,6 +188,7 @@ class Mode_Apprenti(Mode):
         self.rec_button.config(state=tk.NORMAL)
         self.learning_button.config(state=tk.DISABLED)
         self.play_button.config(state=tk.DISABLED)
+        self.text_box.config(state=tk.DISABLED)
         self.audio_playing = False
         self.ready_to_learn = False
         
@@ -237,7 +239,7 @@ class Mode_Apprenti(Mode):
             self.save_text_box()
 
         self.transcription.update(message)
-
+        self.text_box.config(state=tk.NORMAL)
         self.text_box.delete('1.0', tk.END)
         self.text_box.insert(tk.END, self.transcription.text_box_en_cours)
         if ending:
@@ -250,6 +252,7 @@ class Mode_Apprenti(Mode):
             self.play_button.config(state=tk.NORMAL)
             self.status_bar.config(text="Transcription ...Terminée", bg='lightblue', fg='darkblue', anchor=tk.W)
         else:
+            self.text_box.config(state=tk.DISABLED)
             self.set_pos_curseur(self.transcription.pos_cur)
             self.status_bar.config(text="Transcription ... en cours", bg='lightblue', fg='darkblue', anchor=tk.W)
 
