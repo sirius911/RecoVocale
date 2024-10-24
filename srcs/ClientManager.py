@@ -1,4 +1,4 @@
-from client import EnhancedTranscriptionClient
+from client import TranscriptionClient
 from Correcteur import intercept, corrige_ponctuation
 from utils_keyboard import Simulator
 import threading
@@ -22,7 +22,7 @@ class ClientManager:
         self.update_callback = update_callback
         self.insertions = insertions
         self.fenetre_gestion_insertions = fenetre_gestion_insertions
-        self.ancienne_transcription = ""
+        # self.ancienne_transcription = ""
         self.mode = mode
         self.nb_repeat = nb_repeat # nb de fois que la transcription doit etre répété pour demander un fin de transcription
 
@@ -31,7 +31,7 @@ class ClientManager:
         self.stop_client()  # Ensure any previous client is stopped before starting a new one
 
         if self.client is None:
-            self.client = EnhancedTranscriptionClient(
+            self.client = TranscriptionClient(
                 self.host,
                 self.port,
                 lang=self.lang,
@@ -41,12 +41,13 @@ class ClientManager:
                 save_output_recording=self.save_output_recording,
                 output_recording_filename=self.output_recording_filename,
                 call_back=self.call_back,
+                nb_repeat=self.nb_repeat,
             )
         self.client.set_pause(False)
         self.running = True
         self.loop = loop
-        self.compteur = 0
-        self.ancienne_transcription = ""
+        # self.compteur = 0
+        # self.ancienne_transcription = ""
         # Run the client in a separate thread to avoid blocking the event loop
         self.client_thread = threading.Thread(target=self.run_client_thread)
         self.client_thread.start()
@@ -58,35 +59,40 @@ class ClientManager:
         except Exception as e:
             print(f"Error running client: {e}")
 
-    def call_back(self, texte):
+    def call_back(self, texte, ending):
         # Fonction appelé par Client.py suite a evenement websocket serveur WhisperLive
         transcriptions = texte if self.client else []
         if self.fenetre_gestion_insertions() or self.mode == APPRENTI:
             # la fenetre des insertions est ouverte donc on n'intercepte pas 
             combined_text = ''.join(transcriptions).lstrip()
-            ending = False
+            # ending = False
         else:
-            combined_text, ending = intercept(''.join(transcriptions).lstrip(), self.insertions.get())
-        
-        if combined_text.lstrip() != '' and combined_text == self.ancienne_transcription and self.client.is_pause():
-            self.compteur += 1
-        else:
-            self.ancienne_transcription = combined_text
-            self.compteur = 0
-        ending = ending or (self.compteur >= self.nb_repeat) # fin demandé par intercept() ou nb_repeat fois le meme text en mode pause
+            combined_text, stop = intercept(''.join(transcriptions).lstrip(), self.insertions.get())
+            ending = ending or stop
+        # if combined_text.lstrip() != '' and combined_text == self.ancienne_transcription and self.client.is_pause():
+        #     self.compteur += 1
+        # else:
+        #     self.ancienne_transcription = combined_text
+        #     self.compteur = 0
+        # ending = ending or (self.compteur >= self.nb_repeat) # fin demandé par intercept() ou nb_repeat fois le meme text en mode pause
         if combined_text != "":
-            if ending and self.mode != APPRENTI:
+            if self.mode != APPRENTI:
                 combined_text = corrige_ponctuation(combined_text)
             if not self.fenetre_gestion_insertions():
                 # on appelle la fonction du mode
                 self.update_callback(combined_text, ending)
-            if ending:
-                    print("Fin de transcription demandée")
-                    if self.fenetre_gestion_insertions():
-                        Simulator(combined_text)
-                    self.running = False
-                    return False # recording = False
-        return True
+            else:
+                # la fenetre insertion est ouverte
+                if ending:
+                   Simulator(combined_text) 
+        return not ending # on renvoi la demande de recording du client donc l'inverse de ending
+            # if ending:
+            #         print("Fin de transcription demandée")
+            #         if self.fenetre_gestion_insertions():
+            #             Simulator(combined_text)
+            #         self.running = False
+                    # return False # recording = False
+        # return True
 
     def stop_client(self):
         if not self.running:
