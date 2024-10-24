@@ -248,8 +248,10 @@ class Mode_Apprenti(Mode):
             self.rec_button.config(state=tk.DISABLED)
             self.learning_button.config(state=tk.NORMAL)
             self.play_button.config(state=tk.NORMAL)
+            self.status_bar.config(text="Transcription ...Terminée", bg='lightblue', fg='darkblue', anchor=tk.W)
         else:
             self.set_pos_curseur(self.transcription.pos_cur)
+            self.status_bar.config(text="Transcription ... en cours", bg='lightblue', fg='darkblue', anchor=tk.W)
 
     def learning(self):
         transcription = self.text_box.get("1.0", tk.END)

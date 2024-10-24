@@ -239,8 +239,10 @@ class Mode_Direct(Mode):
             self.flag_begin = True
             self.transcription.validation()
             self.set_pos_curseur(self.transcription.fin_insertion)
+            self.status_bar.config(text="Transcription ...Terminée", bg='lightblue', fg='darkblue', anchor=tk.W)
         else:
             self.set_pos_curseur(self.transcription.pos_cur)
+            self.status_bar.config(text="Transcription ... en cours", bg='lightblue', fg='darkblue', anchor=tk.W)
 
     def copy_to_clipboard(self):
         self.status_bar.config(text='- Copie -', bg='lightblue', fg='darkblue', anchor=tk.CENTER)
