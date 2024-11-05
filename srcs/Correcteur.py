@@ -149,15 +149,15 @@ def corrige_ponctuation(phrases:str):
 
     # Étape 1: Protéger les cas spéciaux (phrase modifiée)
     phrases_protegee = proteger_points_speciaux(phrases)
-    print("Après protection :", phrases_protegee)
+    # print("Après protection :", phrases_protegee)
 
     # Étape 2: Faire les remplacements normaux (phrase modifiée)
     phrases_remplacee = remplacement_normal(phrases_protegee)
-    print("Après remplacement :", phrases_remplacee)
+    # print("Après remplacement :", phrases_remplacee)
 
     # Étape 3: Restaurer les cas protégés (phrase finale)
     phrases_finale = restaurer_points_speciaux(phrases_remplacee)
-    print("Phrase finale :", phrases_finale)
+    # print("Phrase finale :", phrases_finale)
 
     #supprimer la ponctuation après le \n
     phrases_finale = re.sub(r'(?<=\n)[.,;:!?]', '',  phrases_finale)

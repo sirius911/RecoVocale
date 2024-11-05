@@ -25,7 +25,8 @@ class Pause(Action):
 
 class Unpause(Action):
     def execute(self):
-        self.app.unpause()
+        if not self.app.transcription_en_cours:
+            self.app.unpause()
 
 class ValidTranscriptions(Action):
     def execute(self):

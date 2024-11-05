@@ -236,6 +236,7 @@ class Mode_Apprenti(Mode):
     def update_transcriptions(self, message, ending):
         if message is not None:
             if self.flag_begin:
+                self.trash_button.config(state=tk.DISABLED)
                 self.flag_begin = False
                 self.transcription.pos_cur = self.get_pos_curseur()
                 self.transcription.cur_selec = self.get_pos_select()
@@ -254,6 +255,7 @@ class Mode_Apprenti(Mode):
             self.rec_button.config(state=tk.DISABLED)
             self.learning_button.config(state=tk.NORMAL)
             self.play_button.config(state=tk.NORMAL)
+            self.trash_button.config(state=tk.NORMAL)
             self.status_bar.config(text="Transcription ...Terminée", bg='lightblue', fg='darkblue', anchor=tk.W)
         else:
             self.text_box.config(state=tk.DISABLED)

@@ -67,20 +67,25 @@ class App:
         # #---------------------------MICRO----------------------------
         # Initialize the microphone 
         # self.mic = Micro(loop, app=self.current_mode)
-        self.mic = None
-        self.root.after(100, self.start_micro_monitoring)  # Démarrer l'intégration asyncio/tkinter
+        self.mic = Micro(loop=self.loop, app=self.current_mode, call_back=self.update)
+        # self.mic = None
+        # self.root.after(100, self.start_micro_monitoring)  # Démarrer l'intégration asyncio/tkinter
         self.info()
 
-    def start_micro_monitoring(self):
-        """Démarre la surveillance du micro via la méthode monitor() de Micro."""
-        if self.mic is None:
-            try:
-                self.mic = Micro(loop=self.loop, app=self.current_mode, call_back=self.info)
-                self.current_mode.status_bar.config(text=f'[{self.mic.micro_name}] connecté', bg='lightblue', fg='darkblue', anchor=tk.CENTER)
-            except Exception as e:
-                self.current_mode.status_bar.config(text='Micro déconnecté', bg='lightblue', fg='darkblue', anchor=tk.CENTER)
-        if self.mic:
-            asyncio.run_coroutine_threadsafe(self.mic.monitor(), self.loop)
+    # def start_micro_monitoring(self):
+    #     """Démarre la surveillance du micro via la méthode monitor() de Micro."""
+    #     print("start_micro_monitor()")
+    #     if self.mic is None:
+    #         try:
+    #             print("ici")
+    #             self.mic = Micro(loop=self.loop, app=self.current_mode, call_back=self.info)
+    #             self.current_mode.status_bar.config(text=f'[{self.mic.micro_name}] connecté', bg='lightblue', fg='darkblue', anchor=tk.CENTER)
+    #         except Exception as e:
+    #             print("là")
+    #             self.current_mode.status_bar.config(text='Micro déconnecté', bg='lightblue', fg='darkblue', anchor=tk.CENTER)
+    #     if self.mic:
+    #         print("encore ici")
+    #         asyncio.run_coroutine_threadsafe(self.mic.monitor(), self.loop)
 
     def paste_from_clipboard(self):
         self.current_mode.status_bar.config(text='- Coller -', bg='lightblue', fg='darkblue', anchor=tk.CENTER)
@@ -150,46 +155,47 @@ class App:
                 self.console_debug.log_message(log_en_cours)
     
     def info(self):
-        self.console_debug.delete_status()
-        self.console_debug.append_status_with_format("Version : ", font_style="italic")
-        self.console_debug.append_status_with_format(f"v{VERSION}\n", color="green")
-        self.console_debug.append_status_with_format("Modèle : ", font_style="italic")
-        if self.current_mode.client_manager.client:
-            self.console_debug.append_status_with_format(f"{self.current_mode.client_manager.client.get_model_path()}\n", color="green")
-        else:
-           self.console_debug.append_status_with_format("None\n", color="blue")
-        self.console_debug.append_status_with_format("Serveur : ", font_style="italic")
-        if check_server_status(self.config.server_ip, self.config.port):
-            self.console_debug.append_status_with_format(f"Connected @{self.config.server_ip}:{self.config.port} \n", color="green")
-        else:
-            self.console_debug.append_status_with_format(f"NOT Connected @{self.config.server_ip}:{self.config.port} \n", color="red")
-        self.console_debug.append_status_with_format("Micro : ", font_style="italic")
-        if self.mic and self.mic.is_connected():
-            self.console_debug.append_status_with_format(f"{self.mic.micro_name}\n", color="green")
-        else:
-            self.console_debug.append_status_with_format("Aucun\n", color="red")
+        if self.config.debug:
+            self.console_debug.delete_status()
+            self.console_debug.append_status_with_format("Version : ", font_style="italic")
+            self.console_debug.append_status_with_format(f"v{VERSION}\n", color="green")
+            self.console_debug.append_status_with_format("Modèle : ", font_style="italic")
+            if self.current_mode.client_manager.client:
+                self.console_debug.append_status_with_format(f"{self.current_mode.client_manager.client.get_model_path()}\n", color="green")
+            else:
+                self.console_debug.append_status_with_format("None\n", color="blue")
+            self.console_debug.append_status_with_format("Serveur : ", font_style="italic")
+            if check_server_status(self.config.server_ip, self.config.port):
+                self.console_debug.append_status_with_format(f"Connected @{self.config.server_ip}:{self.config.port} \n", color="green")
+            else:
+                self.console_debug.append_status_with_format(f"NOT Connected @{self.config.server_ip}:{self.config.port} \n", color="red")
+            self.console_debug.append_status_with_format("Micro : ", font_style="italic")
+            if self.mic and self.mic.is_connected():
+                self.console_debug.append_status_with_format(f"{self.mic.micro_name}\n", color="green")
+            else:
+                self.console_debug.append_status_with_format("Aucun\n", color="red")
 
-        self.console_debug.append_status_with_format("Mode : ", font_style="italic")
-        self.console_debug.append_status_with_format(self.current_mode.name(), color="green")
-        self.console_debug.append_status_with_format(" - Simul Clavier : ", font_style="italic")
-        self.console_debug.append_status_with_format(f" {'Oui' if self.current_mode.simulator_keyboard else 'Non'}\n", color="green")
-        
-        self.console_debug.append_status_with_format("Raccourci : ", font_style="italic")
-        self.console_debug.append_status_with_format(f"{self.keyboard_shortcut}\n", color="green")
+            self.console_debug.append_status_with_format("Mode : ", font_style="italic")
+            self.console_debug.append_status_with_format(self.current_mode.name(), color="green")
+            self.console_debug.append_status_with_format(" - Simul Clavier : ", font_style="italic")
+            self.console_debug.append_status_with_format(f" {'Oui' if self.current_mode.simulator_keyboard else 'Non'}\n", color="green")
+            
+            self.console_debug.append_status_with_format("Raccourci : ", font_style="italic")
+            self.console_debug.append_status_with_format(f"{self.keyboard_shortcut}\n", color="green")
 
-        self.console_debug.append_status_with_format("Debug : ", font_style="italic")
-        self.console_debug.append_status_with_format(f"{self.config.debug}\n", color="green")
+            self.console_debug.append_status_with_format("Debug : ", font_style="italic")
+            self.console_debug.append_status_with_format(f"{self.config.debug}\n", color="green")
 
-        self.console_debug.append_status_with_format("Position actuelle de la fenêtre : x=", font_style="italic")
-        self.console_debug.append_status_with_format(self.root.winfo_x(), color="green")
-        self.console_debug.append_status_with_format(", y=", font_style="italic")
-        self.console_debug.append_status_with_format(f"{self.root.winfo_y()}\n", color="green")
+            self.console_debug.append_status_with_format("Position actuelle de la fenêtre : x=", font_style="italic")
+            self.console_debug.append_status_with_format(self.root.winfo_x(), color="green")
+            self.console_debug.append_status_with_format(", y=", font_style="italic")
+            self.console_debug.append_status_with_format(f"{self.root.winfo_y()}\n", color="green")
 
-        self.console_debug.append_status_with_format("Fichier des insertions : ", font_style="italic")
-        self.console_debug.append_status_with_format(f"{get_config_path(self.config.insertions)}\n", color="green")
+            self.console_debug.append_status_with_format("Fichier des insertions : ", font_style="italic")
+            self.console_debug.append_status_with_format(f"{get_config_path(self.config.insertions)}\n", color="green")
 
-        self.console_debug.append_status_with_format("Nb répétitions : ", font_style="italic")
-        self.console_debug.append_status_with_format(f"{self.config.nb_repeat}", color="green")
+            self.console_debug.append_status_with_format("Nb répétitions : ", font_style="italic")
+            self.console_debug.append_status_with_format(f"{self.config.nb_repeat}", color="green")
 
 
     #---------------------------------------------------------------------------------------------------------------------

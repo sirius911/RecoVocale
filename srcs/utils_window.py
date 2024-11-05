@@ -61,6 +61,7 @@ def create_buttons(self):
     if self.mode == DIRECT or self.mode == APPRENTI:
         self.trash_button = tk.Button(self.button_frame, image=self.trash_image, command=self.clear_text_box)
         self.trash_button.grid(row=0, column=2, padx=padx)
+        self.trash_button.config(state=tk.DISABLED)
     if self.mode == APPRENTI:
         self.learning_button = tk.Button(self.button_frame, image=self.learn_image, command=self.learning, state=tk.DISABLED)
         self.learning_button.grid(row=0, column=3, padx=padx)

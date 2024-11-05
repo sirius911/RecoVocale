@@ -68,7 +68,7 @@ class Mode_Direct(Mode):
             nb_repeat=self.app.config.nb_repeat,
         )
         super().enter()
-        self.flag_begin = True
+        # self.transcription_en_cours = False
         self.pile = ['']
     def ui(self):
         create_menus(self)
@@ -89,7 +89,7 @@ class Mode_Direct(Mode):
         # Add the text box
         self.text_box = tk.Text(self.text_box_frame, yscrollcommand=self.text_box_scrollbar.set)
         self.text_box.pack(fill=tk.BOTH, expand=True)
-        self.text_box.config(state=tk.DISABLED)
+        # self.text_box.config(state=tk.DISABLED)
 
         # Configure the selection tag
         self.text_box.tag_configure("sel", background="yellow", foreground="black")
@@ -220,15 +220,22 @@ class Mode_Direct(Mode):
         if event and (event.keysym in ("Shift_L", "Shift_R", "Control_L", "Control_R", "Alt_L", "Alt_R") or
                       (event.state & 0x4 and event.keysym == "z")):
             return
-        self.save_text_box()
-        self.transcription.set(self.text_box.get("1.0", tk.END).strip())
-        self.transcription.pos_cur = self.get_pos_curseur()
+        self.root.after_idle(self.text_change) # pour attendre que tkinter est bien écrit les modifications
         
+
+    def text_change(self):    
+        nouveau_text = self.text_box.get("1.0", tk.END)
+        self.save_text_box()
+        self.transcription.set(nouveau_text)
+        self.transcription.text_box_en_cours = nouveau_text
+        self.transcription.pos_cur = self.get_pos_curseur()
 
     def update_transcriptions(self, message, ending):
         if message is not None:
-            if self.flag_begin:
-                self.flag_begin = False
+            if not self.transcription_en_cours:
+                self.trash_button.config(state=tk.DISABLED)
+                self.rec_button.config(state=tk.DISABLED)
+                self.transcription_en_cours = True
                 self.transcription.pos_cur = self.get_pos_curseur()
                 self.transcription.cur_selec = self.get_pos_select()
                 self.save_text_box()
@@ -239,7 +246,9 @@ class Mode_Direct(Mode):
             self.text_box.insert(tk.END, self.transcription.text_box_en_cours)
         if ending:
             self.text_box.config(state=tk.NORMAL)
-            self.flag_begin = True
+            self.trash_button.config(state=tk.NORMAL)
+            self.rec_button.config(state=tk.NORMAL)
+            self.transcription_en_cours = False
             self.transcription.validation()
             self.set_pos_curseur(self.transcription.fin_insertion)
             self.status_bar.config(text="Transcription ...Terminée", bg='lightblue', fg='darkblue', anchor=tk.W)

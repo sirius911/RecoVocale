@@ -13,6 +13,7 @@ class Mode:
         self.transcription = Transcription()
         self.fenetre_gestion_ouverte = False  # Attribut pour savoir si la fenêtre est ouverte
         self.simulator_keyboard = None
+        self.transcription_en_cours = False
         self.enter()
 
     def enter(self):
