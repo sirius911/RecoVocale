@@ -121,12 +121,16 @@ class Client:
     def process_segments(self, segments):
         """Processes transcript segments."""
         text = []
+        ending = False
         for i, seg in enumerate(segments):
+            if seg["completed"]:
+                print("** SEGMENT COMPLETED **")
+                ending = True
             if not text or text[-1] != seg["text"]:
                 text.append(seg["text"])
-                if i == len(segments) - 1:
+                if i == len(segments) - 1 and not seg["completed"]:
                     self.last_segment = seg
-                elif (self.server_backend == "faster_whisper" and
+                elif (self.server_backend == "faster_whisper" and seg["completed"] and
                       (not self.transcript or
                         float(seg['start']) >= float(self.transcript[-1]['end']))):
                     self.transcript.append(seg)
@@ -135,9 +139,6 @@ class Client:
             self.last_response_received = time.time()
             self.last_received_segment = segments[-1]["text"]
 
-        # Truncate to last 3 entries for brevity.
-        # text = text[-3:]
-        # self.transcripted = text
         combined_text = ''.join(text).lstrip()
         if combined_text.lstrip() != '' and combined_text == self.ancienne_transcription:
             self.compteur += 1
@@ -146,16 +147,16 @@ class Client:
             self.ancienne_transcription = combined_text
         print(f"self.compteur = {self.compteur}")
         utils.print_transcript(text, self.recording)
-        ending = False
-        if self.compteur > self.nb_repeat:
+        
+        if self.compteur > self.nb_repeat or ending:
             self.recording = False
-            ending = True
+            # ending = True
             print("fin dans client()")
         # Call back
-        if self.recording:
-            self.recording = self.call_back(text, ending)
-        else:
-            self.call_back(None, True)
+        # if self.recording:
+        self.recording = self.call_back(text, ending)
+        # else:
+        #     self.call_back(None, True)
         # if self.recording:
             # on verifie qu'on est bien encore en recording pour ne pas envoyer à la fonction
             # call_back si la transcription est terminé mais qu'on a encore des retours serveurs
@@ -300,7 +301,7 @@ class Client:
 
         """
         if self.server_backend == "faster_whisper":
-            if (self.last_segment):
+            if (self.last_segment) and self.transcript[-1]["text"] != self.last_segment["text"]:
                 self.transcript.append(self.last_segment)
             utils.create_srt_file(self.transcript, output_path)
 
