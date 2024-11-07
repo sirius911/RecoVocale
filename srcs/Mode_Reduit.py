@@ -24,7 +24,8 @@ class Mode_Reduit(Mode):
             update_callback = self.update_transcriptions,  # Pass the callback to ClientManager
             insertions = self.app.insertions,
             fenetre_gestion_insertions = self.is_ouverte,
-            mode=self.mode
+            mode=self.mode,
+            nb_repeat=self.app.config.nb_repeat,
         )
         super().enter()
         self.simulator_keyboard = Simulator(None, True)
@@ -70,10 +71,8 @@ class Mode_Reduit(Mode):
             self.root.clipboard_append(self.transcription.text_en_cours)
             # coller
             Simulator([Key.ctrl, 'v'])
-            # Simulator(self.transcription.text_en_cours)
             self.transcription.validation()
             self.status_bar.config( text=f'RecoVocale {VERSION}', bg='lightblue', fg='darkblue', anchor=tk.W)
-            # self.simulator_keyboard.init()
         else:
             show_bubble_message(self.root, message)
             self.status_bar.config(text='* Transcription *', bg='lightblue', fg='darkblue', anchor=tk.CENTER)

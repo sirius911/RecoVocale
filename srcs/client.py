@@ -126,6 +126,8 @@ class Client:
             if seg["completed"]:
                 print("** SEGMENT COMPLETED **")
                 ending = True
+            else:
+                ending = False
             if not text or text[-1] != seg["text"]:
                 text.append(seg["text"])
                 if i == len(segments) - 1 and not seg["completed"]:
@@ -146,11 +148,11 @@ class Client:
             self.compteur = 0
             self.ancienne_transcription = combined_text
         print(f"self.compteur = {self.compteur}")
-        utils.print_transcript(text, self.recording)
+        utils.print_transcript(text)
         
         if self.compteur > self.nb_repeat or ending:
             self.recording = False
-            # ending = True
+            ending = True
             print("fin dans client()")
         # Call back
         # if self.recording:

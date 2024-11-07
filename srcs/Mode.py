@@ -75,18 +75,17 @@ class Mode:
             self.rec_button.config(image=self.record_image)
 
     def _update_barre_status(self):
-        if self.app.recording:
-            message = "RECORDING ..."
+        if self.mode == REDUIT:
+            message = f"RecoVocale {VERSION}"
         else:
-            if self.mode == REDUIT:
-                message = f"RecoVocale {VERSION}"
-            else:
-                message = f"RecoVocale [{self.app.config.server_ip}:{self.app.config.port}] (v{VERSION}) {"" if self.app.status_server else "not"} connected"
+            message = f"RecoVocale [{self.app.config.server_ip}:{self.app.config.port}] (v{VERSION}) {"" if self.app.status_server else "not"} connected"
 
         if self.app.status_server == False:
             self.status_bar.config(text=message, fg='red', anchor=tk.W)
         elif self.app.recording:
-            self.status_bar.config(text=message, fg='black', bg='red', anchor=tk.CENTER)
+            self.status_bar.config(text="RECORDING ...", fg='black', bg='red', anchor=tk.CENTER)
+        elif self.transcription_en_cours:
+            self.status_bar.config(text="Transcription ...en cours", bg='lightblue', fg='darkblue', anchor=tk.W)
         else:
             self.status_bar.config(text=message, bg='lightblue', fg='darkblue', anchor=tk.W)
 

@@ -68,7 +68,6 @@ class Mode_Direct(Mode):
             nb_repeat=self.app.config.nb_repeat,
         )
         super().enter()
-        # self.transcription_en_cours = False
         self.pile = ['']
     def ui(self):
         create_menus(self)
@@ -255,7 +254,7 @@ class Mode_Direct(Mode):
         else:
             self.text_box.config(state=tk.DISABLED)
             self.set_pos_curseur(self.transcription.pos_cur)
-            self.status_bar.config(text="Transcription ... en cours", bg='lightblue', fg='darkblue', anchor=tk.W)
+            # self.status_bar.config(text="Transcription ... en cours", bg='lightblue', fg='darkblue', anchor=tk.W)
 
     def copy_to_clipboard(self):
         self.status_bar.config(text='- Copie -', bg='lightblue', fg='darkblue', anchor=tk.CENTER)

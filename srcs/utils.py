@@ -9,7 +9,7 @@ import numpy as np
 #     os.system("cls" if os.name == "nt" else "clear")
 
 
-def print_transcript(text, recording=None):
+def print_transcript(text):
     """Prints formatted transcript text."""
     wrapper = textwrap.TextWrapper(width=60)
     for line in wrapper.wrap(text="".join(text)):
