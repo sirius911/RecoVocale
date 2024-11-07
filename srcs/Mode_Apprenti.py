@@ -61,6 +61,8 @@ class Mode_Apprenti(Mode):
         # Add the text box
         self.text_box = tk.Text(self.text_box_frame, yscrollcommand=self.text_box_scrollbar.set)
         self.text_box.pack(fill=tk.BOTH, expand=True)
+        #balise pour les mots incorrects
+        self.text_box.tag_config("incorrect", foreground="red", underline=True)
         self.text_box.config(state=tk.DISABLED)
 
         # Configure the selection tag
@@ -70,7 +72,11 @@ class Mode_Apprenti(Mode):
         self.text_box_scrollbar.config(command=self.text_box.yview)
 
         # Attacher l'événement à la Text box
-        self.text_box.bind("<KeyRelease>", self.on_text_change)
+        self.text_box.bind("<Key>", self.on_text_change)
+
+        self.text_box.bind("<Button-3>", self.show_context_menu)
+        # Création du menu contextuel
+        self.context_menu = tk.Menu(self.root, tearoff=0)
 
         # Create the status bar at the bottom of the window
         self.status_bar = tk.Label(self.root, text="Bienvenue dans l'application", bd=1, relief=tk.SUNKEN, anchor=tk.W)
@@ -225,13 +231,13 @@ class Mode_Apprenti(Mode):
         # S'assurer que le curseur est visible
         self.text_box.see("insert")
 
-    def on_text_change(self, event):
-        if event and (event.keysym in ("Shift_L", "Shift_R", "Control_L", "Control_R", "Alt_L", "Alt_R") or
-                (event.state & 0x4 and event.keysym == "z")):
-            return
-        self.save_text_box()
-        self.transcription.set(self.text_box.get("1.0", tk.END).strip())
-        self.transcription.pos_cur = self.get_pos_curseur()
+    # def on_text_change(self, event):
+    #     if event and (event.keysym in ("Shift_L", "Shift_R", "Control_L", "Control_R", "Alt_L", "Alt_R") or
+    #             (event.state & 0x4 and event.keysym == "z")):
+    #         return
+    #     self.save_text_box()
+    #     self.transcription.set(self.text_box.get("1.0", tk.END).strip())
+    #     self.transcription.pos_cur = self.get_pos_curseur()
 
     def update_transcriptions(self, message, ending):
         if message is not None:
@@ -257,6 +263,7 @@ class Mode_Apprenti(Mode):
             self.play_button.config(state=tk.NORMAL)
             self.trash_button.config(state=tk.NORMAL)
             self.status_bar.config(text="Transcription ...Terminée", bg='lightblue', fg='darkblue', anchor=tk.W)
+            self.verification_dico()
         else:
             self.text_box.config(state=tk.DISABLED)
             self.set_pos_curseur(self.transcription.pos_cur)
@@ -347,23 +354,23 @@ class Mode_Apprenti(Mode):
         super().exit()
         return retour
     
-    def undo(self, event=None):
-        if event and event.keysym in ("Shift_L", "Shift_R", "Control_L", "Control_R", "Alt_L", "Alt_R") :
-            return
-        if self.pile:
-            dernier_etat = self.pile.pop()
-            self.text_box.delete('1.0', tk.END)
-            self.text_box.insert('1.0', dernier_etat)
-            self.transcription.set(dernier_etat)
-        if not self.pile:
-            self.pile = ['']
-            self.edit_menu.entryconfig(0, state='disabled')
+    # def undo(self, event=None):
+    #     if event and event.keysym in ("Shift_L", "Shift_R", "Control_L", "Control_R", "Alt_L", "Alt_R") :
+    #         return
+    #     if self.pile:
+    #         dernier_etat = self.pile.pop()
+    #         self.text_box.delete('1.0', tk.END)
+    #         self.text_box.insert('1.0', dernier_etat)
+    #         self.transcription.set(dernier_etat)
+    #     if not self.pile:
+    #         self.pile = ['']
+    #         self.edit_menu.entryconfig(0, state='disabled')
         # print(f"Pile après undo: {self.pile}")
 
-    def save_text_box(self):
-        # Sauvegarder uniquement si le texte a changé
-        text_box = self.text_box.get("1.0", tk.END).strip()
-        if not self.pile or text_box != self.pile[-1]:
-            self.pile.append(text_box)
-            self.edit_menu.entryconfig(0, state='normal')
-            # print("État sauvegardé:", self.pile)
+    # def save_text_box(self):
+    #     # Sauvegarder uniquement si le texte a changé
+    #     text_box = self.text_box.get("1.0", tk.END).strip()
+    #     if not self.pile or text_box != self.pile[-1]:
+    #         self.pile.append(text_box)
+    #         self.edit_menu.entryconfig(0, state='normal')
+    #         # print("État sauvegardé:", self.pile)

@@ -294,7 +294,9 @@ def on_resize(event):
         height = event.height
         print(f"Ma fenêtre Tkinter - Dimensions: {width}x{height}")
 
+
 if __name__ == "__main__":
+
      # Récupérer l'ID du processus du splash screen passé en argument
     # if len(sys.argv) > 1:
     #     splash_pid = sys.argv[1]

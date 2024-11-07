@@ -120,6 +120,10 @@ def create_menus(self):
     self.debug_var = BooleanVar(value=self.app.config.debug)
     self.settings_menu.add_checkbutton(label="Debug", variable=self.debug_var, 
                                    command=self.toggle_debug)
+    self.dico_var = BooleanVar(value=self.app.config.dictionnaire)
+    self.settings_menu.add_checkbutton(label="Dictionnaire", variable=self.dico_var,
+                                   command=self.toggle_dictionnaire)
+
     self.settings_menu.add_separator()
     self.settings_menu.add_command(label="Quitter", command=self.exit_app)
 
