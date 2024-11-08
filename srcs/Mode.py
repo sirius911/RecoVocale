@@ -218,7 +218,6 @@ class Mode:
                 # print(f"{mot} est incorrect. Suggestions : {self.dico.suggest(mot)}")
 
     def show_context_menu(self, event):
-        print(self.mots_personnels)
         # Obtenir l'index du clic droit
         index = self.text_box.index(f"@{event.x},{event.y}")
         
@@ -264,8 +263,7 @@ class Mode:
     def ajouter_mot_personnalise(self, mot):
         self.mots_personnels.add(mot)
         self.dico.add(mot)
-        # with open("chemin/vers/mots_personnels.txt", "a") as f:
-            # f.write(mot + "\n")
+        self.verification_dico()
 
     def is_ouverte(self):
         return self.fenetre_gestion_ouverte
