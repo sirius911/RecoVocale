@@ -1,5 +1,4 @@
 import os
-import shutil
 import time
 from Mode import Mode
 import tkinter as tk
@@ -231,14 +230,6 @@ class Mode_Apprenti(Mode):
         # S'assurer que le curseur est visible
         self.text_box.see("insert")
 
-    # def on_text_change(self, event):
-    #     if event and (event.keysym in ("Shift_L", "Shift_R", "Control_L", "Control_R", "Alt_L", "Alt_R") or
-    #             (event.state & 0x4 and event.keysym == "z")):
-    #         return
-    #     self.save_text_box()
-    #     self.transcription.set(self.text_box.get("1.0", tk.END).strip())
-    #     self.transcription.pos_cur = self.get_pos_curseur()
-
     def update_transcriptions(self, message, ending):
         if message is not None:
             if not self.transcription_en_cours:
@@ -354,23 +345,3 @@ class Mode_Apprenti(Mode):
         super().exit()
         return retour
     
-    # def undo(self, event=None):
-    #     if event and event.keysym in ("Shift_L", "Shift_R", "Control_L", "Control_R", "Alt_L", "Alt_R") :
-    #         return
-    #     if self.pile:
-    #         dernier_etat = self.pile.pop()
-    #         self.text_box.delete('1.0', tk.END)
-    #         self.text_box.insert('1.0', dernier_etat)
-    #         self.transcription.set(dernier_etat)
-    #     if not self.pile:
-    #         self.pile = ['']
-    #         self.edit_menu.entryconfig(0, state='disabled')
-        # print(f"Pile après undo: {self.pile}")
-
-    # def save_text_box(self):
-    #     # Sauvegarder uniquement si le texte a changé
-    #     text_box = self.text_box.get("1.0", tk.END).strip()
-    #     if not self.pile or text_box != self.pile[-1]:
-    #         self.pile.append(text_box)
-    #         self.edit_menu.entryconfig(0, state='normal')
-    #         # print("État sauvegardé:", self.pile)

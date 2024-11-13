@@ -18,13 +18,9 @@ class Mode:
         self.transcription_en_cours = False
 
         # # Définir le chemin du répertoire de configuration dans %APPDATA%\RecoVocale
-        # config_dir = os.path.join(os.getenv('APPDATA'), 'RecoVocale')
-        # path_to_dic = os.path.join(config_dir, "fr.dic")
-        # path_to_aff = os.path.join(config_dir, "fr.aff")
         self.dico = enchant.Dict("fr_FR")
         self.mots_personnels = set()
-        # self.dico = SpellChecker(language="fr")
-        # self.dico.word_frequency.add("cardiopathie")
+
         self.enter()
 
     def enter(self):
@@ -214,8 +210,6 @@ class Mode:
                 end = f"1.0 + {end_idx} chars"
                 # Ajouter une balise pour souligner les mots incorrects
                 self.text_box.tag_add("incorrect", start, end)
-                # Afficher les suggestions (affichage simplifié)
-                # print(f"{mot} est incorrect. Suggestions : {self.dico.suggest(mot)}")
 
     def show_context_menu(self, event):
         # Obtenir l'index du clic droit

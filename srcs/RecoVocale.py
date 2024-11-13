@@ -72,21 +72,6 @@ class App:
         # self.root.after(100, self.start_micro_monitoring)  # Démarrer l'intégration asyncio/tkinter
         self.info()
 
-    # def start_micro_monitoring(self):
-    #     """Démarre la surveillance du micro via la méthode monitor() de Micro."""
-    #     print("start_micro_monitor()")
-    #     if self.mic is None:
-    #         try:
-    #             print("ici")
-    #             self.mic = Micro(loop=self.loop, app=self.current_mode, call_back=self.info)
-    #             self.current_mode.status_bar.config(text=f'[{self.mic.micro_name}] connecté', bg='lightblue', fg='darkblue', anchor=tk.CENTER)
-    #         except Exception as e:
-    #             print("là")
-    #             self.current_mode.status_bar.config(text='Micro déconnecté', bg='lightblue', fg='darkblue', anchor=tk.CENTER)
-    #     if self.mic:
-    #         print("encore ici")
-    #         asyncio.run_coroutine_threadsafe(self.mic.monitor(), self.loop)
-
     def paste_from_clipboard(self):
         self.current_mode.status_bar.config(text='- Coller -', bg='lightblue', fg='darkblue', anchor=tk.CENTER)
         Simulator([Key.ctrl, 'v'])
@@ -103,7 +88,6 @@ class App:
 
     def on_closing(self):
         self.current_mode.stop()
-        # self.stop_client()
         if self.mic:
             self.mic.disconnect()
         # sauvegarde userConfig

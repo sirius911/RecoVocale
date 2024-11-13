@@ -196,9 +196,6 @@ def show_bubble_message(parent, message):
         # Positionner la bulle précisément au centre de l'écran avec la taille adaptée
         bubble.geometry(f"+{x}+{y}")
 
-
-        
-
 def remove_bubble():
     """Ferme la bulle de message si elle est active."""
     global bubble
