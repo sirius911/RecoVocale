@@ -186,7 +186,7 @@ class Mode:
         self.transcription.pos_cur = self.get_pos_curseur()
         self.verification_dico()
 
-    def verification_dico(self):
+    def verification_dico(self, auto=False):
         #efface les marquages précédents
         self.text_box.tag_remove("incorrect", "1.0", tk.END)
         if not self.app.config.dictionnaire:
@@ -202,14 +202,34 @@ class Mode:
 
             # Vérifier chaque mot
             if mot_nettoye and not self.dico.check(mot_nettoye):
-                # Trouver les positions du mot
+                # Trouver les positions du mot dans le texte
                 start_idx = contenu.find(mot)
                 end_idx = start_idx + len(mot)
-                # Convertir les positions en indices tkinter
                 start = f"1.0 + {start_idx} chars"
                 end = f"1.0 + {end_idx} chars"
-                # Ajouter une balise pour souligner les mots incorrects
-                self.text_box.tag_add("incorrect", start, end)
+
+                # Obtenir les suggestions
+                suggestions = self.dico.suggest(mot_nettoye)
+
+                 # Si une seule suggestion est disponible, remplacer automatiquement le mot
+                if len(suggestions) == 1 and auto:
+                    correct_mot = suggestions[0]
+                    self.save_text_box()
+                    # Remplacer le mot incorrect par le mot correct
+                    self.text_box.delete(start, end)
+                    self.text_box.insert(start, correct_mot)
+                else:
+                    # S'il y a plusieurs suggestions, ajouter une balise pour souligner le mot incorrect
+                    self.text_box.tag_add("incorrect", start, end)
+
+                # # Trouver les positions du mot
+                # start_idx = contenu.find(mot)
+                # end_idx = start_idx + len(mot)
+                # # Convertir les positions en indices tkinter
+                # start = f"1.0 + {start_idx} chars"
+                # end = f"1.0 + {end_idx} chars"
+                # # Ajouter une balise pour souligner les mots incorrects
+                # self.text_box.tag_add("incorrect", start, end)
 
     def show_context_menu(self, event):
         # Obtenir l'index du clic droit

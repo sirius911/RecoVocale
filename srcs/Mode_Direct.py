@@ -222,7 +222,7 @@ class Mode_Direct(Mode):
             self.transcription.validation()
             self.set_pos_curseur(self.transcription.fin_insertion)
             self.status_bar.config(text="Transcription ...Terminée", bg='lightblue', fg='darkblue', anchor=tk.W)
-            self.verification_dico()
+            self.verification_dico(True)
         else:
             self.text_box.config(state=tk.DISABLED)
             self.set_pos_curseur(self.transcription.pos_cur)

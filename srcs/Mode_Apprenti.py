@@ -58,7 +58,7 @@ class Mode_Apprenti(Mode):
         self.text_box_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
         # Add the text box
-        self.text_box = tk.Text(self.text_box_frame, yscrollcommand=self.text_box_scrollbar.set)
+        self.text_box = tk.Text(self.text_box_frame, yscrollcommand=self.text_box_scrollbar.set, wrap="word")
         self.text_box.pack(fill=tk.BOTH, expand=True)
         #balise pour les mots incorrects
         self.text_box.tag_config("incorrect", foreground="red", underline=True)
@@ -254,7 +254,7 @@ class Mode_Apprenti(Mode):
             self.play_button.config(state=tk.NORMAL)
             self.trash_button.config(state=tk.NORMAL)
             self.status_bar.config(text="Transcription ...Terminée", bg='lightblue', fg='darkblue', anchor=tk.W)
-            self.verification_dico()
+            self.verification_dico(True)
         else:
             self.text_box.config(state=tk.DISABLED)
             self.set_pos_curseur(self.transcription.pos_cur)
