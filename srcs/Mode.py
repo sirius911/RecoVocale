@@ -1,4 +1,5 @@
 # from utils_socket import check_server_status
+import re
 import string
 import time
 from info import *
@@ -192,22 +193,16 @@ class Mode:
         if not self.app.config.dictionnaire:
             return
 
-        # Séparer le contenu en mots
         contenu = self.text_box.get("1.0", tk.END)
-        mots = contenu.split()
-        
+        # Séparer le contenu en mots
+        # mots = contenu.split()
+        mots = re.findall(r'\b[\w-]+\b', contenu) # permet de ne pas couper si mot composé (-)
+
         for mot in mots:
             # Nettoyer le mot de la ponctuation en début et fin, sans modifier l'original
             mot_nettoye = mot.strip(string.punctuation)
-
             # Vérifier chaque mot
             if mot_nettoye and not self.dico.check(mot_nettoye):
-                # Trouver les positions du mot dans le texte
-                start_idx = contenu.find(mot)
-                end_idx = start_idx + len(mot)
-                start = f"1.0 + {start_idx} chars"
-                end = f"1.0 + {end_idx} chars"
-
                 # Obtenir les suggestions
                 suggestions = self.dico.suggest(mot_nettoye)
 
@@ -215,30 +210,46 @@ class Mode:
                 if len(suggestions) == 1 and auto:
                     correct_mot = suggestions[0]
                     self.save_text_box()
+                    # Trouver la position exacte du mot dans le Text widget
+                    start_idx = self.text_box.search(mot, "1.0", tk.END)
+                    if not start_idx:
+                        continue
+                    end_idx = f"{start_idx} + {len(mot)}c"
                     # Remplacer le mot incorrect par le mot correct
-                    self.text_box.delete(start, end)
-                    self.text_box.insert(start, correct_mot)
+                    self.text_box.delete(start_idx, end_idx)
+                    self.text_box.insert(start_idx, correct_mot)
                 else:
-                    # S'il y a plusieurs suggestions, ajouter une balise pour souligner le mot incorrect
-                    self.text_box.tag_add("incorrect", start, end)
-
-                # # Trouver les positions du mot
-                # start_idx = contenu.find(mot)
-                # end_idx = start_idx + len(mot)
-                # # Convertir les positions en indices tkinter
-                # start = f"1.0 + {start_idx} chars"
-                # end = f"1.0 + {end_idx} chars"
-                # # Ajouter une balise pour souligner les mots incorrects
-                # self.text_box.tag_add("incorrect", start, end)
+                     # Marquer le mot comme incorrect s'il n'y a pas une seule suggestion
+                    start_idx = self.text_box.search(mot, "1.0", tk.END)
+                    if not start_idx:
+                        continue
+                    end_idx = f"{start_idx} + {len(mot)}c"
+                    # print(start_idx, end_idx)
+                    self.text_box.tag_add("incorrect", start_idx, end_idx)
 
     def show_context_menu(self, event):
-        # Obtenir l'index du clic droit
+       # Obtenir la position du clic droit dans le widget Text
         index = self.text_box.index(f"@{event.x},{event.y}")
         
-        # Récupérer le mot sous le curseur
-        word_start = self.text_box.index(f"{index} wordstart")
-        word_end = self.text_box.index(f"{index} wordend")
-        incorrect_word = self.text_box.get(word_start, word_end)
+        # Obtenir la ligne complète où le clic droit a eu lieu
+        line_start = f"{index.split('.')[0]}.0"
+        line_end = f"{index.split('.')[0]}.end"
+        line_text = self.text_box.get(line_start, line_end)
+        
+        # Obtenir la position relative du curseur dans la ligne
+        cursor_pos_in_line = int(index.split('.')[1])
+        
+        # Utiliser une regex pour trouver le mot avec un trait d'union sous le curseur
+        # Recherche de mots contenant des lettres, chiffres et traits d'union
+        for match in re.finditer(r'\b[\w-]+\b', line_text):
+            start, end = match.span()
+            if start <= cursor_pos_in_line <= end:
+                incorrect_word = match.group(0)
+                word_start = f"{line_start} + {start}c"
+                word_end = f"{line_start} + {end}c"
+                break
+        else:
+            return  # Aucun mot trouvé sous le curseur
 
         # Vérifier si le mot est incorrect et obtenir des suggestions
         if not self.dico.check(incorrect_word):
