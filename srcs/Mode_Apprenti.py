@@ -132,6 +132,16 @@ class Mode_Apprenti(Mode):
 
     def stop(self):
         self.stop_client()
+        #essais------------------------
+        self.text_box.config(state=tk.NORMAL)
+        self.trash_button.config(state=tk.NORMAL)
+        self.rec_button.config(state=tk.NORMAL)
+        self.transcription_en_cours = False
+        self.transcription.validation()
+        self.set_pos_curseur(self.transcription.fin_insertion)
+        self.status_bar.config(text="Transcription ...interrompue", bg='lightblue', fg='darkblue', anchor=tk.W)
+        self.verification_dico(True)
+        #essais------------------------
 
     def valid_transcriptions(self):
         self.stop_client()

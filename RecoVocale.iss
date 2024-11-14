@@ -18,9 +18,11 @@ LicenseFile="C:\\Users\\lorcyr\\RecoVocale\\LICENSE.txt"
 
 [Files]
 ; Inclure le fichier exécutable et d'autres fichiers nécessaires
+; pour le Flags:ignoreversion / onlyifdoesntexist / promptifolder 
 Source: "dist\RecoVocale.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "C:\Users\LORCYR\Appdata\Roaming\RecoVocale\user_config.ini"; DestDir: "{localappdata}\RecoVocale"; Flags: ignoreversion
 Source: "C:\Users\LORCYR\Appdata\Roaming\RecoVocale\micro_actions_config.json"; DestDir: "{localappdata}\RecoVocale"; Flags: ignoreversion
+Source: "C:\Users\LORCYR\Appdata\Local\enchant\fr_FR"; DestDir: "{localappdata}\enchant"; Flags: onlyifdoesntexist
 
 
 [Icons]

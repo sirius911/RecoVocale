@@ -32,6 +32,10 @@ class ValidTranscriptions(Action):
     def execute(self):
         self.app.valid_transcriptions()
 
+class StopAction(Action):
+    def execute(self):
+        self.app.stop()
+
 class Clear(Action):
     def execute(self):
         self.app.clear_text_box()
