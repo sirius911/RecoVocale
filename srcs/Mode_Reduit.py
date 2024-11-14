@@ -59,6 +59,7 @@ class Mode_Reduit(Mode):
     def stop(self):
         self.stop_client()
         remove_bubble()
+        self.update_transcriptions(message=self.transcription.text_en_cours, ending=True)
 
     def valid_transcriptions(self):
         self.stop_client()

@@ -124,6 +124,7 @@ class Mode_Direct(Mode):
     def stop(self):
         self.stop_client()
         #essais------------------------
+        # si le bouton stop est demandé
         self.text_box.config(state=tk.NORMAL)
         self.trash_button.config(state=tk.NORMAL)
         self.rec_button.config(state=tk.NORMAL)
