@@ -242,14 +242,18 @@ class Client:
                     "task": self.task,
                     "model": self.model,
                     "use_vad": self.use_vad,
-                    # "beam_size": '1',
-                    # "initial_prompt": 'point, rapport, médic',
-                    # "repetition_penality": '2.1',
-                    # "no_repeat_ngram_size": '2',
-                    # "no_speech_threshold": '0.1',
-                    # "log_prob_threshold": '-1.0',
-                    # "condition_on_previous_text": 'True',
-                    # "compression_ratio_threshold": '2.4'
+                    "beam_size":3,
+                    "best_of":1,
+                    "patience":0.5,
+                    "length_penalty":1.0,
+                    "repetition_penalty":1.5,
+                    "no_repeat_ngram_size":3,
+                    "log_prob_threshold":-0.5,
+                    "no_speech_threshold":0.5,
+                    "compression_ratio_threshold":1.5,
+                    "condition_on_previous_text":False,
+                    "temperature":[0.2, 0.4],
+                    "initial_prompt":'médical français',
                 }
             )
         )
@@ -836,38 +840,3 @@ class TranscriptionClient(TranscriptionTeeClient):
     
     def is_pause(self):
         return self.pause
-    
-# class EnhancedTranscriptionClient(TranscriptionClient):
-#     def __init__(self, host, port, lang=None, model="small",translate=False, use_vad=True, save_output_recording=False, output_recording_filename="./output_recording.wav", output_transcription_path="./output.srt", call_back=None):
-#         super().__init__(host=host,
-#                          port=port,
-#                          lang=lang,
-#                          model=model,
-#                          translate=translate,
-#                          use_vad=use_vad,
-#                          save_output_recording=save_output_recording,
-#                          output_recording_filename=output_recording_filename,
-#                          output_transcription_path=output_transcription_path,
-#                          call_back=call_back,
-#                          )
-#         self.pause = True
-
-#     def stop(self):
-#         self.client.close_websocket()
-#         self.client.recording = False
-#         self.pause = True
-#         self.client.transcripted = []
-
-#     # def get_transcriptions(self):
-#     #     return self.client.get_transcriptions()
-
-#     def is_recording(self):
-#         return self.client.recording
-    
-#     def set_pause(self, flag):
-#         for client in self.clients:
-#             client.set_pause(flag)
-#         self.pause = flag
-    
-#     def is_pause(self):
-#         return self.pause
