@@ -242,7 +242,7 @@ class Client:
                     "task": self.task,
                     "model": self.model,
                     "use_vad": self.use_vad,
-                    "beam_size":3,
+                    "beam_size":5,
                     "best_of":1,
                     "patience":0.5,
                     "length_penalty":1.0,
@@ -508,7 +508,7 @@ class TranscriptionTeeClient:
                 for client in self.clients:
                     client.wait_before_disconnect()
                 self.multicast_packet(Client.END_OF_AUDIO.encode('utf-8'), True)
-                self.write_all_clients_srt()
+                # self.write_all_clients_srt()
                 self.stream.close()
                 self.close_all_clients()
 

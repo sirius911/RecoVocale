@@ -66,7 +66,8 @@ VSVersionInfo(
 Set-Content -Path "version_file.txt" -Value $versionFileContent
 
 # Construire la commande PyInstaller avec plusieurs --add-data et le fichier de version
-$pyinstallerCommand = "pyinstaller --onefile --clean --icon=`"$iconPath`" --add-data `"$iconsData`" --add-data `"$configData`" `"$sourcePath`" --name `"$outputName`" --noconsole --version-file version_file.txt"
+# $pyinstallerCommand = "pyinstaller --onefile --clean --icon=`"$iconPath`" --add-data `"$iconsData`" --add-data `"$configData`" `"$sourcePath`" --name `"$outputName`" --noconsole --version-file version_file.txt"
+$pyinstallerCommand = "pyinstaller --onefile --clean --icon=`"$iconPath`" --add-data `"$iconsData`" --add-data `"$configData`" `"$sourcePath`" --name `"$outputName`" --noconsole --version-file version_file.txt --strip --log-level=WARN"
 
 # Exécuter la commande
 Write-Host "Running PyInstaller..."
