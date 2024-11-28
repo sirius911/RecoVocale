@@ -51,9 +51,7 @@ def create_buttons(self):
     self.rec_button.grid(row=0, column=0, padx=padx)
     if self.app.status_server == True:
         self.rec_button.config(state=tk.NORMAL)
-
-    ToolTip(self.rec_button, f"({self.app.keyboard_shortcut})")
-
+    change_toolTip(self.rec_button, self.app.config.shortcut)
     self.rec_canvas = tk.Canvas(self.button_frame, width=button_width, height=button_width)
     self.rec_circle = self.rec_canvas.create_oval(2, 2, button_width, button_width, fill="grey")
     self.rec_canvas.grid(row=0, column=1, padx=padx)
@@ -75,6 +73,8 @@ def create_buttons(self):
     # Optional: If you want the frame to be centered horizontally in the window
     # self.button_frame.grid(row=0, column=0, sticky="n")  # This will keep it centered
 
+def change_toolTip(button, texte):
+    ToolTip(button, f"{texte}")
 
 def create_menus(self):
     self.menu_bar = tk.Menu(self.root)
