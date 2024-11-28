@@ -66,10 +66,7 @@ class App:
 
         # #---------------------------MICRO----------------------------
         # Initialize the microphone 
-        # self.mic = Micro(loop, app=self.current_mode)
         self.mic = Micro(loop=self.loop, app=self.current_mode, call_back=self.update)
-        # self.mic = None
-        # self.root.after(100, self.start_micro_monitoring)  # Démarrer l'intégration asyncio/tkinter
         self.info()
 
     def paste_from_clipboard(self):

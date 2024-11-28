@@ -1,8 +1,5 @@
 from datetime import datetime
-import json
-import os
 import re
-from utils_window import get_config_path
 import re
 
 def int_to_roman(number:int):
@@ -38,6 +35,7 @@ def detecter_chiffre_roman(text):
     match_chiffre = re.search(pattern_chiffre, text.lower())
     if match_chiffre:
         # Convertir le chiffre capturé en entier
+        print("[Insérer][CHIFFRE ROMAIN]")
         return int_to_roman(int(match_chiffre.group(1)))
     
     # Expression régulière pour capturer les nombres en lettres
@@ -49,6 +47,7 @@ def detecter_chiffre_roman(text):
         nombre_en_lettres = match_lettres.group(1)
         # Vérifier si le mot correspond à un nombre dans le dictionnaire
         if nombre_en_lettres in nombres_en_lettres:
+            print("[Insérer][CHIFFRE ROMAIN]")
             return int_to_roman(nombres_en_lettres[nombre_en_lettres])
     
     return None  # Retourner None si aucun chiffre n'est trouvé
@@ -56,6 +55,7 @@ def detecter_chiffre_roman(text):
 def remplacement_special(text:str):
     retour = None
     if text.lower() == "date":
+        print( "[Insérer][DATE]")
         return datetime.now().strftime("%d/%m/%Y")
     retour = detecter_chiffre_roman(text)
     return retour
@@ -82,16 +82,16 @@ def remplacer_avec_dictionnaire(texte, pattern, dico_insertion):
         print(f" -> non trouvé")
         return match.group(0)
     # Utilise re.sub pour remplacer les occurrences du pattern
-    return re.sub(pattern, remplacement, texte, flags=re.IGNORECASE), insertion
+    return re.sub(pattern, remplacement, texte, flags=re.IGNORECASE)
 
 def insertion(phrase, dico_insertion):
 
     pattern = r"\bins[éèêe]r(é|ez|er|ée|ées|és)[,. ]+([\w\s]+)"
     
     # match = re.search(pattern, phrase)
-    nouveau_texte, ending = remplacer_avec_dictionnaire(phrase, pattern, dico_insertion)
+    nouveau_texte = remplacer_avec_dictionnaire(phrase, pattern, dico_insertion)
     # print(f"nouvelle phrase = {nouveau_texte}")
-    return nouveau_texte, ending
+    return nouveau_texte
 
 def proteger_points_speciaux(phrases):
     # Protéger les occurrences de "point" ou "points" précédées par des articles ou des chiffres
@@ -176,5 +176,5 @@ def intercept(phrases, dico_insertion):
     doit intercepter des mots clefs dans une liste de phrase
     renvoi la phrase corrigée et un flag ending indiquand si on doit terminé la transcription
     '''
-    phrase_renvoyee, ending = insertion(phrases, dico_insertion)
-    return phrase_renvoyee, ending
+    phrase_renvoyee = insertion(phrases, dico_insertion)
+    return phrase_renvoyee

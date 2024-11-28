@@ -59,30 +59,29 @@ class ClientManager:
 
     def call_back(self, texte, ending):
         # Fonction appelé par Client.py suite a evenement websocket serveur WhisperLive
-        if texte is None:
-            # print(f"appelle du call back du mode(None, True)")
-            # self.update_callback(None, True)
+        if texte is None: # appel du call back suite à ending=True
             return False
         transcriptions = texte if self.client else []
         if self.fenetre_gestion_insertions() or self.mode == APPRENTI:
             # la fenetre des insertions est ouverte donc on n'intercepte pas 
             combined_text = ''.join(transcriptions).lstrip()
         else:
-            combined_text, stop = intercept(''.join(transcriptions).lstrip(), self.insertions.get())
-            # ending = ending or stop
+            #On passe transcriptions a intercept() pour les insertions automatiques date, chiffre romain etc...
+            combined_text = intercept(''.join(transcriptions).lstrip(), self.insertions.get())
 
         if combined_text != "":
             if self.mode != APPRENTI:
+                # En mode APPRENTI on ne mets pas les ponctuations écrites (point, virgule etc...)
                 combined_text = corrige_ponctuation(combined_text)
             if not self.fenetre_gestion_insertions():
-                # on appelle la fonction du mode
-                # print(f"appelle du call back du mode('{combined_text}', {ending})")
+                # on appelle la fonction du mode qui permet soit d'écrire dans la TextBox soit d'envoyer la chaine écrite
+                # on n'appelle la fonction que si le client n'est pas dans la fenêtre de gestion des insertions 
                 self.update_callback(combined_text, ending)
             else:
-                # la fenetre insertion est ouverte
+                # la fenetre insertion est ouverte on va alors envoyer le texte sur l'écran
                 if ending:
                    Simulator(combined_text) 
-        return not ending # on renvoi la demande de recording du client donc l'inverse de ending
+        return not ending # on renvoi la demande de recording du client donc l'inverse de ending à la fonction qui a appelé le call back
 
     def stop_client(self):
         if not self.running:

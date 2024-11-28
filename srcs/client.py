@@ -1,18 +1,15 @@
 import os
 import shutil
 import wave
-
 import numpy as np
 import pyaudio
 import threading
 import json
 import websocket
-# from websocket import WebSocketApp  
 import uuid
 import time
 import ffmpeg
 import utils as utils
-import audioop
 import tempfile
 
 TEMP_DIR = tempfile.gettempdir()  # Utiliser le répertoire temporaire du système
@@ -101,7 +98,6 @@ class Client:
         self.ws_thread.start()
 
         self.transcript = []
-        # print("[INFO]: * recording")
 
     def set_pause(self, flag):
         self.pause = flag
@@ -147,23 +143,16 @@ class Client:
         else:
             self.compteur = 0
             self.ancienne_transcription = combined_text
-        print(f"self.compteur = {self.compteur}")
-        utils.print_transcript(text)
+        # print(f"self.compteur = {self.compteur}")
+        # utils.print_transcript(text)
         
         if self.compteur > self.nb_repeat or ending:
             self.recording = False
             ending = True
-            print("fin dans client()")
-        # Call back
-        # if self.recording:
+            # print("fin dans client()")
+
+        # appel de la fonction Call back
         self.recording = self.call_back(text, ending)
-        # else:
-        #     self.call_back(None, True)
-        # if self.recording:
-            # on verifie qu'on est bien encore en recording pour ne pas envoyer à la fonction
-            # call_back si la transcription est terminé mais qu'on a encore des retours serveurs
-            # self.recording = self.call_back(text)
-            # self.call_back(text)
 
     def on_message(self, ws, message):
         """
@@ -298,35 +287,11 @@ class Client:
         """
         return self.client_socket
 
-    def write_srt_file(self, output_path="output.srt"):
-        """
-        Writes out the transcript in .srt format.
-
-        Args:
-            message (output_path, optional): The path to the target file.  Default is "output.srt".
-
-        """
-        if self.server_backend == "faster_whisper":
-            if not self.transcript and self.last_segment is not None:
-                self.transcript.append(self.last_segment)
-            elif self.last_segment and self.transcript[-1]["text"] != self.last_segment["text"]:
-                self.transcript.append(self.last_segment)
-            utils.create_srt_file(self.transcript, output_path)
-
     def wait_before_disconnect(self):
         """Waits a bit before disconnecting in order to process pending responses."""
         assert self.last_response_received
         while time.time() - self.last_response_received < self.disconnect_if_no_response_for:
             continue
-
-    # def get_transcriptions(self):
-    #     return self.transcripted, self.phrase_finished
-    
-    def reset_transcription_context(self):
-        self.transcript = []
-        self.last_segment = None
-        self.last_received_segment = None
-        self.phrase_finished = False
 
 class TranscriptionTeeClient:
     """
@@ -368,11 +333,6 @@ class TranscriptionTeeClient:
                 shutil.rmtree(self.chunk_dir)
             os.makedirs(self.chunk_dir)
 
-        #-------------------------------------------------------------------------------
-        self.silence_threshold = 1000  # Adjust this threshold according to your needs
-        self.silence_duration = 5  # Duration of silence in seconds to consider the end
-        self.silence_counter = 0
-        #-------------------------------------------------------------------------------
         try:
             self.stream = self.p.open(
                 format=self.format,
@@ -385,31 +345,6 @@ class TranscriptionTeeClient:
         except OSError as error:
             print(f"[WARN]: Unable to access microphone. {error}")
             self.stream = None
-
-    def detect_silence(self, data:bytes) -> bool:
-        """
-        Detect silence in the given audio data.
-
-        This function calculates the Root Mean Square (RMS) of the audio volume and 
-        compares it to a predefined silence threshold. If the RMS value is below 
-        the threshold, it increments a silence counter. Otherwise, it resets the 
-        counter. The function returns True if the silence counter exceeds the 
-        duration of silence considered as the end, otherwise False.
-
-        Args:
-            data (bytes): The audio data to be analyzed.
-
-        Returns:
-            bool: True if the detected silence duration exceeds the predefined 
-                silence duration, otherwise False.
-        """
-        rms = audioop.rms(data, 2)  # Calculate the Root Mean Square (RMS) of the audio volume
-        if rms < self.silence_threshold:
-            self.silence_counter += 1
-        else:
-            self.silence_counter = 0
-        return self.silence_counter > (self.rate / self.chunk) * self.silence_duration
-
 
     def __call__(self, audio=None, rtsp_url=None, hls_url=None, save_file=None):
         """
@@ -435,13 +370,9 @@ class TranscriptionTeeClient:
                     return
 
         print("[INFO]: Server Ready!")
-        if hls_url is not None:
-            self.process_hls_stream(hls_url, save_file)
-        elif audio is not None:
+        if audio is not None:
             resampled_file = utils.resample(audio)
             self.play_file(resampled_file)
-        elif rtsp_url is not None:
-            self.process_rtsp_stream(rtsp_url)
         else:
             self.record()
 
@@ -449,12 +380,6 @@ class TranscriptionTeeClient:
         """Closes all client websockets."""
         for client in self.clients:
             client.close_websocket()
-
-    def write_all_clients_srt(self):
-        """Writes out .srt files for all clients."""
-        return
-        # for client in self.clients:
-        #     client.write_srt_file(client.srt_file_path)
 
     def multicast_packet(self, packet, unconditional=False):
         """
@@ -508,7 +433,6 @@ class TranscriptionTeeClient:
                 for client in self.clients:
                     client.wait_before_disconnect()
                 self.multicast_packet(Client.END_OF_AUDIO.encode('utf-8'), True)
-                # self.write_all_clients_srt()
                 self.stream.close()
                 self.close_all_clients()
 
@@ -518,29 +442,7 @@ class TranscriptionTeeClient:
                 self.stream.close()
                 self.p.terminate()
                 self.close_all_clients()
-                self.write_all_clients_srt()
                 print("[INFO]: Keyboard interrupt.")
-
-    def process_rtsp_stream(self, rtsp_url):
-        """
-        Connect to an RTSP source, process the audio stream, and send it for trascription.
-
-        Args:
-            rtsp_url (str): The URL of the RTSP stream source.
-        """
-        process = self.get_rtsp_ffmpeg_process(rtsp_url)
-        self.handle_ffmpeg_process(process, stream_type='RTSP')
-
-    def process_hls_stream(self, hls_url, save_file):
-        """
-        Connect to an HLS source, process the audio stream, and send it for transcription.
-
-        Args:
-            hls_url (str): The URL of the HLS stream source.
-            save_file （str, optional): Local path to save the network stream.
-        """
-        process = self.get_hls_ffmpeg_process(hls_url, save_file)
-        self.handle_ffmpeg_process(process, stream_type='HLS')
 
     def handle_ffmpeg_process(self, process, stream_type):
         print(f"[INFO]: Connecting to {stream_type} stream...")
@@ -557,38 +459,10 @@ class TranscriptionTeeClient:
             print(f"[ERROR]: Failed to connect to {stream_type} stream: {e}")
         finally:
             self.close_all_clients()
-            self.write_all_clients_srt()
             if process:
                 process.kill()
 
         print(f"[INFO]: {stream_type} stream processing finished.")
-
-    def get_rtsp_ffmpeg_process(self, rtsp_url):
-        return (
-            ffmpeg
-            .input(rtsp_url, threads=0)
-            .output('-', format='s16le', acodec='pcm_s16le', ac=1, ar=self.rate)
-            .run_async(pipe_stdout=True, pipe_stderr=True)
-        )
-
-    def get_hls_ffmpeg_process(self, hls_url, save_file):
-        if save_file is None:
-            process = (
-                ffmpeg
-                .input(hls_url, threads=0)
-                .output('-', format='s16le', acodec='pcm_s16le', ac=1, ar=self.rate)
-                .run_async(pipe_stdout=True, pipe_stderr=True)
-            )
-        else:
-            input = ffmpeg.input(hls_url, threads=0)
-            output_file = input.output(save_file, acodec='copy', vcodec='copy').global_args('-loglevel', 'quiet')
-            output_std = input.output('-', format='s16le', acodec='pcm_s16le', ac=1, ar=self.rate)
-            process = (
-                ffmpeg.merge_outputs(output_file, output_std)
-                .run_async(pipe_stdout=True, pipe_stderr=True)
-            )
-
-        return process
 
     def save_chunk(self, n_audio_file):
         """
@@ -625,7 +499,6 @@ class TranscriptionTeeClient:
         self.close_all_clients()
         if self.save_output_recording:
             self.write_output_recording(n_audio_file)
-        # self.write_all_clients_srt()
 
     def record(self):
         """
@@ -660,35 +533,18 @@ class TranscriptionTeeClient:
 
                     self.multicast_packet(audio_array.tobytes())
 
-                    #-------------------------------------------------
-                    # if self.detect_silence(data):
-                    #     # print("[INFO]: Silence detected. Stopping recording.")
-                    #     for client in self.clients:
-                    #         client.phrase_finished = True
-                    # else:
-                    #     for client in self.clients:
-                    #         client.phrase_finished = False
-                    #-------------------------------------------------------------------
-
                     # save frames if more than a minute
                     if len(self.frames) > 60 * self.rate:
                         if self.save_output_recording:
                             self.save_chunk(n_audio_file)
                             n_audio_file += 1
                         self.frames = b""
-            # self.write_all_clients_srt()
             print(f"sortie de la boucle while record() : {self.save_output_recording}")
             self.finalize_recording(n_audio_file)
-            # if self.save_output_recording:
-            #      self.finalize_recording(n_audio_file)
+            if self.save_output_recording:
+                 self.finalize_recording(n_audio_file)
         except KeyboardInterrupt:
             self.finalize_recording(n_audio_file)
-
-    #--------------------------NOT USED---------------------------------
-    def reset_transcription_context(self):
-        for client in self.clients:
-            client.reset_transcription_context()
-    #-------------------------------------------------------------------
 
     def write_audio_frames_to_file(self, frames, file_name):
         """

@@ -1,4 +1,3 @@
-# from utils_socket import check_server_status
 import re
 import string
 import time
