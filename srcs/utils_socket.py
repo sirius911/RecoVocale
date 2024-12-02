@@ -1,21 +1,10 @@
-# import socket
-
-
-# def check_server_status(host:str, port:int) -> bool:
-#         try:
-#             sock = socket.create_connection((host, port), timeout=2)
-#             sock.close()
-#             return True
-#         except (socket.timeout, ConnectionRefusedError, socket.gaierror, OSError):
-#             return False
-
 import asyncio
 import websockets
 
 async def check_websocket_status(host: str, port: int) -> bool:
     uri = f"ws://{host}:{port}"
     try:
-        async with websockets.connect(uri) as websocket:
+        async with websockets.connect(uri):
             return True
     except Exception as e:
         return False

@@ -1,45 +1,14 @@
-import os
 import textwrap
 import scipy
 import ffmpeg
 import numpy as np
-
-# def clear_screen():
-#     """Clears the console screen."""
-#     os.system("cls" if os.name == "nt" else "clear")
 
 
 def print_transcript(text):
     """Prints formatted transcript text."""
     wrapper = textwrap.TextWrapper(width=60)
     for line in wrapper.wrap(text="".join(text)):
-        # pass
         print(f"[{line}]")
-
-
-def format_time(s):
-    """Convert seconds (float) to SRT time format."""
-    hours = int(s // 3600)
-    minutes = int((s % 3600) // 60)
-    seconds = int(s % 60)
-    milliseconds = int((s - int(s)) * 1000)
-    return f"{hours:02}:{minutes:02}:{seconds:02},{milliseconds:03}"
-
-
-# def create_srt_file(segments, output_file):
-#     with open(output_file, 'w', encoding='utf-8') as srt_file:
-#         segment_number = 1
-#         for segment in segments:
-#             start_time = format_time(float(segment['start']))
-#             end_time = format_time(float(segment['end']))
-#             text = segment['text']
-
-#             srt_file.write(f"{segment_number}\n")
-#             srt_file.write(f"{start_time} --> {end_time}\n")
-#             srt_file.write(f"{text}\n\n")
-
-#             segment_number += 1
-
 
 def resample(file: str, sr: int = 16000):
     """

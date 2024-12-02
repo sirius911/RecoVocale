@@ -332,7 +332,6 @@ class TranscriptionTeeClient:
             if os.path.exists(self.chunk_dir):
                 shutil.rmtree(self.chunk_dir)
             os.makedirs(self.chunk_dir)
-
         try:
             self.stream = self.p.open(
                 format=self.format,
@@ -539,10 +538,9 @@ class TranscriptionTeeClient:
                             self.save_chunk(n_audio_file)
                             n_audio_file += 1
                         self.frames = b""
-            print(f"sortie de la boucle while record() : {self.save_output_recording}")
+            # print(f"sortie de la boucle while record() : {self.save_output_recording}")
             self.finalize_recording(n_audio_file)
-            if self.save_output_recording:
-                 self.finalize_recording(n_audio_file)
+
         except KeyboardInterrupt:
             self.finalize_recording(n_audio_file)
 
