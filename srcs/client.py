@@ -146,9 +146,9 @@ class Client:
         # print(f"self.compteur = {self.compteur}")
         # utils.print_transcript(text)
         
-        if self.compteur > self.nb_repeat or ending:
-            self.recording = False
-            ending = True
+        # if self.compteur > self.nb_repeat or ending:
+        #     self.recording = False
+        #     ending = True
             # print("fin dans client()")
 
         # appel de la fonction Call back

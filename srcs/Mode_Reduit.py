@@ -65,6 +65,7 @@ class Mode_Reduit(Mode):
         self.stop_client()
 
     def update_transcriptions(self, message, ending):
+        print(f"Appel de update_transcription avec [{message[:10]}] ending = {ending}")
         if message is not None:
             self.transcription.update(message, -1)
         if ending:
@@ -82,7 +83,7 @@ class Mode_Reduit(Mode):
             
     def corriger_texte(self, texte):
         if not self.app.config.dictionnaire:
-            return
+            return texte
         # Séparer le contenu en mots
         mots = re.findall(r'\b[\w-]+\b', texte)  # Prend en compte les mots composés avec des traits d'union
 
