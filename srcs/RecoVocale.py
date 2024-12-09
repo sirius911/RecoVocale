@@ -1,3 +1,4 @@
+import os
 import time
 import tkinter as tk
 import asyncio
@@ -202,6 +203,17 @@ if __name__ == "__main__":
 
     try:
         root = tk.Tk()
+        # Chemin vers l'icône (dans le répertoire de l'application installée)
+        if getattr(sys, 'frozen', False):  # Mode exécutable compilé
+            base_path = sys._MEIPASS
+        else:
+            base_path = os.path.dirname(os.path.abspath(__file__))
+        icon_path = os.path.join(base_path, "Icons/reco.ico")
+        # Définir l'icône de la fenêtre principale
+        if os.path.exists(icon_path):
+            root.iconbitmap(icon_path)
+        else:
+            print("Icône non trouvée :", icon_path)
         # Create a new event loop
         new_loop = asyncio.new_event_loop()
         threading.Thread(target=start_loop, args=(new_loop,), daemon=True).start()

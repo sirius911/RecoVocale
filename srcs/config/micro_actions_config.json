@@ -13,7 +13,7 @@
             "16": {"class": "Keyboard", "arg":["\u0002"]},
             "512": {"class": "Clear"},
             "1024": {"class": "Keyboard", "arg":["\u0001","a"]},
-            "2048": {"class": "NoAction"}
+            "2048": {"class": "Keyboard", "arg":["\u0001","z"]}
         }
     },
     "Philips (2.60)": {
@@ -30,7 +30,7 @@
             "16": {"class": "Keyboard", "arg":["\u0002"]},
             "512": {"class": "Clear"},
             "1024": {"class": "Keyboard", "arg":["\u0001","a"]},
-            "2048": {"class": "NoAction"}
+            "2048": {"class": "Keyboard", "arg":["\u0001","z"]}
         }
     },
     "Nuance": {
@@ -44,11 +44,11 @@
             "512": {"class": "Copie_clipboard"},
             "2048": {"class": "Keyboard", "arg":["\u0001","v"]},
             "8192": {"class": "Keyboard", "arg":["\u0003"]},
-            "16384": {"class": "NoAction"},
+            "16384": {"class": "StopAction"},
             "4096": {"class":  "Keyboard", "arg":["\u0002"]},
             "32768": {"class": "Clear"},
-            "1": {"class": "ValidTranscriptions"},
-            "2": {"class": "Keyboard", "arg":["\u0001","a"]}
+            "1": {"class": "Keyboard", "arg":["\u0001","a"]},
+            "2": {"class": "Keyboard", "arg":["\u0001","z"]}
         }
     },
     "Jabra": {

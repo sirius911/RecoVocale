@@ -3,12 +3,12 @@
 [Setup]
 ; Nom du fichier installateur
 OutputDir=install
-OutputBaseFilename=install_0.95
+OutputBaseFilename=install_1.00
 SetupIconFile=reco.ico
 ; Nom de l'application
 AppName=RecoVocale
 ; Version de l'application
-AppVersion=0.95
+AppVersion=1.00
 ; Répertoire par défaut d'installation
 DefaultDirName={pf}\RecoVocale
 ; Répertoire par défaut dans le menu démarrer
@@ -20,9 +20,10 @@ LicenseFile="C:\\Users\\lorcyr\\RecoVocale\\LICENSE.txt"
 ; Inclure le fichier exécutable et d'autres fichiers nécessaires
 ; pour le Flags:ignoreversion / onlyifdoesntexist / promptifolder 
 Source: "dist\RecoVocale.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "C:\Users\LORCYR\Appdata\Roaming\RecoVocale\user_config.ini"; DestDir: "{localappdata}\RecoVocale"; Flags: ignoreversion
-Source: "C:\Users\LORCYR\Appdata\Roaming\RecoVocale\micro_actions_config.json"; DestDir: "{localappdata}\RecoVocale"; Flags: ignoreversion
+Source: "C:\Users\lorcyr\RecoVocale\srcs\config\user_config.ini"; DestDir: "{localappdata}\RecoVocale"; Flags: ignoreversion
+Source: "C:\Users\lorcyr\RecoVocale\srcs\config\micro_actions_config.json"; DestDir: "{localappdata}\RecoVocale"; Flags: ignoreversion
 Source: "C:\Users\LORCYR\Appdata\Local\enchant\fr_FR.dic"; DestDir: "{localappdata}\enchant"; Flags: onlyifdoesntexist
+Source: "C:\Users\lorcyr\RecoVocale\srcs\config\insertions.xml"; DestDir: "{localappdata}\RecoVocale"; Flags: onlyifdoesntexist
 
 
 [Icons]

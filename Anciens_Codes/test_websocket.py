@@ -3,7 +3,7 @@ import websockets
 import json
 
 async def test_websocket():
-    uri = "ws://10.1.147.251:30000"  # Adresse du serveur WebSocket
+    uri = "ws://10.1.11.215:30000"  # Adresse du serveur WebSocket
     try:
         async with websockets.connect(uri) as websocket:
             print("Connexion réussie au serveur WebSocket !")

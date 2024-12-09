@@ -8,15 +8,15 @@ class UserConfig:
         self.config_file = os.path.join(self.config_dir, "user_config.ini")
         print(f"init avec {self.config_file}")
         # Valeurs par défaut
-        self.server_ip = "10.1.147.12"
+        self.server_ip = "10.1.147.251"
         self._port = "30000"
         self._shortcut = "F3"
         self.mode = "DIRECT"
         self.x_window = "10"
         self.y_window = "10"
         self.debug = False
-        self.insertions = "config/insertions.xml"
-        self.nb_repeat = 2
+        self.insertions = "insertions.xml"
+        self.nb_repeat = 3
         self.dictionnaire = False
         # Lire la configuration si le fichier existe, sinon la créer
         if os.path.exists(self.config_file):
