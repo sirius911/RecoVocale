@@ -65,7 +65,6 @@ class Mode_Reduit(Mode):
         self.stop_client()
 
     def update_transcriptions(self, message, ending):
-        print(f"Appel de update_transcription avec [{message[:10]}] ending = {ending}")
         if message is not None:
             self.transcription.update(message, -1)
         if ending:

@@ -32,6 +32,8 @@ class UserConfig:
         self.server_ip = config.get('SETTINGS', 'SERVEUR_IP', fallback=self.server_ip)
         self._port = config.get('SETTINGS', 'PORT', fallback=self._port)
         self._shortcut = config.get('SETTINGS', 'SHORTCUT', fallback=self._shortcut)
+        if self._shortcut is None or self._shortcut == "":
+            self._shortcut = "F3"
         self.mode = config.get('SETTINGS', 'MODE', fallback=self.mode)
         self.x_window = config.get('SETTINGS', 'X_WINDOW', fallback=self.x_window)
         self.y_window = config.get('SETTINGS', 'Y_WINDOW', fallback=self.y_window)

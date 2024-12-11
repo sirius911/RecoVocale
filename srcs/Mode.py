@@ -100,7 +100,8 @@ class Mode:
         self._update_rec_circle()
         self._update_image_button()
         self._update_barre_status()
-        # self.app.info()
+        if self.app.config.debug:
+            self.app.info()
 
     def name(self):
         return self.mode.name

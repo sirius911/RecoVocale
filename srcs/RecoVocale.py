@@ -146,7 +146,7 @@ class App:
                 self.console_debug.append_status_with_format("None\n", color="blue")
             self.console_debug.append_status_with_format("Serveur : ", font_style="italic")
             if check_server_status(self.config.server_ip, self.config.port):
-                self.console_debug.append_status_with_format(f"Connected @{self.config.server_ip}:{self.config.port} \n", color="green")
+                self.console_debug.append_status_with_format(f"Connected @{self.config.server_ip}:{self.config._port} \n", color="green")
             else:
                 self.console_debug.append_status_with_format(f"NOT Connected @{self.config.server_ip}:{self.config.port} \n", color="red")
             self.console_debug.append_status_with_format("Micro : ", font_style="italic")
