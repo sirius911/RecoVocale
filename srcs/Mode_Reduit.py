@@ -31,6 +31,7 @@ class Mode_Reduit(Mode):
         )
         super().enter()
         self.simulator_keyboard = Simulator(None, True)
+        self.a_ecrit = False # permet de ne pas écrire deux fois si le client stop avant la fin
 
     def ui(self): 
         create_menus(self)
@@ -58,8 +59,9 @@ class Mode_Reduit(Mode):
 
     def stop(self):
         self.stop_client()
-        remove_bubble()
-        self.update_transcriptions(message=self.transcription.text_en_cours, ending=True)
+        # remove_bubble()
+        if not self.a_ecrit:
+            self.update_transcriptions(message=self.transcription.text_en_cours, ending=True)
 
     def valid_transcriptions(self):
         self.stop_client()
@@ -76,9 +78,11 @@ class Mode_Reduit(Mode):
             Simulator([Key.ctrl, 'v'])
             self.transcription.validation()
             self.status_bar.config( text=f'RecoVocale {VERSION}', bg='lightblue', fg='darkblue', anchor=tk.W)
+            self.a_ecrit = True
         else:
             show_bubble_message(self.root, message)
             self.status_bar.config(text='* Transcription *', bg='lightblue', fg='darkblue', anchor=tk.CENTER)
+            self.a_ecrit = False
             
     def corriger_texte(self, texte):
         if not self.app.config.dictionnaire:
