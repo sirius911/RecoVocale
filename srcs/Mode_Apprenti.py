@@ -35,6 +35,7 @@ class Mode_Apprenti(Mode):
             fenetre_gestion_insertions = self.is_ouverte,
             mode=self.mode,
             nb_repeat=self.app.config.nb_repeat,
+            ip_client=self.app.ip_client,
         )
         super().enter()
         self.pile = ['']

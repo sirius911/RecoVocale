@@ -8,7 +8,7 @@ import json
 import websocket
 import uuid
 import time
-import ffmpeg
+# import ffmpeg
 import utils as utils
 import tempfile
 
@@ -33,6 +33,7 @@ class Client:
         use_vad=True,
         call_back=None,
         nb_repeat=3,
+        ip_client="0.0.0.0",
     ):
         """
         Initializes a Client instance for audio recording and streaming to a server.
@@ -68,6 +69,7 @@ class Client:
         self.nb_repeat = nb_repeat # Nb de fois ou la transcription est considéré stable
         self.ancienne_transcription = ''
         self.call_back=call_back
+        self.ip_client=ip_client
         self.compteur = 0 # pour compter les occurence de transcription
         if translate:
             self.task = "translate"
@@ -231,6 +233,7 @@ class Client:
                     "task": self.task,
                     "model": self.model,
                     "use_vad": self.use_vad,
+                    "ip_client": self.ip_client,
                     "beam_size":5,
                     "best_of":1,
                     "patience":0.5,
@@ -663,9 +666,19 @@ class TranscriptionClient(TranscriptionTeeClient):
                     output_recording_filename="./output_recording.wav",
                     output_transcription_path="./output.srt",
                     call_back=None,
-                    nb_repeat=3
+                    nb_repeat=3,
+                    ip_client="0.0.0.0",
                  ):
-        self.client = Client(host, port, lang, translate, model, srt_file_path=output_transcription_path, use_vad=use_vad, call_back=call_back, nb_repeat=nb_repeat)
+        self.client = Client(host=host,
+                             port=port, 
+                             lang=lang, 
+                             translate=translate,
+                             model=model,
+                             srt_file_path=output_transcription_path,
+                             use_vad=use_vad,
+                             call_back=call_back,
+                             nb_repeat=nb_repeat,
+                             ip_client=ip_client)
 
         if save_output_recording and not output_recording_filename.endswith(".wav"):
             raise ValueError(f"Please provide a valid `output_recording_filename`: {output_recording_filename}")

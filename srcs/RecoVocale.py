@@ -1,4 +1,5 @@
 import os
+import socket
 import time
 import tkinter as tk
 import asyncio
@@ -10,7 +11,7 @@ from Mode_Direct import Mode_Direct
 from Mode_Apprenti import Mode_Apprenti
 from Mode_Record import Mode_Record
 from Mode_Reduit import Mode_Reduit
-from utils_socket import check_server_status
+from utils_socket import check_server_status, get_windows_session
 from utils_keyboard import Simulator
 from Micro import Micro
 from info import *
@@ -35,7 +36,12 @@ class App:
             self.console_debug.debug_window.withdraw()
        
         self.root = root
-        
+        # Récupérer l'adresse IP locale du client
+        try:
+            self.ip_client = socket.gethostbyname(socket.gethostname())
+        except Exception:
+            self.ip_client = "0.0.0.0"  # Fallback si l'IP n'est pas détectée
+        self.ip_client = f"{get_windows_session()}@{self.ip_client}"
         # Use the provided asyncio event loop
         self.loop = loop
         self.recording = False
@@ -149,6 +155,8 @@ class App:
                 self.console_debug.append_status_with_format(f"Connected @{self.config.server_ip}:{self.config._port} \n", color="green")
             else:
                 self.console_debug.append_status_with_format(f"NOT Connected @{self.config.server_ip}:{self.config.port} \n", color="red")
+            self.console_debug.append_status_with_format("IP client : ", font_style="italic")
+            self.console_debug.append_status_with_format(f"{self.ip_client}\n", color="green")
             self.console_debug.append_status_with_format("Micro : ", font_style="italic")
             if self.mic and self.mic.is_connected():
                 self.console_debug.append_status_with_format(f"{self.mic.micro_name}\n", color="green")

@@ -1,4 +1,5 @@
 import asyncio
+import getpass
 import websockets
 
 async def check_websocket_status(host: str, port: int) -> bool:
@@ -9,6 +10,13 @@ async def check_websocket_status(host: str, port: int) -> bool:
     except Exception as e:
         return False
 
+def get_windows_session():
+    try:
+        return getpass.getuser()
+
+    except Exception as e:
+        print(f"[ERROR]: Impossible de récupérer la session Windows : {e}")
+        return "None"
 
 def check_server_status(host: str, port: int) -> bool:
     try:

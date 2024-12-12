@@ -5,7 +5,7 @@ import threading
 from info import APPRENTI
 
 class ClientManager:
-    def __init__(self, host, port, lang, model, translate, use_vad, save_output_recording, output_recording_filename, update_callback, insertions, fenetre_gestion_insertions, mode, nb_repeat=2):
+    def __init__(self, host, port, lang, model, translate, use_vad, save_output_recording, output_recording_filename, update_callback, insertions, fenetre_gestion_insertions, mode, nb_repeat=2, ip_client="0.0.0.0"):
         self.host = host
         self.port = port
         self.lang = lang
@@ -23,6 +23,7 @@ class ClientManager:
         self.fenetre_gestion_insertions = fenetre_gestion_insertions
         self.mode = mode
         self.nb_repeat = nb_repeat # nb de fois que la transcription doit etre répété pour demander un fin de transcription
+        self.ip_client = ip_client
 
     def start_client(self, loop):
         print("Starting client in ClientManager")
@@ -40,6 +41,7 @@ class ClientManager:
                 output_recording_filename=self.output_recording_filename,
                 call_back=self.call_back,
                 nb_repeat=self.nb_repeat,
+                ip_client=self.ip_client,
             )
 
         self.client.set_pause(False)

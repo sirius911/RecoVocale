@@ -66,9 +66,11 @@ class Mode_Direct(Mode):
             fenetre_gestion_insertions = self.is_ouverte,
             mode=self.mode,
             nb_repeat=self.app.config.nb_repeat,
+            ip_client=self.app.ip_client,
         )
         super().enter()
         self.pile = ['']
+        self.transcription_interrompue = False
     def ui(self):
         create_menus(self)
         create_buttons(self)
@@ -115,6 +117,7 @@ class Mode_Direct(Mode):
 
     def unpause(self):
         print(f"UnPausing client in Mode Direct")
+        self.transcription_interrompue = False
         super().unpause()
 
     def stop_client(self):
@@ -132,6 +135,7 @@ class Mode_Direct(Mode):
         self.transcription.validation()
         self.set_pos_curseur(self.transcription.fin_insertion)
         self.status_bar.config(text="Transcription ...interrompue", bg='lightblue', fg='darkblue', anchor=tk.W)
+        self.transcription_interrompue = True
         self.verification_dico(True)
         #essais------------------------
 
@@ -212,7 +216,7 @@ class Mode_Direct(Mode):
         self.text_box.see("insert")
     
     def update_transcriptions(self, message, ending):
-        if message is not None:
+        if message is not None and not self.transcription_interrompue:
             if not self.transcription_en_cours:
                 self.trash_button.config(state=tk.DISABLED)
                 self.rec_button.config(state=tk.DISABLED)
