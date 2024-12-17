@@ -1,5 +1,6 @@
 import os
 import shutil
+import struct
 import wave
 import numpy as np
 import pyaudio
@@ -265,21 +266,22 @@ class Client:
 
     def close_websocket(self):
         """
-        Close the WebSocket connection and join the WebSocket thread.
-
-        First attempts to close the WebSocket connection using `self.client_socket.close()`. After
-        closing the connection, it joins the WebSocket thread to ensure proper termination.
-
+        Ferme la connexion WebSocket en envoyant manuellement un code et une raison.
         """
         try:
-            self.client_socket.close()
-        except Exception as e:
-            print("[ERROR]: Error closing WebSocket:", e)
+            # Construire le message de fermeture avec code 1000 et raison personnalisée
+            code = 1000  # Code de fermeture normal
+            reason = self.ip_client  # Raison personnalisée (IP client ici)
+            close_payload = struct.pack("!H", code) + reason.encode("utf-8")
 
-        try:
-            self.ws_thread.join()
+            # Envoyer le message de fermeture manuellement avec OPCODE_CLOSE
+            self.client_socket.send(close_payload, websocket.ABNF.OPCODE_CLOSE)
+
+            # Appeler la méthode close pour s'assurer que la connexion est fermée
+            self.client_socket.close()
+            print("[INFO]: WebSocket fermé proprement avec code et raison.")
         except Exception as e:
-            print("[ERROR:] Error joining WebSocket thread:", e)
+            print(f"[ERROR]: Erreur lors de la fermeture WebSocket : {e}")
 
     def get_client_socket(self):
         """

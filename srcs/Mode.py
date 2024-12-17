@@ -6,6 +6,7 @@ from Transcription import Transcription
 import tkinter as tk
 from insertions import FenetreGestion
 import enchant
+from utils_socket import check_server_status
 
 class Mode:
     def __init__(self, app):
@@ -55,6 +56,7 @@ class Mode:
     def pause(self):
         self.client_manager.pause()
         self.app.recording = False
+        self.app.status_server = check_server_status(self.app.config.server_ip, self.app.config.port, self.app.ip_client)
         self.update()
 
     def unpause(self):
@@ -65,6 +67,8 @@ class Mode:
                 else:
                     self.client_manager.start_client(self.app.loop)
                 self.app.recording = True
+        else:
+            self.app.status_server = check_server_status(self.app.config.server_ip, self.app.config.port, self.app.ip_client)
         self.update()
 
     def exit_app(self):
@@ -72,7 +76,7 @@ class Mode:
         self.app.on_closing()
 
     def _update_rec_circle(self):
-        fill = 'red' if self.app.recording else 'grey'
+        fill = 'red' if self.app.recording and self.app.status_server == True else 'grey'
         self.rec_canvas.itemconfig(self.rec_circle, fill=fill)
 
     def _update_image_button(self):
@@ -80,6 +84,9 @@ class Mode:
             self.rec_button.config(image=self.pause_image)
         else:
             self.rec_button.config(image=self.record_image)
+        if self.app.status_server == False:
+            self.rec_button.config(state=tk.DISABLED)
+            self.app.status_server = check_server_status(self.app.config.server_ip, self.app.config.port, self.app.ip_client)
 
     def _update_barre_status(self):
         if self.mode == REDUIT:
@@ -88,7 +95,7 @@ class Mode:
             message = f"RecoVocale [{self.app.config.server_ip}:{self.app.config.port}] (v{VERSION}) {"" if self.app.status_server else "not"} connected"
 
         if self.app.status_server == False:
-            self.status_bar.config(text=message, fg='red', anchor=tk.W)
+            self.status_bar.config(text=message, fg='red', bg='lightblue', anchor=tk.W)
         elif self.app.recording:
             self.status_bar.config(text="RECORDING ...", fg='black', bg='red', anchor=tk.CENTER)
         elif self.transcription_en_cours:
@@ -96,10 +103,17 @@ class Mode:
         else:
             self.status_bar.config(text=message, bg='lightblue', fg='darkblue', anchor=tk.W)
 
+    def _update_title_window(self):
+        if self.mode == REDUIT:
+            self.root.title(f"RV v{VERSION}")
+        else:
+            self.root.title(f"RecoVocale [{self.app.config.server_ip}:{self.app.config.port}] (v{VERSION}) {"" if self.app.status_server else "not"} connected")
+
     def update(self):
         self._update_rec_circle()
         self._update_image_button()
         self._update_barre_status()
+        self._update_title_window()
         if self.app.config.debug:
             self.app.info()
 

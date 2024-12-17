@@ -1,12 +1,12 @@
 from types import SimpleNamespace
 
-VERSION = '1.10'
+VERSION = '1.20'
 
 #------------------------ M O D E S ----------------------
 DIRECT = SimpleNamespace()
 DIRECT.name = "DIRECT"
 DIRECT.resizable = True
-DIRECT.topmost = True
+DIRECT.topmost = False
 DIRECT.window_width = 940
 DIRECT.window_height = 709
 DIRECT.button_width = 30
@@ -21,7 +21,7 @@ RECORD.button_width = 30
 
 REDUIT = SimpleNamespace()
 REDUIT.name = "REDUIT"
-REDUIT.resizable = True
+REDUIT.resizable = False
 REDUIT.topmost = True
 REDUIT.window_width = 226
 REDUIT.window_height = 60

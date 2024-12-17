@@ -3,12 +3,12 @@
 [Setup]
 ; Nom du fichier installateur
 OutputDir=install
-OutputBaseFilename=install_1.10
+OutputBaseFilename=install_1.20
 SetupIconFile=reco.ico
 ; Nom de l'application
 AppName=RecoVocale
 ; Version de l'application
-AppVersion=1.10
+AppVersion=1.20
 ; Répertoire par défaut d'installation
 DefaultDirName={pf}\RecoVocale
 ; Répertoire par défaut dans le menu démarrer

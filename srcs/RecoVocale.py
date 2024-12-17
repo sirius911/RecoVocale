@@ -48,7 +48,7 @@ class App:
         self.root.attributes("-topmost", True)  # Keep the window on top of others
  
         #-------------------check serveur-----------------------
-        self.status_server = check_server_status(self.config.server_ip, self.config.port)
+        self.status_server = check_server_status(self.config.server_ip, self.config.port, self.ip_client, timeout=5)
 
         #----------------------MODE----------------------------
         mode = self.config.mode
@@ -151,7 +151,7 @@ class App:
             else:
                 self.console_debug.append_status_with_format("None\n", color="blue")
             self.console_debug.append_status_with_format("Serveur : ", font_style="italic")
-            if check_server_status(self.config.server_ip, self.config.port):
+            if check_server_status(self.config.server_ip, self.config.port, self.ip_client):
                 self.console_debug.append_status_with_format(f"Connected @{self.config.server_ip}:{self.config._port} \n", color="green")
             else:
                 self.console_debug.append_status_with_format(f"NOT Connected @{self.config.server_ip}:{self.config.port} \n", color="red")
