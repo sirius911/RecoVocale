@@ -8,7 +8,7 @@ from ClientManager import ClientManager
 import pygame
 from datetime import datetime
 import tempfile
-from ftp_upload import upload_files_to_ftp
+from sftp_upload import upload_files_to_sftp
 
 
 class Mode_Apprenti(Mode):
@@ -281,7 +281,7 @@ class Mode_Apprenti(Mode):
 
         print(f"On a deux fichiers : \n\t-wav->{self.temp_wav_file} et \n\t-text->{self.temp_txt_file}")
         self.status_bar.config(text="Transfert des fichiers...")
-        upload_files_to_ftp(audio_file=self.temp_wav_file, text_file=self.temp_txt_file,filenames=filename)
+        upload_files_to_sftp(audio_file=self.temp_wav_file, text_file=self.temp_txt_file,filenames=filename)
         
         self.status_bar.config(text="Merci.")
         time.sleep(1)
