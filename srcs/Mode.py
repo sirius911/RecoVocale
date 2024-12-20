@@ -60,6 +60,8 @@ class Mode:
         self.update()
 
     def unpause(self):
+        if self.mode == DIRECT:
+            self.transcription_interrompue = False
         if self.app.status_server == True:
             if not self.app.recording:
                 if self.client_manager.client:

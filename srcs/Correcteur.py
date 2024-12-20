@@ -1,6 +1,5 @@
 from datetime import datetime
 import re
-import re
 
 def int_to_roman(number:int):
     if not (0 < number < 4000):
@@ -171,10 +170,52 @@ def corrige_ponctuation(phrases:str):
 
     return phrases_finale
 
+def convertir_unites(texte):
+    # Mapping des unités françaises vers leurs abréviations
+    unit_mapping = {
+        r"\blitres\b": "L",
+        r"\bdécilitre[s]?\b": "dL",
+        r"\bcentilitre[s]?\b":"cL",
+        r"\bmillilitres[s]?\b": "mL",
+        r"\bmillimètre[s]?\b": "mm",
+        r"\bgrammes?\b": "g",
+        r"\bmilligrammes?\b": "mg",
+        r"\bkilos?\b": "kg",
+        r"\bcentimètre[s]? cube[s]?\b": "cm³",
+        r"\bcentimètre[s]? carré[s]?\b": "cm²",
+        r"\bkilomètre[s]?\b": "km",
+        r"\bcentimètre[s]?\b": "cm",
+
+    }
+
+    # Appliquer les remplacements pour chaque unité
+    for pattern, abbr in unit_mapping.items():
+        texte = re.sub(pattern, abbr, texte, flags=re.IGNORECASE)
+
+    # Remplacer "par" entre deux quantités avec des unités
+    texte = re.sub(
+        r"(\d+(?:,\d+)?)\s?\b([a-z²³]+)\b\s+par\s+(\d+(?:,\d+)?)\s?\b([a-z²³]+)\b",
+        r"\1\2/\3\4",
+        texte,
+        flags=re.IGNORECASE,
+    )
+
+    # Remplacer "par" entre une quantité et une unité seule
+    texte = re.sub(
+        r"(\d+(?:,\d+)?)\s?\b([a-z²³]+)\b\s+par\s+\b([a-z²³]+)\b",
+        r"\1\2/\3",
+        texte,
+        flags=re.IGNORECASE,
+    )
+
+    return texte
+
+
 def intercept(phrases, dico_insertion):
     '''
     doit intercepter des mots clefs dans une liste de phrase
     renvoi la phrase corrigée et un flag ending indiquand si on doit terminé la transcription
     '''
-    phrase_renvoyee = insertion(phrases, dico_insertion)
-    return phrase_renvoyee
+    phrase_interceptee = insertion(phrases, dico_insertion)
+    resultat = convertir_unites(phrase_interceptee)
+    return resultat
