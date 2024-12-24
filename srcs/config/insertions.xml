@@ -1,0 +1,568 @@
+<?xml version="1.0" ?>
+<SpeechAutoTexts xmlns="http://nuance.com/NAS/AutoTextImport">
+  <SpeechAutoText>
+    <Format>1</Format>
+    <Name>coude</Name>
+    <Description>
+    </Description>
+    <OwningObjectType>User</OwningObjectType>
+    <OwningObjectName>BAUFAB</OwningObjectName>
+    <ProductGuid>5766e812-0b77-4595-9a53-552142261862</ProductGuid>
+    <Locale>fr-FR</Locale>
+    <MetaDataDictionary>
+      <MetaData>
+        <Name>DNS_PlainText</Name>
+        <Value>1</Value>
+      </MetaData>
+    </MetaDataDictionary>
+    <SpokenPhrases>
+      <SpokenPhrase>
+        <Phrase>insérer coude</Phrase>
+      </SpokenPhrase>
+    </SpokenPhrases>
+    <Body>Orthèse du coude avec produit tricyclique
+soins IDE à domicile pendant 5 jours
+prévoir consultation sous 15 jours au
+appliquer tous</Body>
+  </SpeechAutoText>
+  <SpeechAutoText>
+    <Format>1</Format>
+    <Name>Facteurs de risques</Name>
+    <Description>
+    </Description>
+    <OwningObjectType>User</OwningObjectType>
+    <OwningObjectName>BAUFAB</OwningObjectName>
+    <ProductGuid>5766e812-0b77-4595-9a53-552142261862</ProductGuid>
+    <Locale>fr-FR</Locale>
+    <MetaDataDictionary>
+      <MetaData>
+        <Name>DNS_PlainText</Name>
+        <Value>1</Value>
+      </MetaData>
+    </MetaDataDictionary>
+    <SpokenPhrases>
+      <SpokenPhrase>
+        <Phrase>insérer Facteurs de risques</Phrase>
+      </SpokenPhrase>
+    </SpokenPhrases>
+    <Body>Hypertension artérielle : [Pas d'hypertension artérielle | depuis]
+Diabète : [Pas de diabète | DNID | diabète gesta]
+Tabac : [Pas de tabagisme | arrêt après    années | tabagisme en cours depuis X années]
+Alcool : [Moins d'un verre d'alcool par jour| zéro | entre 1 et 3 verres/jour | plus de 3 verres/jour]
+ 
+ </Body>
+  </SpeechAutoText>
+  <SpeechAutoText>
+    <Format>1</Format>
+    <Name>Arthrodèse</Name>
+    <Description>
+    </Description>
+    <OwningObjectType>User</OwningObjectType>
+    <OwningObjectName>BAUFAB</OwningObjectName>
+    <ProductGuid>5766e812-0b77-4595-9a53-552142261862</ProductGuid>
+    <Locale>fr-FR</Locale>
+    <MetaDataDictionary>
+      <MetaData>
+        <Name>DNS_PlainText</Name>
+        <Value>1</Value>
+      </MetaData>
+    </MetaDataDictionary>
+    <SpokenPhrases>
+      <SpokenPhrase>
+        <Phrase>insérer Arthrodèse</Phrase>
+      </SpokenPhrase>
+    </SpokenPhrases>
+    <Body>ARTHRODESE ANTERIEURE CERVICALE
+ 
+Installation en décubitus dorsal, stabilisation de la tête par un étrier de Mayfield.
+Désinfection 4 temps, champage selon protocole HAS.
+Check-list phase 2 faite, antibioprophylaxie adaptée et réalisée préalablement.
+Voie d'abord prè-vasculaire pré-sterno-chléïdo-mastoïdienne antérieure droite.
+Ligature des vaisseaux thyroïdiens [inférieurs/postérieurs].
+Exposition du ligament vertébral commun antérieur.
+Repérage du disque à arthrodéser sous radioscopie.
+Discectomie complète.
+Avivement des plateaux vertébraux à la curette, retirant le cartilage jusqu'à l'os sous-chondral.
+Libération des foramens [droit/gauche] à la curette courbe de Karlin. 
+Retrait d'une hernie discale sous-ligamentaire droite ou gauche.
+Essai de cage [  ] taille [   ]  et vissée [  ].
+Lavage abondant.
+Contrôle radioscopique.
+Greffe de l'espace inter-somatique à travers la cage par un prélèvement de crête iliaque droite, prélevée par voie mini invasive en réalisant un orifice dans la crête iliaque moyenne grâce à un ciseau gouge et prélèvement d'os spongieux à la curette.
+Comblement de l'orifice iliaque osseux par un tissu de comblement de type Surgicel hémostatique.
+Lavage abondant cervical.
+Drainage aspiratif.
+Fermeture en 3 plans surjet au fil Vicryl rapide sur la peau.</Body>
+  </SpeechAutoText>
+  <SpeechAutoText>
+    <Format>1</Format>
+    <Name>Vertébroplastie</Name>
+    <Description>
+    </Description>
+    <OwningObjectType>User</OwningObjectType>
+    <OwningObjectName>BAUFAB</OwningObjectName>
+    <ProductGuid>5766e812-0b77-4595-9a53-552142261862</ProductGuid>
+    <Locale>fr-FR</Locale>
+    <MetaDataDictionary>
+      <MetaData>
+        <Name>DNS_PlainText</Name>
+        <Value>1</Value>
+      </MetaData>
+    </MetaDataDictionary>
+    <SpokenPhrases>
+      <SpokenPhrase>
+        <Phrase>insérer Vertébroplastie</Phrase>
+      </SpokenPhrase>
+    </SpokenPhrases>
+    <Body>VERTEBROPLASTIE
+ 
+Installation en décubitus ventral.
+Par voie percutanée repérée à l'aide de 2 amplificateur de brillance et par voie de passage transpédiculaire, introduction du système KYPHHOON MEDTRONIC.
+Gonflage des ballons en intra-vertébral pour réduction de la cyphose vertébrale traumatique, puis en laissant un ballon gonflé pour permettre de garder la réduction, mise en place d'un ciment acrylique, contrôlé sous radioscopie et progressivement pas à pas et réalisation d'une vertébroplastie de la vertèbre concernée ....
+Pas de problème peropératoire. 
+Fermeture de la peau par des points séparés.
+ </Body>
+  </SpeechAutoText>
+  <SpeechAutoText>
+    <Format>1</Format>
+    <Name>Signature</Name>
+    <Description/>
+    <OwningObjectType>User</OwningObjectType>
+    <OwningObjectName>BAUFAB</OwningObjectName>
+    <ProductGuid>5766e812-0b77-4595-9a53-552142261862</ProductGuid>
+    <Locale>fr-FR</Locale>
+    <MetaDataDictionary>
+      <MetaData>
+        <Name>DNS_PlainText</Name>
+        <Value>1</Value>
+      </MetaData>
+    </MetaDataDictionary>
+    <SpokenPhrases>
+      <SpokenPhrase>
+        <Phrase>insérer Signature</Phrase>
+      </SpokenPhrase>
+    </SpokenPhrases>
+    <Body>Dr Fabien Baudelle (remplaçant) RPPS : 10101664589</Body>
+  </SpeechAutoText>
+  <SpeechAutoText>
+    <Format>1</Format>
+    <Name>Antalgiques HBPM</Name>
+    <Description>
+    </Description>
+    <OwningObjectType>User</OwningObjectType>
+    <OwningObjectName>BAUFAB</OwningObjectName>
+    <ProductGuid>5766e812-0b77-4595-9a53-552142261862</ProductGuid>
+    <Locale>fr-FR</Locale>
+    <MetaDataDictionary>
+      <MetaData>
+        <Name>DNS_PlainText</Name>
+        <Value>1</Value>
+      </MetaData>
+    </MetaDataDictionary>
+    <SpokenPhrases>
+      <SpokenPhrase>
+        <Phrase>insérer Antalgiques</Phrase>
+      </SpokenPhrase>
+    </SpokenPhrases>
+    <Body>- Paracetamol 1 gramme : 1 prise toutes les 6 heures max 4 par jour pendant 15 jours
+- Lamaline 300/10/30 mg gélule : 1 à 2 gélules par prise matin, midi et soir pendant 15 jours
+- Orozamudol 50 mg : 1 prise si douleur malgré paracétamol max 4/jour pendant 7 jours
+- Acupan 20 mg : 1ampoule sur un sucre toutes les 4 heures si douleurs malgré paracétamol max 6/jour pendant 7 jours
+- Kétoprofène LP 100 mg : une prise matin une prise le soir pendant 5 jours
+- Lansoprazole 15 mg : une prise le soir pendant cinq jours
+- Lovenox 4000 UI : 1 injection sous-cutanée par jour pendant 45 jours
+- Vitamine C 1 g : une prise par jour pendant 45 jours</Body>
+  </SpeechAutoText>
+  <SpeechAutoText>
+    <Format>1</Format>
+    <Name>Ordo pansement</Name>
+    <Description>
+    </Description>
+    <OwningObjectType>User</OwningObjectType>
+    <OwningObjectName>BAUFAB</OwningObjectName>
+    <ProductGuid>5766e812-0b77-4595-9a53-552142261862</ProductGuid>
+    <Locale>fr-FR</Locale>
+    <MetaDataDictionary>
+      <MetaData>
+        <Name>DNS_PlainText</Name>
+        <Value>1</Value>
+      </MetaData>
+    </MetaDataDictionary>
+    <SpokenPhrases>
+      <SpokenPhrase>
+        <Phrase>insérer pansement</Phrase>
+      </SpokenPhrase>
+    </SpokenPhrases>
+    <Body>- Set pansement stérile pour plaies post-opératoires 
+- Compresses stériles 10cm par 10 cm
+- Sérum physiologique unidose 10 ou 20 cc
+- Savon doux à pH neutre type Cicaplast lavant
+- Cicaplaie 
+- Mepilex border Flex
+- Aquacel Foam 1 boîte de 10 pansement
+- Ôte -agrafes 2 unités
+- Ciseaux stériles 1 unité
+
+QSP 10 réfections de pansements
+
+</Body>
+  </SpeechAutoText>
+  <SpeechAutoText>
+    <Format>1</Format>
+    <Name>Matériel</Name>
+    <Description>
+    </Description>
+    <OwningObjectType>User</OwningObjectType>
+    <OwningObjectName>BAUFAB</OwningObjectName>
+    <ProductGuid>5766e812-0b77-4595-9a53-552142261862</ProductGuid>
+    <Locale>fr-FR</Locale>
+    <MetaDataDictionary>
+      <MetaData>
+        <Name>DNS_PlainText</Name>
+        <Value>1</Value>
+      </MetaData>
+    </MetaDataDictionary>
+    <SpokenPhrases>
+      <SpokenPhrase>
+        <Phrase>insérer Matériel</Phrase>
+      </SpokenPhrase>
+    </SpokenPhrases>
+    <Body>- Une boite de marche type XLR8 (THUASNE) ou NEXTEP (DONJOY) modèle HAUT 
+- Une paire de cannes anglaises à l'achat
+- Un déambulateur à l'achat
+- Location d'un fauteuil roulant avec appui jambier droit/gauche pour une durée de huit semaines
+- Deux paires de bas de contention classe II</Body>
+  </SpeechAutoText>
+  <SpeechAutoText>
+    <Format>1</Format>
+    <Name>CROP Fracture bimalléolaire</Name>
+    <Description>
+    </Description>
+    <OwningObjectType>User</OwningObjectType>
+    <OwningObjectName>BAUFAB</OwningObjectName>
+    <ProductGuid>5766e812-0b77-4595-9a53-552142261862</ProductGuid>
+    <Locale>fr-FR</Locale>
+    <MetaDataDictionary>
+      <MetaData>
+        <Name>DNS_PlainText</Name>
+        <Value>1</Value>
+      </MetaData>
+    </MetaDataDictionary>
+    <SpokenPhrases>
+      <SpokenPhrase>
+        <Phrase>insérer CROP bimal</Phrase>
+      </SpokenPhrase>
+    </SpokenPhrases>
+    <Body>Sous rachianesthésie / AG / ALR
+En décubitus dorsal avec un coussin sous la fesse homolatérale
+Garrot à la cuisse à 300 mmHg pendant 68 minutes
+Badigeon antiseptique et champage stérile selon protocole
+Check-list HAS
+Antibioprophylaxie selon recommandations de la SFAR
+
+Incision centrée sur malléole externe.
+Dissection profonde avec hémostase fermeture
+Exposition du foyer de fracture. Réduction du foyer sur davier puis stabilisation par vissage en compression antéropostérieure.
+Mise en place d'une plaque de neutralisation, vissage cortical et verrouillé.
+
+Incision sur la malléole médiale.
+Dissection profonde refoulant la veine saphène
+Exposition du foyer de fracture, curetage du foyer lavage articulaire.
+Réduction à la pointe carrée puis stabilisation par vissage Anis de diamètre 4 mm sur rondelle.
+
+Réalisation d'un vissage percutané antéropostérieur du tubercule postérolatéral du tibia de Volkmann ( Vis Asnis 4 sans rondelle) en prenant soin de refouler le nerf fibulaire superficiel et les tendons extenseurs.
+
+Contrôle scopique satisfaisant de face et de profil, avec une bonne stabilité de la syndesmose au testing.
+Lavage abondant
+Fermeture plan par plan avec points séparés au fil non résorbable sur la peau.
+Pansement par Urgotulle et compresse bande.
+Confection d'une attelle plâtrée postérieure.
+
+Matériel :
+Deux vis Anis (Styker) diamètre 4 empreinte hexagonale
+Une plaque tiers de tube (Synthes) 3.5 empreinte stardrive
+
+Consignes post-opératoires :
+Réfection des pansements tous les 2 jours jusqu'à cicatrisation avec ablation des points 15 jours post-opératoires
+Immobilisation par attelle plâtrée postérieure est à relayer par une botte de marche dès que possible.
+Botte de marche à porter pendant six semaines au total.
+L'appui contre-indiqué pour une durée de six semaines. Thromboprophylaxie pendant six semaines.
+La kinésithérapie pour mobilisation passive de la cheville est à débuter à trois semaines post-opératoire.
+Consultation de contrôle à six semaines post-opératoire pour reprise de l'appui et sevrage la botte de marche</Body>
+  </SpeechAutoText>
+  <SpeechAutoText>
+    <Format>1</Format>
+    <Name>Kinésithérapie Cheville</Name>
+    <Description>
+    </Description>
+    <OwningObjectType>User</OwningObjectType>
+    <OwningObjectName>BAUFAB</OwningObjectName>
+    <ProductGuid>5766e812-0b77-4595-9a53-552142261862</ProductGuid>
+    <Locale>fr-FR</Locale>
+    <MetaDataDictionary>
+      <MetaData>
+        <Name>DNS_PlainText</Name>
+        <Value>1</Value>
+      </MetaData>
+    </MetaDataDictionary>
+    <SpokenPhrases>
+      <SpokenPhrase>
+        <Phrase>insérer Kiné cheville</Phrase>
+      </SpokenPhrase>
+    </SpokenPhrases>
+    <Body>Kinésithérapie de la cheville et du membre inférieur gauche 
+
+Suites d'une fracture bimalléolaire gauche ostéosynthésée par plaque et vis
+
+À partir de quatre semaines post-opératoires :
+Massage cicatriciel drainage
+Physiothérapie antalgique cryothérapie
+Mobilisation douce de la tibiotarsienne et la sous talienne pour récupération des amplitudes articulaires
+Renforcement des fibulaires
+Appui contre-indiqué jusqu'à six semaines
+
+À partir de six semaines post-opératoires :
+Reprise progressive de l'appui
+Réhabilitation à la marche
+Proprioception
+</Body>
+  </SpeechAutoText>
+  <SpeechAutoText>
+    <Format>1</Format>
+    <Name>CROP clou gamma</Name>
+    <Description>
+    </Description>
+    <OwningObjectType>User</OwningObjectType>
+    <OwningObjectName>BAUFAB</OwningObjectName>
+    <ProductGuid>5766e812-0b77-4595-9a53-552142261862</ProductGuid>
+    <Locale>fr-FR</Locale>
+    <MetaDataDictionary>
+      <MetaData>
+        <Name>DNS_PlainText</Name>
+        <Value>1</Value>
+      </MetaData>
+    </MetaDataDictionary>
+    <SpokenPhrases>
+      <SpokenPhrase>
+        <Phrase>insérer CROP gamma</Phrase>
+      </SpokenPhrase>
+    </SpokenPhrases>
+    <Body>Sous anesthésie générale /rachianesthésie
+En décubitus dorsal sur table orthopédique, réduction par manœuvres externes
+Badigeon antiseptique et champage stérile selon protocole
+Check-list HAS
+Antibioprophylaxie selon recommandations de la SFAR
+
+Incision latérale paratrochantérienne
+Trépanation du fémur proximal à la pointe carrée au niveau du grand trochanter.
+Passage de la tige guide sous contrôle scopique.
+Alésage de 10 en 10 jusqu'au diamètre 13, puis passage alésoir d'un diamètre 15 sur la partie proximale. Envoi en anatomopathologie du produit d'alésage.
+Mise en place du clou gamma.
+Verrouillage proximal par une vis céphalique puis de la vis de blocage anti rotatoire.
+Verrouillage distal en position statique à l'aide de l'ancillaire/à main levée par deux vis.
+Contrôle amplificateur de brillance de face et de profil satisfaisant.
+Lavage abondant.
+Fermeture plan par plan avec agrafes cutanées.
+Pansement sec
+
+Matériel :
+Clou gamma court/long (Stryker) : diamètre 11 angulation 125° longueur 320 mm
+Vis céphalique 95 mm
+Vis de verrouillage distal 45 mm et 50 mm
+
+Consignes post-opératoires :
+Appui complet autorisé d'emblée
+Lever à J1 fauteuil J1
+Réfection des pansements tous les 2 jours jusqu'à cicatrisation avec ablation des agrafes à 15 jours post-opératoires.
+Thromboprophylaxie pendant 30 jours.
+Consultation de contrôle à six semaines
+</Body>
+  </SpeechAutoText>
+  <SpeechAutoText>
+    <Format>1</Format>
+    <Name>CROP PIH</Name>
+    <Description/>
+    <OwningObjectType>User</OwningObjectType>
+    <OwningObjectName>BAUFAB</OwningObjectName>
+    <ProductGuid>5766e812-0b77-4595-9a53-552142261862</ProductGuid>
+    <Locale>fr-FR</Locale>
+    <MetaDataDictionary>
+      <MetaData>
+        <Name>DNS_PlainText</Name>
+        <Value>1</Value>
+      </MetaData>
+    </MetaDataDictionary>
+    <SpokenPhrases>
+      <SpokenPhrase>
+        <Phrase>insérer CROP PIH</Phrase>
+      </SpokenPhrase>
+    </SpokenPhrases>
+    <Body>Sous anesthésie générale en décubitus dorsal sur table standard
+Badigeon antiseptique et champage stérile selon protocole
+Check-list HAS
+Antibioprophylaxie selon recommandations de la SFAR
+
+Voir d'abord antérieure de Hueter - Gaine
+Capsulotomie antérieure, capsulotomie sur fil
+Recoupe du col fémoral, extraction de la tête qui est mesurée à 49 mm
+Préparation du fémur, après release femoral
+Passage des râpes jusqu'à la taille quatre. Mise en place du bouchon
+Cimentation de la tige, puis mise en place après essais de la tête avec la cupule définitive.
+Testing satisfaisant avec une bonne stabilité , un piston de 2-3 mm une absence de conflit intra ou extra-articulaire
+Lavage abondant, hémostase
+Fermeture plan par plan avec agrafes à la peau.
+Pansement Mepilex
+
+Matériel :
+Prothèse SERF :
+Tige HYPE : ACS 3 cimentée
+Tête : 28 col court -3.5
+Cupule : 47/28
+
+Consignes post-opératoires : 
+Premier pansement entre J4 et J5 ou avant si le pansement est décollé ou souillé
+Puis réfection des pansements tous les 4 jours avec ablation des agrafes à J15
+Appui complet autorisé d'emblée
+Thromboprophylaxie 30 jours
+Consultation de contrôle à six semaines</Body>
+  </SpeechAutoText>
+  <SpeechAutoText>
+    <Format>1</Format>
+    <Name>CROP PTH voie postérieur</Name>
+    <Description>
+    </Description>
+    <OwningObjectType>User</OwningObjectType>
+    <OwningObjectName>BAUFAB</OwningObjectName>
+    <ProductGuid>5766e812-0b77-4595-9a53-552142261862</ProductGuid>
+    <Locale>fr-FR</Locale>
+    <MetaDataDictionary>
+      <MetaData>
+        <Name>DNS_PlainText</Name>
+        <Value>1</Value>
+      </MetaData>
+    </MetaDataDictionary>
+    <SpokenPhrases>
+      <SpokenPhrase>
+        <Phrase>insérer CROP PTH voie post</Phrase>
+      </SpokenPhrase>
+    </SpokenPhrases>
+    <Body>Sous anesthésie générale en décubitus latéral droit/gauche sur table standard
+Badigeon antiseptique et champage stérile selon protocole
+Check-list HAS
+Antibioprophylaxie selon recommandations de la SFAR
+
+Voir d'abord postéro-latérale selon Moore
+Ouverture du fascia lata
+Sections des pelvi-trochantérien en conservant le tendon pyramidal
+Capsulotomie postérieure 
+Recoupe/ coupe du col fémoral, extraction de la tête 
+
+Préparation de l'acétabulum par passage de fraises de tailles croissantes jusqu'à la taille.
+Impaction du cotyle avec une très bonne tenue primaire / avec un vissage complémentaire
+Résection des ostéophytes antérieurs
+
+Préparation du fémur
+Passage des râpes jusqu'à la taille . Mise en place du bouchon
+Mise en place de la tige définitive après essai avec un bon press-fit/ Cimentation de la tige
+Mise en place après essais de la tête définitive.
+Testing satisfaisant avec une bonne stabilité , un piston de 2-3 mm une absence de conflit intra ou extra-articulaire
+Lavage abondant, hémostase
+Fermeture plan par plan avec agrafes à la peau.
+Pansement Mepilex
+
+Matériel :
+Prothèse SERF :
+Cotyle Sunfit Novae (SERF), sans ciment, taille 53
+Tige HYPE (SERF) : ACS 5 cimentée
+Tête : 28 col long +3.5 avec insert double mobilité
+
+Consignes post-opératoires : 
+Premier pansement entre J4 et J5 ou avant si le pansement est décollé ou souillé
+Puis réfection des pansements tous les 4 jours avec ablation des agrafes à J15
+Appui complet autorisé d'emblée
+Thromboprophylaxie 30 jours
+Consultation de contrôle à six semaines</Body>
+  </SpeechAutoText>
+  <SpeechAutoText>
+    <Format>1</Format>
+    <Name>Kiné épaule</Name>
+    <Description>
+    </Description>
+    <OwningObjectType>User</OwningObjectType>
+    <OwningObjectName>BAUFAB</OwningObjectName>
+    <ProductGuid>5766e812-0b77-4595-9a53-552142261862</ProductGuid>
+    <Locale>fr-FR</Locale>
+    <MetaDataDictionary>
+      <MetaData>
+        <Name>DNS_PlainText</Name>
+        <Value>1</Value>
+      </MetaData>
+    </MetaDataDictionary>
+    <SpokenPhrases>
+      <SpokenPhrase>
+        <Phrase>insérer Kiné épaule</Phrase>
+      </SpokenPhrase>
+    </SpokenPhrases>
+    <Body>Kinésithérapie de l'épaule du membre supérieur gauche
+
+Suites d'une fracture de l'humérus proximal 
+
+À partir de 3 semaines:
+Mouvement pendulaire
+Appui mobilisation passive douce de l'épaule en évitant un mouvement de rotation 
+Mobilisation poignet coude
+
+À partir de 6 semaines:
+Mobilisation active avec récupération de la force musculaire
+Renforcement de la coiffe
+Début de mobilisation sur les rotations
+</Body>
+  </SpeechAutoText>
+  <SpeechAutoText>
+    <Format>1</Format>
+    <Name>CROP Poignet</Name>
+    <Description>
+    </Description>
+    <OwningObjectType>User</OwningObjectType>
+    <OwningObjectName>BAUFAB</OwningObjectName>
+    <ProductGuid>5766e812-0b77-4595-9a53-552142261862</ProductGuid>
+    <Locale>fr-FR</Locale>
+    <MetaDataDictionary>
+      <MetaData>
+        <Name>DNS_PlainText</Name>
+        <Value>1</Value>
+      </MetaData>
+    </MetaDataDictionary>
+    <SpokenPhrases>
+      <SpokenPhrase>
+        <Phrase>insérer CROP Poignet</Phrase>
+      </SpokenPhrase>
+    </SpokenPhrases>
+    <Body>Sous ALR
+En décubitus dorsal. 
+Garrot à la racine du membre à 250 mmHg pendant 30 minutes
+Badigeon antiseptique et champage stérile selon protocole
+Check-list HAS
+Antibioprophylaxie selon recommandations de la SFAR
+
+Voie antérieure de Henry distale.
+On repère le fléchisseur radial du carpe qui récliné en ulnaire.
+Dissection profonde, ouverture du canal pronateur qui est ruginé à la face antérieure du radius
+Exposition du foyer de fracture. Réduction du foyer stabilisation par la plaque temporairement par broches puis fixée par vissage cortical premier et verrouillé
+
+Contrôle scopique satisfaisant de face et de profil, avec une stabilité du montage
+Lavage abondant. Mise en place d'un Manovac
+Fermeture plan par plan avec points séparés au fil non résorbable sur la peau.
+Pansement par Urgotulle et compresse bande.
+Confection d'une attelle amovible de poignet.
+
+Matériel :
+Plaque du radius distal LOQTEQ 2.5, avec vis empreinte T8 (stardrive)
+
+Consignes post-opératoires :
+Premier réfection du pansement à J2 post-opératoire avec ablation du Manovac puis réfection des pansements tous les 2 jours jusqu'à cicatrisation avec ablation des points à 12 jours post-opératoires
+Immobilisation par attelle mobile du poignet pendant quatre semaines
+La kinésithérapie pour mobilisation douce est à débuter après deux semaines post-opératoires.
+Consultation de contrôle à quatre semaines post-opératoires </Body>
+  </SpeechAutoText>
+</SpeechAutoTexts>

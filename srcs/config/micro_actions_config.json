@@ -1,0 +1,64 @@
+{
+    "Philips (3.81)": {
+        "vendor_id": "0x0911",
+        "product_id": "0x0c1c",
+        "firmware": "0x381",
+        "actions" : {
+            "0": {"class": "Pause"},                
+            "1": {"class": "Unpause"},
+            "4": {"class": "StopAction"},
+            "32": {"class": "Copie_clipboard"},
+            "64": {"class": "Keyboard", "arg":["\u0001","v"]},
+            "8": {"class": "Keyboard", "arg":["\u0003"]},
+            "16": {"class": "Keyboard", "arg":["\u0002"]},
+            "512": {"class": "Clear"},
+            "1024": {"class": "Keyboard", "arg":["\u0001","a"]},
+            "2048": {"class": "Keyboard", "arg":["\u0001","z"]}
+        }
+    },
+    "Philips (2.60)": {
+        "vendor_id": "0x0911",
+        "product_id": "0x0c1c",
+        "firmware": "0x0260",
+        "actions" : {
+            "0": {"class": "Pause"},
+            "1": {"class": "Unpause"},
+            "4": {"class": "StopAction"},
+            "32": {"class": "Copie_clipboard"},
+            "64": {"class": "Keyboard", "arg":["\u0001","v"]},
+            "8": {"class": "Keyboard", "arg":["\u0003"]},
+            "16": {"class": "Keyboard", "arg":["\u0002"]},
+            "512": {"class": "Clear"},
+            "1024": {"class": "Keyboard", "arg":["\u0001","a"]},
+            "2048": {"class": "Keyboard", "arg":["\u0001","z"]}
+        }
+    },
+    "Nuance": {
+        "vendor_id": "0x0554",
+        "product_id": "0x1001",
+        "firmware": "0x203",
+        "actions": {
+            "0": {"class": "Pause"},
+            "1024": {"class": "Unpause"},
+            "256": {"class": "CopierColler"},
+            "512": {"class": "Copie_clipboard"},
+            "2048": {"class": "Keyboard", "arg":["\u0001","v"]},
+            "8192": {"class": "Keyboard", "arg":["\u0003"]},
+            "16384": {"class": "StopAction"},
+            "4096": {"class":  "Keyboard", "arg":["\u0002"]},
+            "32768": {"class": "Clear"},
+            "1": {"class": "Keyboard", "arg":["\u0001","a"]},
+            "2": {"class": "Keyboard", "arg":["\u0001","z"]}
+        }
+    },
+    "Jabra": {
+        "vendor_id": "0x0b0e",
+        "product_id": "0x0422",
+        "firmware": "0x0",
+        "actions": {
+            "[1, 0]": {"class": "NoAction"},
+            "[1, 1]": {"class": "NoAction"},
+            "[1, 2]": {"class": "NoAction"}
+        }
+    }
+}
