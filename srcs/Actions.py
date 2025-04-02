@@ -64,9 +64,9 @@ class CopierColler(Action):
         time.sleep(0.5)
         Simulator([Key.ctrl, 'v'])
 
-class Selection(Action):
-    def execute(self, dir):
-        self.app.select_text_box(dir)
+# class Selection(Action):
+#     def execute(self, dir):
+#         self.app.select_text_box(dir)
 
 class Attendre(Action):
     def __init__(self, app, duree):

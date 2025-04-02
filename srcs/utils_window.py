@@ -78,6 +78,7 @@ def change_toolTip(button, texte):
     ToolTip(button, f"{texte}")
 
 def create_menus(self):
+    
     self.menu_bar = tk.Menu(self.root)
     self.root.config(menu=self.menu_bar)
 
@@ -113,6 +114,17 @@ def create_menus(self):
                                    value=APPRENTI,
                                    command= lambda: self.app.switch_mode(APPRENTI))
 
+    # Menu Service
+    self.service_var = tk.StringVar(value=self.app.config.service)
+    self.service_menu = tk.Menu(self.settings_menu, tearoff=0)
+    self.settings_menu.add_cascade(label="Service", menu=self.service_menu)
+
+    for service in self.app.config.get_services():
+        self.service_menu.add_radiobutton(label=service,
+                                        variable=self.service_var,
+                                        value=service,
+                                        command=lambda s=service: self.set_service(s))
+    
     # Autres options du menu Paramètres
     self.settings_menu.add_separator()
     self.settings_menu.add_command(label="Gestion des Insertions", command=self.ouvrir_gestion_insertions)

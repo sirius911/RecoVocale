@@ -25,14 +25,17 @@ class ClientManager:
         self.nb_repeat = nb_repeat # nb de fois que la transcription doit etre répété pour demander un fin de transcription
         self.ip_client = ip_client
 
-    def start_client(self, loop):
-        print("Starting client in ClientManager")
+    def start_client(self, loop, port_service=None):
+        port = port_service
+        if port is None:
+            port = self.port
+        print(f"Starting client in ClientManager in [{port}]")
         self.stop_client()  # Ensure any previous client is stopped before starting a new one
 
         if self.client is None:
             self.client = TranscriptionClient(
                 self.host,
-                self.port,
+                port,
                 lang=self.lang,
                 model=self.model,
                 translate=self.translate,

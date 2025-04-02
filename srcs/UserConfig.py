@@ -10,6 +10,7 @@ class UserConfig:
         # Valeurs par défaut
         self.server_ip = "10.1.147.251"
         self._port = "30000"
+        self._service = "Général"
         self._shortcut = "F3"
         self.mode = "DIRECT"
         self.x_window = "10"
@@ -18,6 +19,12 @@ class UserConfig:
         self.insertions = "insertions.xml"
         self.nb_repeat = 3
         self.dictionnaire = False
+        self._service_port_map = {
+            "Général": "30001",
+            "Radiologie": "30002",
+            "Cardiologie": "30003",
+            "Oncologie": "30004",
+        }
         # Lire la configuration si le fichier existe, sinon la créer
         if os.path.exists(self.config_file):
             self.load_config()
@@ -31,6 +38,7 @@ class UserConfig:
         
         self.server_ip = config.get('SETTINGS', 'SERVEUR_IP', fallback=self.server_ip)
         self._port = config.get('SETTINGS', 'PORT', fallback=self._port)
+        self._service = config.get('SETTINGS', 'SERVICE', fallback=self._service)
         self._shortcut = config.get('SETTINGS', 'SHORTCUT', fallback=self._shortcut)
         if self._shortcut is None or self._shortcut == "":
             self._shortcut = "F3"
@@ -51,6 +59,7 @@ class UserConfig:
         config['SETTINGS'] = {
             'SERVEUR_IP': self.server_ip,
             'PORT': self._port,
+            'SERVICE': self._service,
             'SHORTCUT': self._shortcut,
             'MODE': self.mode,
             'X_WINDOW': root.winfo_x() if root else 0,
@@ -65,6 +74,9 @@ class UserConfig:
         with open(self.config_file, 'w') as configfile:
             config.write(configfile)
         print("Ok")
+
+    def get_services(self):
+        return list(self._service_port_map.keys())
         
     # Getters et Setters
     @property
@@ -74,6 +86,17 @@ class UserConfig:
     @port.setter
     def port(self, value):
         self._port = value
+
+    @property
+    def service(self):
+        return self._service
+
+    @service.setter
+    def service(self, value):
+        self._service = value
+        if value in self._service_port_map:
+            self._port = self._service_port_map[value]
+            print(f"changement de Port : {self._port}")
     
     @property
     def shortcut(self):

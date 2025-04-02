@@ -67,7 +67,7 @@ class Mode:
                 if self.client_manager.client:
                     self.client_manager.client.set_pause(False)
                 else:
-                    self.client_manager.start_client(self.app.loop)
+                    self.client_manager.start_client(self.app.loop, self.app.config.port)
                 self.app.recording = True
         else:
             self.app.status_server = check_server_status(self.app.config.server_ip, self.app.config.port, self.app.ip_client)
@@ -109,7 +109,7 @@ class Mode:
         if self.mode == REDUIT:
             self.root.title(f"RV v{VERSION}")
         else:
-            self.root.title(f"RecoVocale [{self.app.config.server_ip}:{self.app.config.port}] (v{VERSION}) {"" if self.app.status_server else "not"} connected")
+            self.root.title(f"RecoVocale [{self.app.config.server_ip}:{self.app.config.port}] (v{VERSION}) {"" if self.app.status_server else "not"} connected [{self.app.config.service}]")
 
     def update(self):
         self._update_rec_circle()
@@ -311,3 +311,7 @@ class Mode:
     
     def clear_text_box(self):
         pass
+
+    def set_service(self, service):
+        self.app.config.service = service
+        self._update_title_window()

@@ -155,6 +155,8 @@ class App:
                 self.console_debug.append_status_with_format(f"Connected @{self.config.server_ip}:{self.config._port} \n", color="green")
             else:
                 self.console_debug.append_status_with_format(f"NOT Connected @{self.config.server_ip}:{self.config.port} \n", color="red")
+            self.console_debug.append_status_with_format("Service : ", font_style="italic")
+            self.console_debug.append_status_with_format(f"{self.config.service}\n", color="green")
             self.console_debug.append_status_with_format("IP client : ", font_style="italic")
             self.console_debug.append_status_with_format(f"{self.ip_client}\n", color="green")
             self.console_debug.append_status_with_format("Micro : ", font_style="italic")
