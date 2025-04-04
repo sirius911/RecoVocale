@@ -2,6 +2,17 @@ import textwrap
 import scipy
 import ffmpeg
 import numpy as np
+import sys
+import os
+
+if getattr(sys, 'frozen', False):
+    # Programme compilé → on utilise le dossier de l'exécutable
+    BASE_PATH = os.path.dirname(sys.executable)
+else:
+    # Exécution normale (non compilée)
+    BASE_PATH = os.path.dirname(__file__)
+
+FFMPEG_PATH = os.path.join(BASE_PATH, "bin", "ffmpeg.exe")
 
 
 def print_transcript(text):
@@ -29,7 +40,7 @@ def resample(file: str, sr: int = 16000):
         out, _ = (
             ffmpeg.input(file, threads=0)
             .output("-", format="s16le", acodec="pcm_s16le", ac=1, ar=sr)
-            .run(cmd=["ffmpeg", "-nostdin"], capture_stdout=True, capture_stderr=True)
+            .run(cmd=[FFMPEG_PATH, "-nostdin"], capture_stdout=True, capture_stderr=True)
         )
     except ffmpeg.Error as e:
         raise RuntimeError(f"Failed to load audio: {e.stderr.decode()}") from e

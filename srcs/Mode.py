@@ -59,7 +59,7 @@ class Mode:
         self.app.status_server = check_server_status(self.app.config.server_ip, self.app.config.port, self.app.ip_client)
         self.update()
 
-    def unpause(self):
+    def unpause(self, file_path=None):
         if self.mode == DIRECT:
             self.transcription_interrompue = False
         if self.app.status_server == True:
@@ -67,7 +67,10 @@ class Mode:
                 if self.client_manager.client:
                     self.client_manager.client.set_pause(False)
                 else:
-                    self.client_manager.start_client(self.app.loop, self.app.config.port)
+                    self.client_manager.start_client(self.app.loop,
+                                                     self.app.config.port,
+                                                     file_path,
+                                                     self.app.config.play_audio)
                 self.app.recording = True
         else:
             self.app.status_server = check_server_status(self.app.config.server_ip, self.app.config.port, self.app.ip_client)
@@ -315,3 +318,13 @@ class Mode:
     def set_service(self, service):
         self.app.config.service = service
         self._update_title_window()
+
+    def toggle_play_audio(self):
+        self.app.config.play_audio = self.play_audio_var.get()
+
+    def handle_dropped_file(self, file_path):
+        """
+        Méthode appelée lorsqu'un fichier audio est glissé-déposé.
+        Les classes filles peuvent surcharger cette méthode pour un traitement personnalisé.
+        """
+        print(f"[Mode] Fichier reçu (non traité) : {file_path}")

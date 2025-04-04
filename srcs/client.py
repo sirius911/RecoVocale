@@ -350,7 +350,11 @@ class TranscriptionTeeClient:
             print(f"[WARN]: Unable to access microphone. {error}")
             self.stream = None
 
-    def __call__(self, audio=None, rtsp_url=None, hls_url=None, save_file=None):
+    def __call__(self, audio=None,
+                 rtsp_url=None,
+                 hls_url=None,
+                 save_file=None,
+                 listen=False):
         """
         Start the transcription process.
 
@@ -376,7 +380,7 @@ class TranscriptionTeeClient:
         print("[INFO]: Server Ready!")
         if audio is not None:
             resampled_file = utils.resample(audio)
-            self.play_file(resampled_file)
+            self.play_file(resampled_file, listen)
         else:
             self.record()
 
@@ -397,7 +401,7 @@ class TranscriptionTeeClient:
             if (unconditional or client.recording):
                 client.send_packet_to_server(packet)
 
-    def play_file(self, filename):
+    def play_file(self, filename, listen=False):
         """
         Play an audio file and send it to the server for processing.
 
@@ -423,17 +427,26 @@ class TranscriptionTeeClient:
                 frames_per_buffer=self.chunk,
             )
             try:
-                while any(client.recording for client in self.clients):
+                while True:
+                # while any(client.recording for client in self.clients):
                     data = wavfile.readframes(self.chunk)
                     if data == b"":
                         break
 
                     audio_array = self.bytes_to_float_array(data)
                     self.multicast_packet(audio_array.tobytes())
-                    self.stream.write(data)
+                    if listen:
+                        self.stream.write(data)
 
                 wavfile.close()
 
+                 # 🔥 Nettoyage du fichier resamplé si besoin
+                try:
+                    os.remove(filename)
+                    print(f"[ClientManager] Fichier temporaire supprimé : {filename}")
+                except Exception as e:
+                    print(f"[ClientManager] Erreur lors de la suppression de {filename} : {e}")
+                
                 for client in self.clients:
                     client.wait_before_disconnect()
                 self.multicast_packet(Client.END_OF_AUDIO.encode('utf-8'), True)

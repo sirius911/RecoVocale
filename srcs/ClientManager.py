@@ -1,3 +1,4 @@
+import os
 from client import TranscriptionClient
 from Correcteur import intercept, corrige_ponctuation
 from utils_keyboard import Simulator
@@ -5,7 +6,7 @@ import threading
 from info import APPRENTI
 
 class ClientManager:
-    def __init__(self, host, port, lang, model, translate, use_vad, save_output_recording, output_recording_filename, update_callback, insertions, fenetre_gestion_insertions, mode, nb_repeat=2, ip_client="0.0.0.0"):
+    def __init__(self, host, port, lang, model, translate, use_vad, save_output_recording, output_recording_filename, update_callback, insertions, fenetre_gestion_insertions, mode, nb_repeat=2, ip_client="0.0.0.0", listen=False):
         self.host = host
         self.port = port
         self.lang = lang
@@ -24,8 +25,9 @@ class ClientManager:
         self.mode = mode
         self.nb_repeat = nb_repeat # nb de fois que la transcription doit etre répété pour demander un fin de transcription
         self.ip_client = ip_client
+        self.listen = listen
 
-    def start_client(self, loop, port_service=None):
+    def start_client(self, loop, port_service=None, audio_file=None, listen=False):
         port = port_service
         if port is None:
             port = self.port
@@ -46,7 +48,8 @@ class ClientManager:
                 nb_repeat=self.nb_repeat,
                 ip_client=self.ip_client,
             )
-
+        self.audio_file = audio_file
+        self.listen = listen
         self.client.set_pause(False)
         self.running = True
         self.loop = loop
@@ -56,8 +59,7 @@ class ClientManager:
 
     def run_client_thread(self):
         try:
-            
-            self.client()
+            self.client(audio=self.audio_file, listen=self.listen)
             self.client = None
         except Exception as e:
             print(f"Error running client: {e}")

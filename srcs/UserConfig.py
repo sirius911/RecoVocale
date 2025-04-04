@@ -12,6 +12,7 @@ class UserConfig:
         self._port = "30000"
         self._service = "Général"
         self._shortcut = "F3"
+        self._play_audio = True
         self.mode = "DIRECT"
         self.x_window = "10"
         self.y_window = "10"
@@ -25,6 +26,7 @@ class UserConfig:
             "Cardiologie": "30003",
             "Oncologie": "30004",
         }
+
         # Lire la configuration si le fichier existe, sinon la créer
         if os.path.exists(self.config_file):
             self.load_config()
@@ -49,7 +51,8 @@ class UserConfig:
         self.insertions = config.get('SETTINGS', 'INSERTIONS', fallback=self.insertions)
         self.nb_repeat = int(config.get('SETTINGS', 'NB_REPEAT', fallback=self.nb_repeat))
         self.dictionnaire = (config.get('SETTINGS', 'DICTIONNAIRE', fallback=self.dictionnaire) == 'True')
-        
+        self._play_audio = (config.get('SETTINGS', 'PLAY_AUDIO', fallback=self._play_audio) == 'True')
+
     def save_config(self, root):
         """Sauvegarde la configuration dans un fichier."""
         if not os.path.exists(self.config_dir):
@@ -68,6 +71,7 @@ class UserConfig:
             'INSERTIONS': self.insertions,
             'NB_REPEAT': self.nb_repeat,
             'DICTIONNAIRE': self.dictionnaire,
+            'PLAY_AUDIO': self._play_audio,
         }
         print(f"Sauvegarde {self.config_file} ...", end =' ')
 
@@ -97,7 +101,14 @@ class UserConfig:
         if value in self._service_port_map:
             self._port = self._service_port_map[value]
             print(f"changement de Port : {self._port}")
+    @property
+    def play_audio(self):
+        return self._play_audio
     
+    @play_audio.setter
+    def play_audio(self, value:bool):
+        self._play_audio = value
+
     @property
     def shortcut(self):
         return self._shortcut

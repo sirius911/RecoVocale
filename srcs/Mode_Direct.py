@@ -8,44 +8,6 @@ from utils_keyboard import Simulator
 from pynput.keyboard import Key
 
 
-# def trouver_bornes_mot_tk(phrase, curseur, direction='left'):
-#     # Si le curseur est à la fin, on le place au dernier caractère
-#     if curseur == -1:
-#         curseur = len(phrase) - 1
-
-#     # Assurer que le curseur est dans les bornes de la phrase
-#     curseur = max(0, min(len(phrase) - 1, curseur))
-    
-#     if direction == 'left':
-#         # Trouver le début du mot à left
-#         debut = curseur
-#         while debut > 0 and phrase[debut].isspace():
-#             debut -= 1
-#         while debut > 0 and not phrase[debut - 1].isspace():
-#             debut -= 1
-        
-#         # Trouver la fin du mot
-#         fin = curseur
-#         while fin < len(phrase) and not phrase[fin].isspace():
-#             fin += 1
-#         return debut, fin - 1
-    
-#     elif direction == 'right':
-#         # Trouver le début du mot à right
-#         debut = curseur
-#         while debut < len(phrase) and phrase[debut].isspace():
-#             debut += 1
-        
-#         fin = debut
-#         while fin < len(phrase) and not phrase[fin].isspace():
-#             fin += 1
-        
-#         return debut, fin - 1
-    
-#     else:
-#         raise ValueError("La direction doit être 'left' ou 'right'.")
-
-
 class Mode_Direct(Mode):
     def enter(self):
         self.mode = DIRECT
@@ -67,6 +29,7 @@ class Mode_Direct(Mode):
             mode=self.mode,
             nb_repeat=self.app.config.nb_repeat,
             ip_client=self.app.ip_client,
+            listen=self.app.config.play_audio,
         )
         super().enter()
         self.pile = ['']
@@ -116,10 +79,10 @@ class Mode_Direct(Mode):
         print("Pausing client in Mode Direct")
         super().pause()
 
-    def unpause(self):
+    def unpause(self, audio_file):
         print(f"UnPausing client in Mode Direct")
         # self.transcription_interrompue = False
-        super().unpause()
+        super().unpause(audio_file)
 
     def stop_client(self):
         print(f"Stop client in Mode Direct")
@@ -252,46 +215,26 @@ class Mode_Direct(Mode):
         time.sleep(0.5)
         self._update_barre_status()
 
-    # def select_text_box(self, dir = "left"):
-    #     self.text_box.focus_set()
-    #     # Effacer la sélection actuelle (retirer la surbrillance)
-    #     self.text_box.tag_remove("sel", "1.0", tk.END)
-
-
-    #     # Récupérer la position du curseur dans la text_box
-    #     cursor_index = self.text_box.index(tk.INSERT)   
-
-    #     # Convertir cet index en offset numérique (compter les caractères depuis le début)
-    #     line, column = map(int, cursor_index.split('.'))
-    #     # print(f"cursor_index = ({line},{column})")
-    #     if dir == "left":
-    #         column -= 1
-    #     else:
-    #         column += 1
-    #     # print(f"next cursor index = ({line},{column})")    
-    #     current_position = int(self.text_box.index(f"{line}.0+{column}c").split('.')[1])
-
-    #     # Récupérer tout le texte du text_box
-    #     full_text =self.text_box.get("1.0", tk.END)
-        
-    #     # Trouver les bornes du mot à left ou à right
-    #     start_pos, end_pos = trouver_bornes_mot_tk(full_text, current_position, dir)
-        
-    #     # Convertir ces bornes en indices Tkinter
-    #     start_index = f"{line}.0+{start_pos}c"
-    #     end_index = f"{line}.0+{end_pos + 1}c"  # Incrémenter pour inclure la dernière lettre
-    #     # print(f"start_index = {start_index}, end_index = {end_index}")
-    #     # Sélectionner le mot dans la text_box
-    #     self.text_box.tag_add("sel", start_index, end_index)
-
-    #     # Mettre le curseur à la fin ou au début  de la sélection
-    #     if dir == "left":
-    #         self.text_box.mark_set(tk.INSERT, start_index)
-    #     else:
-    #         self.text_box.mark_set(tk.INSERT, end_index)
-    #     self.text_box.see(tk.INSERT)  # Faire défiler jusqu'au curseur
-
     def exit(self):
         retour = self.text_box.get("1.0", tk.END) # on retourne la transcription en cours
         super().exit()
         return retour
+    
+    def handle_dropped_file(self, file_path):
+        """
+        Gère un fichier glissé-déposé en l'envoyant à la transcription.
+        """
+        # if self.transcription_en_cours:
+        #     self.stop()
+
+        print(f"[Mode_Direct] Traitement du fichier : {file_path}")
+        self.unpause(file_path)
+        # self.client_manager.stop_client()
+        # self.client_manager.client = None  # Réinitialiser proprement
+        # self.client_manager.start_client(
+        #     self.app.loop,
+        #     port_service=self.app.config.port,
+        #     audio_file=file_path
+        # )
+        # self.app.recording = True
+        # self.update()

@@ -2,6 +2,7 @@ import os
 import socket
 import time
 import tkinter as tk
+from tkinterdnd2 import TkinterDnD
 import asyncio
 import threading
 import keyboard
@@ -212,7 +213,7 @@ if __name__ == "__main__":
         sys.exit(0)
 
     try:
-        root = tk.Tk()
+        root = TkinterDnD.Tk()
         # Chemin vers l'icône (dans le répertoire de l'application installée)
         if getattr(sys, 'frozen', False):  # Mode exécutable compilé
             base_path = sys._MEIPASS
@@ -230,6 +231,17 @@ if __name__ == "__main__":
 
         app = App(root, new_loop)  # Pass the new loop to the app
         # root.bind("<Configure>", on_resize)
+        def on_file_drop(event):
+            file_path = event.data.strip("{}")  # Nettoyer le nom du fichier
+            if file_path.lower().endswith((".wav", ".mp3", ".flac", ".ogg")):
+                print("Fichier audio détecté :", file_path)
+                app.current_mode.handle_dropped_file(file_path)
+            else:
+                print("Format non supporté :", file_path)
+
+        # Activer le drop sur la fenêtre principale
+        root.drop_target_register('DND_Files')
+        root.dnd_bind('<<Drop>>', on_file_drop)
         root.mainloop()
         # Une fois terminé, relâchez le mutex
         win32api.CloseHandle(mutex)

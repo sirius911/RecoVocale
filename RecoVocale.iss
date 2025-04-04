@@ -3,12 +3,12 @@
 [Setup]
 ; Nom du fichier installateur
 OutputDir=install
-OutputBaseFilename=install_1.23
+OutputBaseFilename=install_1.24
 SetupIconFile=reco.ico
 ; Nom de l'application
 AppName=RecoVocale
 ; Version de l'application
-AppVersion=1.23
+AppVersion=1.24
 ; Répertoire par défaut d'installation
 DefaultDirName={pf}\RecoVocale
 ; Répertoire par défaut dans le menu démarrer
@@ -22,9 +22,9 @@ LicenseFile="C:\\Users\\lorcyr\\RecoVocale\\LICENSE.txt"
 Source: "dist\RecoVocale.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "C:\Users\lorcyr\RecoVocale\srcs\config\user_config.ini"; DestDir: "{localappdata}\RecoVocale"; Flags: ignoreversion
 Source: "C:\Users\lorcyr\RecoVocale\srcs\config\micro_actions_config.json"; DestDir: "{localappdata}\RecoVocale"; Flags: ignoreversion
-Source: "C:\Users\LORCYR\Appdata\Local\enchant\fr_FR.dic"; DestDir: "{localappdata}\enchant"; Flags: onlyifdoesntexist
+Source: "C:\Users\lorcyr\Appdata\Local\enchant\fr_FR.dic"; DestDir: "{localappdata}\enchant"; Flags: onlyifdoesntexist
 Source: "C:\Users\lorcyr\RecoVocale\srcs\config\insertions.xml"; DestDir: "{localappdata}\RecoVocale"; Flags: onlyifdoesntexist
-
+Source: "dist\bin\ffmpeg.exe"; DestDir: "{app}\bin"; Flags: ignoreversion
 
 [Icons]
 ; Ajouter une icône pour l'application dans le menu démarrer

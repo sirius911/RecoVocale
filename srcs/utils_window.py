@@ -125,6 +125,11 @@ def create_menus(self):
                                         value=service,
                                         command=lambda s=service: self.set_service(s))
     
+    self.settings_menu.add_separator()
+    self.play_audio_var = BooleanVar(value=self.app.config.play_audio)
+    self.settings_menu.add_checkbutton(label="Lecture audio locale", variable=self.play_audio_var,
+                                   command=self.toggle_play_audio)
+
     # Autres options du menu Paramètres
     self.settings_menu.add_separator()
     self.settings_menu.add_command(label="Gestion des Insertions", command=self.ouvrir_gestion_insertions)
