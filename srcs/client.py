@@ -72,6 +72,8 @@ class Client:
         self.call_back=call_back
         self.ip_client=ip_client
         self.compteur = 0 # pour compter les occurence de transcription
+        self.source_is_micro = True
+
         if translate:
             self.task = "translate"
     
@@ -122,8 +124,10 @@ class Client:
         text = []
         ending = False
         for i, seg in enumerate(segments):
-            if seg.get("completed", False):
-                print("** SEGMENT COMPLETED **")
+            if seg.get("completed", False) and self.source_is_micro:
+                # si source_is_micro == False, c'est que l'on a une fichier et que le completed ne présume pas de la fin
+                # de la transcription
+                print(f"** SEGMENT COMPLETED **")
                 ending = True
             else:
                 ending = False
@@ -146,13 +150,6 @@ class Client:
         else:
             self.compteur = 0
             self.ancienne_transcription = combined_text
-        # print(f"self.compteur = {self.compteur}")
-        # utils.print_transcript(text)
-        
-        # if self.compteur > self.nb_repeat or ending:
-        #     self.recording = False
-        #     ending = True
-            # print("fin dans client()")
 
         # appel de la fonction Call back
         self.recording = self.call_back(text, ending)
@@ -211,7 +208,7 @@ class Client:
 
     def on_close(self, ws, close_status_code, close_msg):
         print(f"[INFO]: Websocket connection closed: {close_status_code}: {close_msg}")
-        self.recording = False
+        self.recording = self.call_back(None, True)
         self.waiting = False
 
     def on_open(self, ws):
@@ -378,9 +375,19 @@ class TranscriptionTeeClient:
                     return
 
         print("[INFO]: Server Ready!")
+        for client in self.clients:
+            client.source_is_micro = (audio is None)
+
         if audio is not None:
-            resampled_file = utils.resample(audio)
-            self.play_file(resampled_file, listen)
+            resampled = utils.needs_resample(audio)
+            if resampled:
+                audio_to_play = utils.resample(audio)
+            else:
+                audio_to_play = audio
+            self.play_file(audio_to_play, listen)
+            if resampled:
+                # 🔥 Nettoyage du fichier resamplé si besoin
+                os.remove(audio_to_play)
         else:
             self.record()
 
@@ -439,17 +446,14 @@ class TranscriptionTeeClient:
                         self.stream.write(data)
 
                 wavfile.close()
+                for client in self.clients:
+                    client.source_is_micro = True
 
-                 # 🔥 Nettoyage du fichier resamplé si besoin
-                try:
-                    os.remove(filename)
-                    print(f"[ClientManager] Fichier temporaire supprimé : {filename}")
-                except Exception as e:
-                    print(f"[ClientManager] Erreur lors de la suppression de {filename} : {e}")
-                
                 for client in self.clients:
                     client.wait_before_disconnect()
                 self.multicast_packet(Client.END_OF_AUDIO.encode('utf-8'), True)
+                
+
                 self.stream.close()
                 self.close_all_clients()
 

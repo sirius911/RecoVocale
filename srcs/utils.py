@@ -4,6 +4,8 @@ import ffmpeg
 import numpy as np
 import sys
 import os
+import wave
+import contextlib
 
 if getattr(sys, 'frozen', False):
     # Programme compilé → on utilise le dossier de l'exécutable
@@ -48,4 +50,51 @@ def resample(file: str, sr: int = 16000):
 
     resampled_file = f"{file.split('.')[0]}_resampled.wav"
     scipy.io.wavfile.write(resampled_file, sr, np_buffer.astype(np.int16))
+    print(f"[utils] Fichier resamplé : {resampled_file}")
     return resampled_file
+
+def needs_resample(filepath, target_rate=16000):
+    """
+    Vérifie si un fichier WAV est déjà en 16kHz, mono, 16 bits PCM.
+
+    Args:
+        filepath (str): Chemin du fichier WAV.
+        target_rate (int): Fréquence attendue (par défaut : 16000).
+
+    Returns:
+        bool: True s'il faut le resampler, False s'il est déjà conforme.
+    """
+    try:
+        with contextlib.closing(wave.open(filepath, 'rb')) as wf:
+            nchannels = wf.getnchannels()
+            sampwidth = wf.getsampwidth()
+            framerate = wf.getframerate()
+
+            if nchannels != 1:
+                return True
+            if sampwidth != 2:
+                return True  # 2 bytes = 16 bits
+            if framerate != target_rate:
+                return True
+            return False
+    except Exception as e:
+        print(f"[utils] Erreur lors de la vérification du fichier audio : {e}")
+        return True  # Si erreur, on préfère resampler
+
+def remove_audio_file(file):
+    """
+    Supprime le fichier audio spécifié.
+
+    Args:
+        file (str): Chemin du fichier à supprimer.
+    """
+    try:
+        if os.path.exists(file):
+            os.remove(file)
+            print(f"[utils] Fichier supprimé : {file}")
+        else:
+            print(f"[utils] Le fichier n'existe pas : {file}")
+    except Exception as e:
+        print(f"[utils] Erreur lors de la suppression du fichier : {e}")
+        return False
+    return True

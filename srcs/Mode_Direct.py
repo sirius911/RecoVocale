@@ -79,7 +79,7 @@ class Mode_Direct(Mode):
         print("Pausing client in Mode Direct")
         super().pause()
 
-    def unpause(self, audio_file):
+    def unpause(self, audio_file=None):
         print(f"UnPausing client in Mode Direct")
         # self.transcription_interrompue = False
         super().unpause(audio_file)
@@ -182,9 +182,9 @@ class Mode_Direct(Mode):
     def update_transcriptions(self, message, ending):
         if message is not None and not self.transcription_interrompue:
             if not self.transcription_en_cours:
+                self.transcription_en_cours = True
                 self.trash_button.config(state=tk.DISABLED)
                 self.rec_button.config(state=tk.DISABLED)
-                self.transcription_en_cours = True
                 self.transcription.pos_cur = self.get_pos_curseur()
                 self.transcription.cur_selec = self.get_pos_select()
                 self.save_text_box()
@@ -206,7 +206,6 @@ class Mode_Direct(Mode):
         else:
             self.text_box.config(state=tk.DISABLED)
             self.set_pos_curseur(self.transcription.pos_cur)
-            # self.status_bar.config(text="Transcription ... en cours", bg='lightblue', fg='darkblue', anchor=tk.W)
 
     def copy_to_clipboard(self):
         self.status_bar.config(text='- Copie -', bg='lightblue', fg='darkblue', anchor=tk.CENTER)

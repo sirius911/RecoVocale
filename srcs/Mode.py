@@ -17,7 +17,7 @@ class Mode:
         self.fenetre_gestion_ouverte = False  # Attribut pour savoir si la fenêtre est ouverte
         self.simulator_keyboard = None
         self.transcription_en_cours = False
-
+        self.file_source = None # peut etre un fichier audio
         # # Définir le chemin du répertoire de configuration dans %APPDATA%\RecoVocale
         self.dico = enchant.Dict("fr_FR")
         self.mots_personnels = set()
@@ -60,6 +60,7 @@ class Mode:
         self.update()
 
     def unpause(self, file_path=None):
+        self.file_source = file_path
         if self.mode == DIRECT:
             self.transcription_interrompue = False
         if self.app.status_server == True:
@@ -94,6 +95,7 @@ class Mode:
             self.app.status_server = check_server_status(self.app.config.server_ip, self.app.config.port, self.app.ip_client)
 
     def _update_barre_status(self):
+        mini="--"
         if self.mode == REDUIT:
             message = f"RecoVocale {VERSION}"
         else:
@@ -102,7 +104,11 @@ class Mode:
         if self.app.status_server == False:
             self.status_bar.config(text=message, fg='red', bg='lightblue', anchor=tk.W)
         elif self.app.recording:
-            self.status_bar.config(text="RECORDING ...", fg='black', bg='red', anchor=tk.CENTER)
+            if self.file_source is not None:
+                message = f"Transcription de [{self.file_source}] ... en cours"
+            else:
+                message = "Transcription en cours..."
+            self.status_bar.config(text=message, fg='black', bg='red', anchor=tk.CENTER)
         elif self.transcription_en_cours:
             self.status_bar.config(text="Transcription ...en cours", bg='lightblue', fg='darkblue', anchor=tk.W)
         else:
@@ -147,7 +153,7 @@ class Mode:
         if self.app.recording:
             self.pause()
         else:
-            self.unpause()
+            self.unpause(None)
 
     def toggle_debug(self):
         #maj de la variable config
@@ -327,4 +333,5 @@ class Mode:
         Méthode appelée lorsqu'un fichier audio est glissé-déposé.
         Les classes filles peuvent surcharger cette méthode pour un traitement personnalisé.
         """
+        self.file_source = file_path
         print(f"[Mode] Fichier reçu (non traité) : {file_path}")
