@@ -26,7 +26,8 @@ class Mode_Direct(Mode):
             update_callback = self.update_transcriptions,  # Pass the callback to ClientManager
             insertions = self.app.insertions,
             fenetre_gestion_insertions = self.is_ouverte,
-            mode=self.mode,
+            # mode=self.mode,
+            mode=self,
             nb_repeat=self.app.config.nb_repeat,
             ip_client=self.app.ip_client,
             listen=self.app.config.play_audio,
@@ -223,17 +224,5 @@ class Mode_Direct(Mode):
         """
         Gère un fichier glissé-déposé en l'envoyant à la transcription.
         """
-        # if self.transcription_en_cours:
-        #     self.stop()
-
         print(f"[Mode_Direct] Traitement du fichier : {file_path}")
         self.unpause(file_path)
-        # self.client_manager.stop_client()
-        # self.client_manager.client = None  # Réinitialiser proprement
-        # self.client_manager.start_client(
-        #     self.app.loop,
-        #     port_service=self.app.config.port,
-        #     audio_file=file_path
-        # )
-        # self.app.recording = True
-        # self.update()

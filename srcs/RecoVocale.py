@@ -24,6 +24,8 @@ import win32api
 import sys
 import win32event
 import winerror
+from tkinter import messagebox
+
 
 
 class App:
@@ -238,6 +240,9 @@ if __name__ == "__main__":
                 app.current_mode.handle_dropped_file(file_path)
             else:
                 print("Format non supporté :", file_path)
+                messagebox.showerror("Format non pris en charge",
+                                     f"Le fichier déposé n'est pas dans un format audio supporté.\n\nFichier :\n{file_path}")
+                return
 
         # Activer le drop sur la fenêtre principale
         root.drop_target_register('DND_Files')

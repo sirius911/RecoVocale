@@ -33,7 +33,7 @@ class Mode_Apprenti(Mode):
             update_callback = self.update_transcriptions,  # Pass the callback to ClientManager
             insertions = self.app.insertions,
             fenetre_gestion_insertions = self.is_ouverte,
-            mode=self.mode,
+            mode=self,
             nb_repeat=self.app.config.nb_repeat,
             ip_client=self.app.ip_client,
         )
@@ -116,12 +116,12 @@ class Mode_Apprenti(Mode):
             print("Pausing client in Mode Direct")
         super().pause()
 
-    def unpause(self):
+    def unpause(self, audio_file=None):
         time.sleep(0.1)
         if self.app.config.debug:
             print(f"UnPausing client in Mode Direct")
         if not self.ready_to_learn:
-            super().unpause()
+            super().unpause(audio_file)
 
     def stop_client(self):
         if self.app.config.debug:
@@ -266,11 +266,10 @@ class Mode_Apprenti(Mode):
             self.trash_button.config(state=tk.NORMAL)
             self.status_bar.config(text="Transcription ...Terminée", bg='lightblue', fg='darkblue', anchor=tk.W)
             self.verification_dico(True)
+            self.pause()
         else:
             self.text_box.config(state=tk.DISABLED)
             self.set_pos_curseur(self.transcription.pos_cur)
-            # if not self.app.recording:
-            #     self.status_bar.config(text="Transcription ... en cours", bg='lightblue', fg='darkblue', anchor=tk.W)
 
     def learning(self):
         transcription = self.text_box.get("1.0", tk.END)
@@ -356,3 +355,9 @@ class Mode_Apprenti(Mode):
         super().exit()
         return retour
     
+    def handle_dropped_file(self, file_path):
+        """
+        Gère un fichier glissé-déposé en l'envoyant à la transcription.
+        """
+        print(f"[Mode_Direct] Traitement du fichier : {file_path}")
+        self.unpause(file_path)

@@ -1,9 +1,11 @@
-import os
+from tkinter import messagebox
+import wave
 from client import TranscriptionClient
 from Correcteur import intercept, corrige_ponctuation
 from utils_keyboard import Simulator
 import threading
 from info import APPRENTI
+import traceback
 
 class ClientManager:
     def __init__(self, host, port, lang, model, translate, use_vad, save_output_recording, output_recording_filename, update_callback, insertions, fenetre_gestion_insertions, mode, nb_repeat=2, ip_client="0.0.0.0", listen=False):
@@ -22,7 +24,8 @@ class ClientManager:
         self.update_callback = update_callback
         self.insertions = insertions
         self.fenetre_gestion_insertions = fenetre_gestion_insertions
-        self.mode = mode
+        self.mode = mode.mode # Direct, Reduit etc...
+        self._mode = mode
         self.nb_repeat = nb_repeat # nb de fois que la transcription doit etre répété pour demander un fin de transcription
         self.ip_client = ip_client
         self.listen = listen
@@ -62,7 +65,20 @@ class ClientManager:
             self.client(audio=self.audio_file, listen=self.listen)
             self.client = None
         except Exception as e:
-            print(f"Error running client: {e}")
+            print("Traceback complet :")
+            traceback.print_exc()
+
+            if isinstance(e, (EOFError, wave.Error)):
+                messagebox.showerror(
+                    "Fichier audio invalide",
+                    f"Le fichier ne peut pas être lu comme un fichier audio valide.\n\n"
+                    f"Fichier :\n{self.audio_file}\n\nErreur :\n{e}"
+                )
+            else:
+                print(f"Erreur dans run_client :{repr(e)}")
+                      
+            self.stop_client()
+            self._mode.stop_client() # on stop le client appelant
 
     def call_back(self, texte, ending):
         # Fonction appelé par Client.py suite a evenement websocket serveur WhisperLive
@@ -97,9 +113,10 @@ class ClientManager:
         if self.client:
             self.client.stop()
             self.client = None
-        if self.client_thread:
+        # NE PAS join() si on est dans le thread lui-même
+        if self.client_thread is not None and threading.current_thread() != self.client_thread:
             self.client_thread.join()
-            self.client_thread = None
+        self.client_thread = None
 
     def pause(self):
         if self.client:

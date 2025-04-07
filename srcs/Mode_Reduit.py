@@ -26,10 +26,11 @@ class Mode_Reduit(Mode):
             update_callback = self.update_transcriptions,  # Pass the callback to ClientManager
             insertions = self.app.insertions,
             fenetre_gestion_insertions = self.is_ouverte,
-            mode=self.mode,
+            mode=self,
             nb_repeat=self.app.config.nb_repeat,
             ip_client=self.app.ip_client,
         )
+        
         super().enter()
         self.simulator_keyboard = Simulator(None, True)
         self.a_ecrit = False # permet de ne pas écrire deux fois si le client stop avant la fin
@@ -50,9 +51,9 @@ class Mode_Reduit(Mode):
         print("Pausing client in Mode Réduit")
         super().pause()
 
-    def unpause(self):
+    def unpause(self, audio_file=None):
         print("UnPausing client in Mode Réduit")
-        super().unpause()
+        super().unpause(audio_file)
 
     def stop_client(self):
         print("Stop client in Mode Réduit")
@@ -126,3 +127,10 @@ class Mode_Reduit(Mode):
         remove_bubble()
         super().exit()
         return self.transcription.get() # on retourne la transcription en cours
+
+    def handle_dropped_file(self, file_path):
+        """
+        Gère un fichier glissé-déposé en l'envoyant à la transcription.
+        """
+        print(f"[Mode_Direct] Traitement du fichier : {file_path}")
+        self.unpause(file_path)

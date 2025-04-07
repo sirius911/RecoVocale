@@ -79,7 +79,7 @@ def needs_resample(filepath, target_rate=16000):
             return False
     except Exception as e:
         print(f"[utils] Erreur lors de la vérification du fichier audio : {e}")
-        return True  # Si erreur, on préfère resampler
+        return False
 
 def remove_audio_file(file):
     """
