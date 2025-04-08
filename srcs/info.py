@@ -24,7 +24,7 @@ REDUIT.name = "REDUIT"
 REDUIT.resizable = False
 REDUIT.topmost = True
 REDUIT.window_width = 226
-REDUIT.window_height = 60
+REDUIT.window_height = 85
 REDUIT.button_width = 15
 
 APPRENTI = SimpleNamespace()

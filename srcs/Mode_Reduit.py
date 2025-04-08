@@ -81,6 +81,7 @@ class Mode_Reduit(Mode):
             self.transcription.validation()
             self.status_bar.config( text=f'RecoVocale {VERSION}', bg='lightblue', fg='darkblue', anchor=tk.W)
             self.a_ecrit = True
+            self.pause()
         else:
             show_bubble_message(self.root, message)
             self.status_bar.config(text='* Transcription *', bg='lightblue', fg='darkblue', anchor=tk.CENTER)
