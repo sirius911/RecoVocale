@@ -10,7 +10,7 @@ class UserConfig:
         # Valeurs par défaut
         self.server_ip = "10.1.147.251"
         self._port = "30000"
-        self._service = "Général"
+        self._service = "Tous"
         self._shortcut = "F3"
         self._play_audio = True
         self.mode = "DIRECT"
@@ -21,6 +21,7 @@ class UserConfig:
         self.nb_repeat = 3
         self.dictionnaire = False
         self._service_port_map = {
+            "Tous": "30000",
             "Général": "30001",
             "Radiologie": "30002",
             "Cardiologie": "30003",

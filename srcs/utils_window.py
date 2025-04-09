@@ -117,7 +117,8 @@ def create_menus(self):
     # Menu Service
     self.service_var = tk.StringVar(value=self.app.config.service)
     self.service_menu = tk.Menu(self.settings_menu, tearoff=0)
-    self.settings_menu.add_cascade(label="Service", menu=self.service_menu)
+    
+    self.settings_menu.add_cascade(label="Service", menu=self.service_menu, state=tk.DISABLED)
 
     for service in self.app.config.get_services():
         self.service_menu.add_radiobutton(label=service,
