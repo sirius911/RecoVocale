@@ -205,6 +205,16 @@ def on_resize(event):
         height = event.height
         print(f"Ma fenêtre Tkinter - Dimensions: {width}x{height}")
 
+def show_drop_overlay(app):
+    app.drop_label = tk.Label(app.root, text="📁 Déposez ici", font=("Arial", 24), bg="yellow", fg="black")
+    app.drop_label.place(relx=0.5, rely=0.5, anchor="center")
+
+def hide_drop_overlay(app):
+    if hasattr(app, 'drop_label'):
+        app.drop_label.destroy()
+        del app.drop_label
+
+
 
 if __name__ == "__main__":
     #mutex unique pour l'application
@@ -242,6 +252,7 @@ if __name__ == "__main__":
             if file_path.lower().endswith((".wav", ".mp3", ".flac", ".ogg")):
                 print("Fichier audio détecté :", file_path)
                 app.current_mode.handle_dropped_file(file_path)
+                hide_drop_overlay(app)
             else:
                 print("Format non supporté :", file_path)
                 messagebox.showerror("Format non pris en charge",
@@ -251,6 +262,9 @@ if __name__ == "__main__":
         # Activer le drop sur la fenêtre principale
         root.drop_target_register('DND_Files')
         root.dnd_bind('<<Drop>>', on_file_drop)
+        root.dnd_bind('<<DropEnter>>', lambda e: show_drop_overlay(app))
+        root.dnd_bind('<<DropLeave>>', lambda e: hide_drop_overlay(app))
+
         root.mainloop()
         # Une fois terminé, relâchez le mutex
         if mutex:
