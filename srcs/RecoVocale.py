@@ -25,8 +25,10 @@ import sys
 import win32event
 import winerror
 from tkinter import messagebox
+import atexit
+from loger import envoyer_log
 
-
+atexit.register(lambda: envoyer_log("stop"))
 
 class App:
     def __init__(self, root, loop):
@@ -213,8 +215,10 @@ if __name__ == "__main__":
     if win32api.GetLastError() == winerror.ERROR_ALREADY_EXISTS:
         print("Le programme est déjà en cours d'exécution.")
         sys.exit(0)
-
+    else:
+        envoyer_log("start")
     try:
+        
         root = TkinterDnD.Tk()
         # Chemin vers l'icône (dans le répertoire de l'application installée)
         if getattr(sys, 'frozen', False):  # Mode exécutable compilé
@@ -249,7 +253,9 @@ if __name__ == "__main__":
         root.dnd_bind('<<Drop>>', on_file_drop)
         root.mainloop()
         # Une fois terminé, relâchez le mutex
-        win32api.CloseHandle(mutex)
+        if mutex:
+            win32api.CloseHandle(mutex)
+
         print("Bye!")
     except Exception as e:
         print(e)

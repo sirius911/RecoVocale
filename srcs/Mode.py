@@ -7,6 +7,7 @@ import tkinter as tk
 from insertions import FenetreGestion
 import enchant
 from utils_socket import check_server_status
+from loger import envoyer_log
 
 class Mode:
     def __init__(self, app):
@@ -58,6 +59,7 @@ class Mode:
         self.app.recording = False
         self.app.status_server = check_server_status(self.app.config.server_ip, self.app.config.port, self.app.ip_client)
         self.update()
+        envoyer_log("transcription", self.transcription.get())
 
     def unpause(self, file_path=None):
         self.file_source = file_path
