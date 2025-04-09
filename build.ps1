@@ -4,6 +4,12 @@ $version = Get-Content $versionFile | Select-Object -First 1
 $version = $version.Trim()
 Write-Host "Version lue depuis version.txt : $version"
 
+# Mettre à jour la version dans info.py
+$infoContent = Get-Content "srcs/info.py"
+$infoContent = $infoContent -replace "VERSION = '.*'", "VERSION = '$version'"
+$infoContent | Set-Content "srcs/info.py"
+Write-Host "Version d'info.py à jour"
+
 # Mise à jour du fichier .spec
 $specFile = ".\RecoVocale.spec"
 (Get-Content $specFile) -replace 'version\s*=\s*".*?"', "version=`"$version`"" | Set-Content $specFile
