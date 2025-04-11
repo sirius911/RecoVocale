@@ -6,6 +6,8 @@ from Actions import *
 from utils_window import resource_path, get_config_path
 
 def hash_code(data):
+    # Pour les Micro 1ere génération
+    # On pourra prendre le hash_code2 en mettant à jour le fichier de configuration micro_actions_config.json
     if len(data) < 2:
         raise ValueError(f"Bad hash_code: {data}")
     
@@ -13,6 +15,12 @@ def hash_code(data):
     dernier = data[-1]
     hash_code = avant_dernier*256 + dernier
     return hash_code
+
+def hash_code2(data):
+    result = 0
+    for i, val in enumerate(data):
+        result += val * (i + 1)
+    return result
 
 class BaseMic:
     def __init__(self, loop, vendor_id, product_id, firmware, actions, app, micro_name, on_connect_disconnect=None):
@@ -26,19 +34,40 @@ class BaseMic:
         self.connected = False
         self.device = None
         self.prev_data = None
-        self.call_back = on_connect_disconnect 
+        self.call_back = on_connect_disconnect
+        # Choix de la fonction de hash selon le modèle
+        if "Premium" in micro_name or self.version == 0x0253:
+            self.hash_function = hash_code2  # nouvelle méthode
+        else:
+            self.hash_function = hash_code   # méthode legacy
+
 
         # Démarre la coroutine monitor dans une tâche
         asyncio.run_coroutine_threadsafe(self.monitor(), self.loop)
 
     async def check_connection(self):
         # all_hids = hid.HidDeviceFilter(vendor_id=self.vendor_id, product_id=self.product_id, version_number=self.version).get_devices()
-        all_hids = hid.HidDeviceFilter(vendor_id=self.vendor_id, product_id=self.product_id).get_devices()
+        if self.version:
+            all_hids = hid.HidDeviceFilter(vendor_id=self.vendor_id, product_id=self.product_id, version_number=self.version).get_devices()
+        else:
+            all_hids = hid.HidDeviceFilter(vendor_id=self.vendor_id, product_id=self.product_id).get_devices()
+
         if all_hids:
             if not self.connected:
-                self.device = all_hids[0]
-                self.connected = True
-                self.connect()
+                # Si Premium, on cherche l'interface MI_04
+                if "Premium" in self.micro_name:
+                    for dev in all_hids:
+                        if "mi_04" in dev.device_path.lower():
+                            self.device = dev
+                            break
+                else:
+                    self.device = all_hids[0]
+
+                if self.device:
+                    self.connected = True
+                    self.connect()
+                else:
+                    print(f"Aucun device MI_04 trouvé pour {self.micro_name}")
         else:
             if self.connected:
                 self.device = None
@@ -71,7 +100,8 @@ class BaseMic:
             self.handle_data(data)
 
     def handle_data(self, data):
-        hascode = str(hash_code(data))
+        hascode = str(self.hash_function(data))
+
         if hascode in self.actions:
             
             action_info = self.actions[hascode]
@@ -111,6 +141,7 @@ def Micro(loop, app, call_back):
         except FileNotFoundError:
             print(f"Le fichier de configuration par défaut est introuvable : {default_config_path}")
             raise
+    print(f"lecture du fichier de configuration : {config_path}")
     with open(config_path, "r") as file:
         config = json.load(file)
     for micro_name, micro_info in config.items():
@@ -124,8 +155,8 @@ def Micro(loop, app, call_back):
             print(f"Erreur dans la lecture du fichier [{file}]\n{e}\n Il faut mettre à jour le fichier json !")
             return None
         temp_mic = BaseMic(loop, vendor_id, product_id, firmware_revision, actions, app, micro_name, call_back)
-        # all_hids = hid.HidDeviceFilter(vendor_id=vendor_id, product_id=product_id, version_number=firmware_revision).get_devices()
-        all_hids = hid.HidDeviceFilter(vendor_id=vendor_id, product_id=product_id).get_devices()
+        all_hids = hid.HidDeviceFilter(vendor_id=vendor_id, product_id=product_id, version_number=firmware_revision).get_devices()
+        # all_hids = hid.HidDeviceFilter(vendor_id=vendor_id, product_id=product_id).get_devices()
         if all_hids:
             return temp_mic  # Retourne l'instance de la classe détectée
 
