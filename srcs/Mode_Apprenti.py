@@ -9,6 +9,7 @@ import pygame
 from datetime import datetime
 import tempfile
 from sftp_upload import upload_files_to_sftp
+from loger import envoyer_log
 
 
 class Mode_Apprenti(Mode):
@@ -260,7 +261,7 @@ class Mode_Apprenti(Mode):
             self.transcription.validation()
             self.set_pos_curseur(self.transcription.fin_insertion)
             self.ready_to_learn = True
-            
+            envoyer_log("end_transcription", message)
             self.verification_dico(True)
             if not self.app.recording:
                 self.rec_button.config(state=tk.DISABLED)
@@ -288,7 +289,8 @@ class Mode_Apprenti(Mode):
         time.sleep(1)
         self.clear_text_box()
         self.pile = ['']
-
+        envoyer_log("learning", filename)
+        
     def check_pygame_events(self):
         """
         Vérifie périodiquement les événements pygame seulement lorsqu'on surveille les événements.

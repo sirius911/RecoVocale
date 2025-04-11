@@ -6,6 +6,7 @@ from info import DIRECT
 from ClientManager import ClientManager
 from utils_keyboard import Simulator
 from pynput.keyboard import Key
+from loger import envoyer_log
 
 
 class Mode_Direct(Mode):
@@ -26,7 +27,6 @@ class Mode_Direct(Mode):
             update_callback = self.update_transcriptions,  # Pass the callback to ClientManager
             insertions = self.app.insertions,
             fenetre_gestion_insertions = self.is_ouverte,
-            # mode=self.mode,
             mode=self,
             nb_repeat=self.app.config.nb_repeat,
             ip_client=self.app.ip_client,
@@ -201,12 +201,12 @@ class Mode_Direct(Mode):
             self.transcription_en_cours = False
             self.transcription.validation()
             self.set_pos_curseur(self.transcription.fin_insertion)
-            
+            envoyer_log("end_transcription", message)
             self.verification_dico(True)
             if not self.app.recording:
                 self.pause()
-            else:
                 self.status_bar.config(text="Transcription ...Terminée", bg='lightblue', fg='darkblue', anchor=tk.W)
+                
         else:
             self.text_box.config(state=tk.DISABLED)
             self.set_pos_curseur(self.transcription.pos_cur)

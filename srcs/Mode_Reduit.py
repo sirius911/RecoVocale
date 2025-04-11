@@ -7,6 +7,8 @@ from info import REDUIT, VERSION
 from ClientManager import ClientManager
 from utils_keyboard import Simulator
 from pynput.keyboard import Key
+from loger import envoyer_log
+
 
 class Mode_Reduit(Mode):
     def enter(self):
@@ -75,16 +77,18 @@ class Mode_Reduit(Mode):
             remove_bubble()
             # copie dans clipboard
             self.root.clipboard_clear()
-            self.root.clipboard_append(self.corriger_texte(self.transcription.text_en_cours))
+            text_to_copy = self.corriger_texte(self.transcription.text_en_cours)
+            self.root.clipboard_append(text_to_copy)
             # coller
             Simulator([Key.ctrl, 'v'])
             self.transcription.validation()
             self.status_bar.config( text=f'RecoVocale {VERSION}', bg='lightblue', fg='darkblue', anchor=tk.W)
             self.a_ecrit = True
+            envoyer_log("end_transcription", text_to_copy)
             if not self.app.recording:
                 self.pause()
-            else:
                 self.status_bar.config( text=f'RecoVocale {VERSION}', bg='lightblue', fg='darkblue', anchor=tk.W)
+
         else:
             show_bubble_message(self.root, message)
             self.status_bar.config(text='* Transcription *', bg='lightblue', fg='darkblue', anchor=tk.CENTER)
