@@ -208,7 +208,7 @@ class Client:
 
     def on_close(self, ws, close_status_code, close_msg):
         print(f"[INFO]: Websocket connection closed: {close_status_code}: {close_msg}")
-        self.recording = self.call_back(None, True)
+        self.recording = self.call_back(texte=None, ending=True, force=True)
         self.waiting = False
 
     def on_open(self, ws):
@@ -276,7 +276,7 @@ class Client:
 
             # Appeler la méthode close pour s'assurer que la connexion est fermée
             self.client_socket.close()
-            print("[INFO]: WebSocket fermé proprement avec code et raison.")
+            # print("[INFO]: WebSocket fermé proprement avec code et raison.")
         except Exception as e:
             print(f"[ERROR]: Erreur lors de la fermeture WebSocket : {e}")
 

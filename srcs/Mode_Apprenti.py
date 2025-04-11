@@ -260,13 +260,15 @@ class Mode_Apprenti(Mode):
             self.transcription.validation()
             self.set_pos_curseur(self.transcription.fin_insertion)
             self.ready_to_learn = True
-            self.rec_button.config(state=tk.DISABLED)
-            self.learning_button.config(state=tk.NORMAL)
-            self.play_button.config(state=tk.NORMAL)
-            self.trash_button.config(state=tk.NORMAL)
-            self.status_bar.config(text="Transcription ...Terminée", bg='lightblue', fg='darkblue', anchor=tk.W)
+            
             self.verification_dico(True)
-            self.pause()
+            if not self.app.recording:
+                self.rec_button.config(state=tk.DISABLED)
+                self.learning_button.config(state=tk.NORMAL)
+                self.play_button.config(state=tk.NORMAL)
+                self.trash_button.config(state=tk.NORMAL)
+                self.status_bar.config(text="Transcription ...Terminée", bg='lightblue', fg='darkblue', anchor=tk.W)
+                self.pause()
         else:
             self.text_box.config(state=tk.DISABLED)
             self.set_pos_curseur(self.transcription.pos_cur)

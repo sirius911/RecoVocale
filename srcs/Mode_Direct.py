@@ -185,7 +185,7 @@ class Mode_Direct(Mode):
             if not self.transcription_en_cours:
                 self.transcription_en_cours = True
                 self.trash_button.config(state=tk.DISABLED)
-                self.rec_button.config(state=tk.DISABLED)
+                # self.rec_button.config(state=tk.DISABLED)
                 self.transcription.pos_cur = self.get_pos_curseur()
                 self.transcription.cur_selec = self.get_pos_select()
                 self.save_text_box()
@@ -201,9 +201,12 @@ class Mode_Direct(Mode):
             self.transcription_en_cours = False
             self.transcription.validation()
             self.set_pos_curseur(self.transcription.fin_insertion)
-            self.status_bar.config(text="Transcription ...Terminée", bg='lightblue', fg='darkblue', anchor=tk.W)
+            
             self.verification_dico(True)
-            self.pause()
+            if not self.app.recording:
+                self.pause()
+            else:
+                self.status_bar.config(text="Transcription ...Terminée", bg='lightblue', fg='darkblue', anchor=tk.W)
         else:
             self.text_box.config(state=tk.DISABLED)
             self.set_pos_curseur(self.transcription.pos_cur)

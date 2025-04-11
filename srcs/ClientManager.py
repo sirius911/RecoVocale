@@ -80,9 +80,12 @@ class ClientManager:
             self.stop_client()
             self._mode.stop_client() # on stop le client appelant
 
-    def call_back(self, texte, ending):
+    def call_back(self, texte, ending, force=False):
         # Fonction appelé par Client.py suite a evenement websocket serveur WhisperLive
         if texte is None: # appel du call back suite à ending=True
+            # print(f"*************ici self._mode.app.recording = {self._mode.app.recording}")
+            if self.audio_file is not None or force:
+                self._mode.app.recording = False  
             return False
         transcriptions = texte if self.client else []
         if self.fenetre_gestion_insertions() or self.mode == APPRENTI:
