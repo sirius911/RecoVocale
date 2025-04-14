@@ -35,6 +35,8 @@ class App:
         self.config = UserConfig()
         self.insertions = GestionnaireInsertion(self.config.insertions)
         self.console_debug = DebugWindow(root)
+        self.debug_window_id = self.console_debug.debug_window.winfo_id()
+
         if self.config.debug:
            self.console_debug.debug_window.deiconify()  # Afficher la fenêtre de débogage
         else:
@@ -136,12 +138,19 @@ class App:
                 keyboard.clear_all_hotkeys()
                 keyboard.add_hotkey(self.shortcut_manager.keyboard_shortcut, self.current_mode.toggle_start_stop)
 
-                # recréation de la fenetre debug
-                self.console_debug = DebugWindow(root)
-                if self.config.debug:
-                    self.console_debug.debug_window.deiconify()  # Afficher la fenêtre de débogage
-                else:
-                    self.console_debug.debug_window.withdraw()
+                try:
+                    if self.config.debug:
+                        self.console_debug.debug_window.deiconify()
+                    else:
+                        self.console_debug.debug_window.withdraw()
+                except tk.TclError:
+                    # La fenêtre a été détruite, on la recrée proprement
+                    self.console_debug = DebugWindow(self.root)
+                    if self.config.debug:
+                        self.console_debug.debug_window.deiconify()
+                    else:
+                        self.console_debug.debug_window.withdraw()
+
                 self.info()
                 self.console_debug.log_message(log_en_cours)
     

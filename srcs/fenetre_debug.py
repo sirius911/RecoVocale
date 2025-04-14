@@ -60,8 +60,9 @@ class DebugWindow:
 
     def update_status(self, status):
         """Met à jour les statuts dans la zone de statut."""
-        self.status_area.delete('1.0', tk.END)  # Effacer le statut précédent
-        self.status_area.insert(tk.END, status)
+        if self.status_area.winfo_exists():
+            self.status_area.delete('1.0', tk.END)  # Effacer le statut précédent
+            self.status_area.insert(tk.END, status)
 
     def on_debug_close(self):
         """Gestion de la fermeture de la fenêtre fille."""
@@ -73,24 +74,25 @@ class DebugWindow:
 
     def append_status_with_format(self, message, color="black", font_style="normal"):
         """Ajoute du texte à la zone de statut avec une couleur et un style de police."""
+        if self.status_area.winfo_exists():
+            # Configurer le style du texte
+            if font_style == "italic":
+                self.status_area.tag_configure(f"formatted_{font_style}", font=("Helvetica",  self.taille_font_status, "italic"))
+            elif font_style == "bold":
+                self.status_area.tag_configure(f"formatted_{font_style}", font=("Helvetica",  self.taille_font_status, "bold"))
+            else:
+                self.status_area.tag_configure(f"formatted_{font_style}", font=("Helvetica", self.taille_font_status, "normal"))
 
-        # Configurer le style du texte
-        if font_style == "italic":
-            self.status_area.tag_configure(f"formatted_{font_style}", font=("Helvetica",  self.taille_font_status, "italic"))
-        elif font_style == "bold":
-            self.status_area.tag_configure(f"formatted_{font_style}", font=("Helvetica",  self.taille_font_status, "bold"))
-        else:
-            self.status_area.tag_configure(f"formatted_{font_style}", font=("Helvetica", self.taille_font_status, "normal"))
+            # Configurer la couleur du texte
+            self.status_area.tag_configure(f"colored_{color}", foreground=color)
 
-        # Configurer la couleur du texte
-        self.status_area.tag_configure(f"colored_{color}", foreground=color)
-
-        # Insérer le nouveau texte sans effacer ce qui est déjà là
-        self.status_area.insert(tk.END, message, (f"formatted_{font_style}", f"colored_{color}"))
-        self.status_area.see(tk.END)  # Faire défiler vers le bas automatiquement
+            # Insérer le nouveau texte sans effacer ce qui est déjà là
+            self.status_area.insert(tk.END, message, (f"formatted_{font_style}", f"colored_{color}"))
+            self.status_area.see(tk.END)  # Faire défiler vers le bas automatiquement
 
     def delete_status(self):
-        self.status_area.delete('1.0', tk.END)
+        if self.status_area.winfo_exists():
+            self.status_area.delete('1.0', tk.END)
 
 # Test rapide pour voir la fenêtre en fonctionnement
 if __name__ == "__main__":
