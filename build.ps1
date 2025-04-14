@@ -10,10 +10,14 @@ $infoContent = $infoContent -replace "VERSION = '.*'", "VERSION = '$version'"
 $infoContent | Set-Content "srcs/info.py"
 Write-Host "Version d'info.py à jour"
 
-# Mise à jour du fichier .spec
-$specFile = ".\RecoVocale.spec"
-(Get-Content $specFile) -replace 'version\s*=\s*".*?"', "version=`"$version`"" | Set-Content $specFile
-Write-Host "Mise à jour de la version dans RecoVocale.spec"
+# Mise à jour des versions dans RecoVocale.iss
+$issFile = ".\RecoVocale.iss"
+(Get-Content $issFile) `
+    -replace 'OutputBaseFilename\s*=\s*.*', "OutputBaseFilename=install_$version" `
+    -replace 'AppVersion\s*=\s*.*', "AppVersion=$version" |
+    Set-Content $issFile
+Write-Host "Mise à jour de la version dans RecoVocale.iss"
+
 
 # Compilation avec PyInstaller en utilisant le fichier .spec
 Write-Host "Compilation avec PyInstaller..."
