@@ -46,8 +46,7 @@ class BaseMic:
         asyncio.run_coroutine_threadsafe(self.monitor(), self.loop)
 
     async def check_connection(self):
-        # all_hids = hid.HidDeviceFilter(vendor_id=self.vendor_id, product_id=self.product_id, version_number=self.version).get_devices()
-        if self.version:
+        if self.version != 0:
             all_hids = hid.HidDeviceFilter(vendor_id=self.vendor_id, product_id=self.product_id, version_number=self.version).get_devices()
         else:
             all_hids = hid.HidDeviceFilter(vendor_id=self.vendor_id, product_id=self.product_id).get_devices()
@@ -154,10 +153,15 @@ def Micro(loop, app, call_back):
         except Exception as e:
             print(f"Erreur dans la lecture du fichier [{file}]\n{e}\n Il faut mettre à jour le fichier json !")
             return None
-        temp_mic = BaseMic(loop, vendor_id, product_id, firmware_revision, actions, app, micro_name, call_back)
-        all_hids = hid.HidDeviceFilter(vendor_id=vendor_id, product_id=product_id, version_number=firmware_revision).get_devices()
-        # all_hids = hid.HidDeviceFilter(vendor_id=vendor_id, product_id=product_id).get_devices()
+        
+        if firmware_revision > 0:
+            # si pas de firmware c'est que l'on prend le speech Mike generique
+            all_hids = hid.HidDeviceFilter(vendor_id=vendor_id, product_id=product_id, version_number=firmware_revision).get_devices()
+        else:
+            all_hids = hid.HidDeviceFilter(vendor_id=vendor_id, product_id=product_id).get_devices()
+
         if all_hids:
+            temp_mic = BaseMic(loop, vendor_id, product_id, firmware_revision, actions, app, micro_name, call_back)
             return temp_mic  # Retourne l'instance de la classe détectée
 
     return None  # Aucun micro compatible trouvé
