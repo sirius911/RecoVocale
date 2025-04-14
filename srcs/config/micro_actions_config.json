@@ -33,6 +33,23 @@
             "2048": {"class": "Keyboard", "arg":["\u0001","z"]}
         }
     },
+    "Philips Premium (2.53)": {
+    "vendor_id": "0x0911",
+    "product_id": "0x0c1c",
+    "firmware": "0x0253",
+    "actions": {
+        "256": {"class": "Pause"},
+        "216": {"class": "Pause"},
+        "226": {"class": "Pause"},
+        "266": {"class": "Unpause"},
+        "296": {"class": "StopAction"},
+        "576": {"class": "Copie_clipboard"},
+        "336": {"class": "Keyboard", "arg":["\u0003"]},
+        "416": {"class": "Keyboard", "arg":["\u0002"]},
+        "896": {"class": "Keyboard", "arg":["\u0001","v"]},
+        "1417": {"class": "NoAction"}
+        }
+    },
     "Nuance": {
         "vendor_id": "0x0554",
         "product_id": "0x1001",
