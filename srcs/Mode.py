@@ -97,11 +97,10 @@ class Mode:
             self.app.status_server = check_server_status(self.app.config.server_ip, self.app.config.port, self.app.ip_client)
 
     def _update_barre_status(self):
-        mini="--"
         if self.mode == REDUIT:
             message = f"RecoVocale {VERSION}"
         else:
-            message = f"RecoVocale [{self.app.config.server_ip}:{self.app.config.port}] (v{VERSION}) {"" if self.app.status_server else "not"} connected"
+            message = f"RecoVocale [{self.app.config.server_ip}:{self.app.config.port}] (v{VERSION}) {"" if self.app.status_server else "not"} connected [{self.app.config.service}]"
 
         if self.app.status_server == False:
             self.status_bar.config(text=message, fg='red', bg='lightblue', anchor=tk.W)
@@ -326,6 +325,7 @@ class Mode:
     def set_service(self, service):
         self.app.config.service = service
         self._update_title_window()
+        self._update_barre_status()
 
     def toggle_play_audio(self):
         self.app.config.play_audio = self.play_audio_var.get()

@@ -275,7 +275,8 @@ class Mode_Apprenti(Mode):
             self.set_pos_curseur(self.transcription.pos_cur)
 
     def learning(self):
-        transcription = self.text_box.get("1.0", tk.END)
+        label_service = "" if self.app.config.service.lower() == "tous" else f"[{self.app.config.service}]"
+        transcription = f"{label_service}{self.text_box.get("1.0", tk.END)}"
         self.copy_to_clipboard()
         with open(self.temp_txt_file, "w", encoding="utf-8") as fichier_text:
             fichier_text.write(transcription)
