@@ -4,8 +4,9 @@ SERVER = '10.1.147.12'
 PORT = 2222  # Port du serveur SFTP
 USERNAME = 'ftpuser'
 PASSWORD = 'DoW8EssZuCa2'  # Remplace par le mot de passe de l'utilisateur SFTP
-AUDIO_DIRECTORY = 'upload/utilisateurs/audios'  # Répertoire cible dans le serveur SFTP
-TEXT_DIRECTORY = 'upload/utilisateurs/rapports'  # Répertoire cible dans le serveur SFTP
+DIRECTORY = 'data'
+AUDIO_DIRECTORY = f'{DIRECTORY}/utilisateurs/audios'  # Répertoire cible dans le serveur SFTP
+TEXT_DIRECTORY = f'{DIRECTORY}/utilisateurs/rapports'  # Répertoire cible dans le serveur SFTP
 
 def ensure_directory(sftp, directory):
     """
@@ -31,7 +32,7 @@ def upload_files_to_sftp(audio_file, text_file, filenames):
         sftp = paramiko.SFTPClient.from_transport(transport)
 
         # Vérifie ou crée les répertoires nécessaires
-        ensure_directory(sftp, 'upload')  # Vérifie que 'upload' existe
+        ensure_directory(sftp, DIRECTORY)  # Vérifie que 'upload' existe
         ensure_directory(sftp, AUDIO_DIRECTORY)  # Vérifie ou crée 'audios'
         ensure_directory(sftp, TEXT_DIRECTORY)  # Vérifie ou crée 'rapports'
 
