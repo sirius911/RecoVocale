@@ -20,6 +20,7 @@ Write-Host "Mise à jour de la version dans RecoVocale.iss"
 
 
 # Compilation avec PyInstaller en utilisant le fichier .spec
+$specFile = ".\RecoVocale.spec"
 Write-Host "Compilation avec PyInstaller..."
 pyinstaller $specFile
 

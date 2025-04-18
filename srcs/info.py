@@ -1,6 +1,6 @@
 from types import SimpleNamespace
 
-VERSION = '1.24'
+VERSION = '1.25'
 
 #------------------------ M O D E S ----------------------
 DIRECT = SimpleNamespace()
