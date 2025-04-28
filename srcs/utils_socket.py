@@ -46,7 +46,7 @@ async def check_websocket_status(host: str, port: int, ip_client: str, timeout: 
 
             # Vérifier la réponse
             if response_data.get("ping") == "pong":
-                print(f"[INFO]: Réponse reçue : {response_data}")
+                # print(f"[INFO]: Réponse reçue : {response_data}")
                 await websocket.close(code=1000, reason=ip_client)
                 return True
             else:

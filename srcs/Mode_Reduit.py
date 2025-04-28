@@ -34,7 +34,7 @@ class Mode_Reduit(Mode):
         )
         
         super().enter()
-        self.simulator_keyboard = Simulator(None, True)
+        # self.simulator_keyboard = Simulator(None, True)
         self.a_ecrit = False # permet de ne pas écrire deux fois si le client stop avant la fin
 
     def ui(self): 
@@ -80,15 +80,16 @@ class Mode_Reduit(Mode):
             text_to_copy = self.corriger_texte(self.transcription.text_en_cours)
             self.root.clipboard_append(text_to_copy)
             # coller
-            Simulator([Key.ctrl, 'v'])
+            if not self.a_ecrit:
+                Simulator([Key.ctrl, 'v'])
+                self.a_ecrit = True
             self.transcription.validation()
             self.status_bar.config( text=f'RecoVocale {VERSION}', bg='lightblue', fg='darkblue', anchor=tk.W)
-            self.a_ecrit = True
+            
             envoyer_log("end_transcription", text_to_copy)
             if not self.app.recording:
                 self.pause()
                 self.status_bar.config( text=f'RecoVocale {VERSION}', bg='lightblue', fg='darkblue', anchor=tk.W)
-
         else:
             show_bubble_message(self.root, message)
             self.status_bar.config(text='* Transcription *', bg='lightblue', fg='darkblue', anchor=tk.CENTER)

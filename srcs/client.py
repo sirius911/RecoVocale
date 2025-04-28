@@ -145,14 +145,14 @@ class Client:
             self.last_received_segment = segments[-1]["text"]
 
         combined_text = ''.join(text).lstrip()
-        if combined_text.lstrip() != '' and combined_text == self.ancienne_transcription:
-            self.compteur += 1
-        else:
-            self.compteur = 0
-            self.ancienne_transcription = combined_text
+        # if combined_text.lstrip() != '' and combined_text == self.ancienne_transcription:
+        #     self.compteur += 1
+        # else:
+        #     self.compteur = 0
+        #     self.ancienne_transcription = combined_text
 
         # appel de la fonction Call back
-        self.recording = self.call_back(text, ending)
+        self.recording = self.call_back(combined_text, ending)
 
     def on_message(self, ws, message):
         """
@@ -434,8 +434,8 @@ class TranscriptionTeeClient:
                 frames_per_buffer=self.chunk,
             )
             try:
-                while True:
-                # while any(client.recording for client in self.clients):
+                # while True:
+                while any(client.recording for client in self.clients):
                     data = wavfile.readframes(self.chunk)
                     if data == b"":
                         break

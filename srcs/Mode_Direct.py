@@ -82,7 +82,7 @@ class Mode_Direct(Mode):
 
     def unpause(self, audio_file=None):
         print(f"UnPausing client in Mode Direct")
-        # self.transcription_interrompue = False
+        self.transcription_interrompue = False
         super().unpause(audio_file)
 
     def stop_client(self):
@@ -201,7 +201,10 @@ class Mode_Direct(Mode):
             self.transcription_en_cours = False
             self.transcription.validation()
             self.set_pos_curseur(self.transcription.fin_insertion)
-            envoyer_log("end_transcription", message)
+            model = ""
+            if self.client_manager and self.client_manager.client:
+                model = f"[{self.client_manager.client.get_model_path()}]"
+            envoyer_log("end_transcription", f"[{model}]{self.transcription.text_en_cours}")
             self.verification_dico(True)
             if not self.app.recording:
                 self.pause()

@@ -82,18 +82,21 @@ class ClientManager:
 
     def call_back(self, texte, ending, force=False):
         # Fonction appelé par Client.py suite a evenement websocket serveur WhisperLive
+        # print(f"[DEBUG] call_back('{texte}', {ending}, {force})")
         if texte is None: # appel du call back suite à ending=True
             # print(f"*************ici self._mode.app.recording = {self._mode.app.recording}")
             if self.audio_file is not None or force:
-                self._mode.app.recording = False  
+                self._mode.app.recording = False
+                self.update_callback(None, True)
             return False
-        transcriptions = texte if self.client else []
+        
+        combined_text = texte.lstrip()
+
         if self.fenetre_gestion_insertions() or self.mode == APPRENTI:
-            # la fenetre des insertions est ouverte donc on n'intercepte pas 
-            combined_text = ''.join(transcriptions).lstrip()
+            # pas d'interceptions
+            pass
         else:
-            #On passe transcriptions a intercept() pour les insertions automatiques date, chiffre romain etc...
-            combined_text = intercept(''.join(transcriptions).lstrip(), self.insertions.get())
+            combined_text = intercept(combined_text, self.insertions.get())
 
         if combined_text != "":
             if self.mode != APPRENTI:
