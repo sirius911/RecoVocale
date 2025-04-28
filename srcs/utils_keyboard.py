@@ -9,6 +9,27 @@ TIME_DELETE = 0.01  #delay for typing speed for backspace
 hold_key = [Key.ctrl, Key.ctrl_l, Key.ctrl_r, Key.shift, Key.shift_l, Key.shift_r,\
             Key.alt, Key.alt_l, Key.alt_r, Key.alt_gr]
 
+key_display_names = {
+    '\n': 'Entrée',
+    ' ': 'Espace',
+    '\t': 'Tabulation',
+    '\u0001': 'Ctrl',
+    '\u0002': 'Flèche gauche',
+    '\u0003': 'Flèche droite',
+    '\u0004': 'Flèche haut',
+    '\u0005': 'Flèche bas',
+    '\u0006': 'Suppr',
+    Key.ctrl: 'Ctrl',
+    Key.left: 'Flèche gauche',
+    Key.right: 'Flèche droite',
+    Key.up: 'Flèche haut',
+    Key.down: 'Flèche bas',
+    Key.delete: 'Suppr',
+    Key.backspace: 'Retour arrière',
+    Key.enter: 'Entrée',
+    Key.tab: 'Tabulation',
+}
+
 class Simulator:
     def __init__(self, data= List[Union[Key, str]] | None, debug=False):
         self.keyboard = Controller()

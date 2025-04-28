@@ -34,7 +34,7 @@ class Mode_Reduit(Mode):
         )
         
         super().enter()
-        # self.simulator_keyboard = Simulator(None, True)
+        self.pile = ['']
         self.a_ecrit = False # permet de ne pas écrire deux fois si le client stop avant la fin
 
     def ui(self): 
@@ -50,12 +50,14 @@ class Mode_Reduit(Mode):
         self.status_bar.grid(row=2, column=0, sticky="ew")
 
     def pause(self):
-        print("Pausing client in Mode Réduit")
-        super().pause()
+        if self.app.recording:
+            print("Pausing client in Mode Réduit")
+            super().pause()
 
     def unpause(self, audio_file=None):
-        print("UnPausing client in Mode Réduit")
-        super().unpause(audio_file)
+        if not self.app.recording:
+            print("UnPausing client in Mode Réduit")
+            super().unpause(audio_file)
 
     def stop_client(self):
         print("Stop client in Mode Réduit")
@@ -132,6 +134,9 @@ class Mode_Reduit(Mode):
     def clear_text_box(self):
         Simulator([Key.delete])
 
+    def undo(self, event=None):
+        Simulator([Key.ctrl,"z"])
+        
     def exit(self):
         remove_bubble()
         super().exit()

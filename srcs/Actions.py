@@ -1,6 +1,6 @@
 import ctypes
 import time
-from utils_keyboard import Simulator
+from utils_keyboard import Simulator, key_display_names
 import tkinter as tk
 import subprocess
 from abc import ABC, abstractmethod
@@ -38,6 +38,8 @@ class StopAction(Action):
 
 class Clear(Action):
     def execute(self):
+        if self.app.status_bar:
+            self.app.status_bar.config(text=f'- Del -', bg='lightblue', fg='darkblue', anchor=tk.CENTER)
         self.app.clear_text_box()
 
 class Keyboard(Action):
@@ -45,11 +47,21 @@ class Keyboard(Action):
         super().__init__(app)
         self.keys = keys
         self.status_bar = status_bar
+
+    def _format_keys(self, data):
+        if isinstance(data, list):
+            # Si data est une liste, on traite chaque élément individuellement
+            return ' + '.join(key_display_names.get(item, str(item)) for item in data)
+        else:
+            # Sinon, comportement normal
+            return self.key_display_names.get(data, data)
+
     def execute(self, data=None):
         if data is None:
             data = self.keys
         if self.status_bar:
-            self.app.status_bar.config(text=f'-{data} -', bg='lightblue', fg='darkblue', anchor=tk.CENTER)
+            affichage = self._format_keys(data)
+            self.app.status_bar.config(text=f'- {affichage} -', bg='lightblue', fg='darkblue', anchor=tk.CENTER)
         Simulator(data=data, debug=False)
 
 class Copie_clipboard(Action):

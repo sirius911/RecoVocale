@@ -124,13 +124,14 @@ class Client:
         text = []
         ending = False
         for i, seg in enumerate(segments):
-            if seg.get("completed", False) and self.source_is_micro:
-                # si source_is_micro == False, c'est que l'on a une fichier et que le completed ne présume pas de la fin
-                # de la transcription
+            if seg.get("completed", False):
                 print(f"** SEGMENT COMPLETED **")
-                ending = True
-            else:
-                ending = False
+                if self.source_is_micro:
+                    # si source_is_micro == False, c'est que l'on a une fichier et que le completed ne présume pas de la fin
+                    # de la transcription
+                    ending = True
+                else:
+                    ending = False
             if not text or text[-1] != seg["text"]:
                 text.append(seg["text"])
                 if i == len(segments) - 1 and not seg.get("completed", False):
