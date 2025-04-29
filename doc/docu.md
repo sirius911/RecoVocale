@@ -14,31 +14,31 @@
     - [🧩 Modules secondaires](#-modules-secondaires)
   - [📁 Détail par module](#-détail-par-module)
     - [📌 Modules principaux](#-modules-principaux-1)
-    - [`RecoVocale.py`](#recovocalepy)
-    - [`Mode.py`](#modepy)
-    - [`Mode_Direct.py`](#mode_directpy)
-    - [`Mode_Reduit.py`](#mode_reduitpy)
-    - [`Mode_Apprentissage.py`](#mode_apprentissagepy)
-    - [`client.py`](#clientpy)
-    - [`ClientManager.py`](#clientmanagerpy)
+    - [`RecoVocale`](#recovocale)
+    - [`Mode`](#mode)
+    - [`Mode_Direct`](#mode_direct)
+    - [`Mode_Reduit`](#mode_reduit)
+    - [`Mode_Apprentissage`](#mode_apprentissage)
+    - [`client`](#client)
+    - [`ClientManager`](#clientmanager)
     - [🧩 Modules secondaires](#-modules-secondaires-1)
-    - [`Actions.py`](#actionspy)
-    - [`Correcteur.py`](#correcteurpy)
-    - [`fenetre_debug.py`](#fenetre_debugpy)
-    - [`ftp_upload.py` / `sftp_upload.py`](#ftp_uploadpy--sftp_uploadpy)
-    - [`info.py`](#infopy)
-    - [`insertions.py`](#insertionspy)
-    - [`loger.py`](#logerpy)
-    - [`Micro.py`](#micropy)
-    - [`shortcut_manager.py`](#shortcut_managerpy)
-    - [`ToolTip.py`](#tooltippy)
-    - [`Transcription.py`](#transcriptionpy)
-    - [`unite.py`](#unitepy)
-    - [`UserConfig.py`](#userconfigpy)
-    - [`utils.py`](#utilspy)
-    - [`utils_keyboard.py`](#utils_keyboardpy)
-    - [`utils_socket.py`](#utils_socketpy)
-    - [`utils_window.py`](#utils_windowpy)
+    - [`Actions`](#actions)
+    - [`Correcteur`](#correcteur)
+    - [`fenetre_debug`](#fenetre_debug)
+    - [`ftp_upload` / `sftp_upload`](#ftp_upload--sftp_upload)
+    - [`info`](#info)
+    - [`insertions`](#insertions)
+    - [`loger`](#loger)
+    - [`Micro`](#micro)
+    - [`shortcut_manager`](#shortcut_manager)
+    - [`ToolTip`](#tooltip)
+    - [`Transcription`](#transcription)
+    - [`unite`](#unite)
+    - [`UserConfig`](#userconfig)
+    - [`utils`](#utils)
+    - [`utils_keyboard`](#utils_keyboard)
+    - [`utils_socket`](#utils_socket)
+    - [`utils_window`](#utils_window)
 - [🔄 3. Algorithmes et flux de traitement](#-3-algorithmes-et-flux-de-traitement)
   - [🎙️ Micro → Serveur WhisperLive → Transcription](#️-micro--serveur-whisperlive--transcription)
     - [📤 1. Capture et envoi du flux audio](#-1-capture-et-envoi-du-flux-audio)
@@ -68,12 +68,12 @@
   - [🎤 Micros spéciaux (SpeechMike)](#-micros-spéciaux-speechmike)
     - [🔧 Configuration personnalisée (`micro_actions_config.json`)](#-configuration-personnalisée-micro_actions_configjson)
 - [🧠 6. Algorithmes : Envoi audio, découpage, threads, callbacks](#-6-algorithmes--envoi-audio-découpage-threads-callbacks)
-  - [🎙️ Classe `Client` (`client.py`)](#️-classe-client-clientpy)
+  - [🎙️ Classe `Client` (`client`)](#️-classe-client-client)
     - [🔄 Initialisation](#-initialisation)
   - [📤 Envoi audio en temps réel](#-envoi-audio-en-temps-réel)
   - [⏱️ Threads et écoute](#️-threads-et-écoute)
   - [📥 Réception des messages](#-réception-des-messages)
-  - [🧩 Classe `ClientManager` (`ClientManager.py`)](#-classe-clientmanager-clientmanagerpy)
+  - [🧩 Classe `ClientManager` (`ClientManager`)](#-classe-clientmanager-clientmanager)
     - [▶️ Méthode `start_client`](#️-méthode-start_client)
   - [📌 Gestion des callbacks](#-gestion-des-callbacks)
   - [🧬 Architecture audio → transcription → mise à jour](#-architecture-audio--transcription--mise-à-jour)
@@ -145,7 +145,7 @@
 
 ### ⚙️ Point d’entrée du programme
 
-L’entrée principale du logiciel est le fichier **`RecoVocale.py`**.  
+L’entrée principale du logiciel est le fichier **`RecoVocale`**.  
 
 <div style="page-break-after: always;"></div>
 
@@ -157,13 +157,13 @@ L’entrée principale du logiciel est le fichier **`RecoVocale.py`**.
 
 | Fichier | Rôle principal |
 |--------|----------------|
-| `RecoVocale.py` | Point d’entrée principal de l’application |
-| `Mode.py` | Classe de base pour les différents modes (direct, réduit, apprentissage) |
-| `Mode_Direct.py` | Mode direct : transcription affichée en temps réel dans une fenêtre |
-| `Mode_Reduit.py` | Mode réduit : texte injecté automatiquement au curseur |
-| `Mode_Apprentissage.py` | Mode apprentissage : réécoute, correction, export vers SFTP |
-| `client.py` | Communication WebSocket : envoi des blocs audio, réception des transcriptions |
-| `ClientManager.py` | Coordination des composants : micro, modes, enregistrement, transcription |
+| `RecoVocale` | Point d’entrée principal de l’application |
+| `Mode` | Classe de base pour les différents modes (direct, réduit, apprentissage) |
+| `Mode_Direct` | Mode direct : transcription affichée en temps réel dans une fenêtre |
+| `Mode_Reduit` | Mode réduit : texte injecté automatiquement au curseur |
+| `Mode_Apprentissage` | Mode apprentissage : réécoute, correction, export vers SFTP |
+| `client` | Communication WebSocket : envoi des blocs audio, réception des transcriptions |
+| `ClientManager` | Coordination des composants : micro, modes, enregistrement, transcription |
 
 ---
 
@@ -171,25 +171,25 @@ L’entrée principale du logiciel est le fichier **`RecoVocale.py`**.
 
 | Fichier | Rôle principal |
 |--------|----------------|
-| `Actions.py` | Déclenchement d’actions dynamiques via commandes vocales |
-| `Correcteur.py` | Correction automatique des transcriptions (unités, chiffres, dates…) |
-| `fenetre_debug.py` | Interface de debug pour visualiser les logs |
-| `ftp_upload.py` / `sftp_upload.py` | Envoi de fichiers audio/texte vers un serveur distant (FTP/SFTP) |
-| `info.py` | Constantes globales : version, services, chemins |
-| `insertions.py` | Gestion des insertions vocales personnalisées |
-| `loger.py` | Journalisation structurée des événements et sessions |
-| `Micro.py` | Détection, test et gestion des microphones |
-| `Mode_Apprenti.py` | Ancienne version ou variante du mode apprentissage |
-| `Mode_Record.py` | Mode d’enregistrement seul sans transcription |
-| `shortcut_manager.py` | Gestion des raccourcis clavier utilisateurs |
-| `ToolTip.py` | Affichage d’une bulle temporaire avec la transcription en cours (mode réduit) |
-| `Transcription.py` | Construction et gestion du texte transcrit |
-| `unite.py` | Remplacement intelligent des unités médicales |
-| `UserConfig.py` | Configuration personnalisée sauvegardée utilisateur |
-| `utils.py` | Fonctions utilitaires communes |
-| `utils_keyboard.py` | Simulation de frappe clavier |
-| `utils_socket.py` | Vérification de la disponibilité du serveur WebSocket |
-| `utils_window.py` | Manipulation de fenêtres (position, topmost, etc.) |
+| `Actions` | Déclenchement d’actions dynamiques via commandes vocales |
+| `Correcteur` | Correction automatique des transcriptions (unités, chiffres, dates…) |
+| `fenetre_debug` | Interface de debug pour visualiser les logs |
+| `ftp_upload` / `sftp_upload` | Envoi de fichiers audio/texte vers un serveur distant (FTP/SFTP) |
+| `info` | Constantes globales : version, services, chemins |
+| `insertions` | Gestion des insertions vocales personnalisées |
+| `loger` | Journalisation structurée des événements et sessions |
+| `Micro` | Détection, test et gestion des microphones |
+| `Mode_Apprenti` | Ancienne version ou variante du mode apprentissage |
+| `Mode_Record` | Mode d’enregistrement seul sans transcription |
+| `shortcut_manager` | Gestion des raccourcis clavier utilisateurs |
+| `ToolTip` | Affichage d’une bulle temporaire avec la transcription en cours (mode réduit) |
+| `Transcription` | Construction et gestion du texte transcrit |
+| `unite` | Remplacement intelligent des unités médicales |
+| `UserConfig` | Configuration personnalisée sauvegardée utilisateur |
+| `utils` | Fonctions utilitaires communes |
+| `utils_keyboard` | Simulation de frappe clavier |
+| `utils_socket` | Vérification de la disponibilité du serveur WebSocket |
+| `utils_window` | Manipulation de fenêtres (position, topmost, etc.) |
 
 
 
@@ -199,35 +199,35 @@ L’entrée principale du logiciel est le fichier **`RecoVocale.py`**.
 
 ### 📌 Modules principaux
 
-### `RecoVocale.py`
+### `RecoVocale`
 - 📌 **Point d’entrée principal**
 - Initialise l’interface utilisateur
 - Lance le mode actif (direct, réduit, apprentissage)
 - Gère les menus : service, insertions, raccourcis, apprentissage
 
-### `Mode.py`
+### `Mode`
 - Définit une **classe de base commune** utilisée par tous les modes
 - Gère les comportements partagés : état de transcription, affichage, géométrie des fenêtres
 
-### `Mode_Direct.py`
+### `Mode_Direct`
 - Affiche la transcription **en temps réel dans une fenêtre**
 
-### `Mode_Reduit.py`
+### `Mode_Reduit`
 - Injecte automatiquement le texte transcrit **au curseur système**
 - Adapté aux logiciels externes (ex : logiciels hospitaliers, Word etc...)
 
-### `Mode_Apprentissage.py`
+### `Mode_Apprentissage`
 - Permet de **réécouter, corriger, et valider** une transcription
 - Envoie la paire audio/texte sur un serveur via **SFTP** pour entraînement
 
-### `client.py`
+### `client`
 - Gère la **connexion WebSocket** avec le serveur WhisperLive
 - Capture l’audio, le découpe, et l’envoie en continu
 - Reçoit les transcriptions et appelle un **callback**
 
 <div style="page-break-after: always;"></div>
 
-### `ClientManager.py`
+### `ClientManager`
 - Coordonne la logique centrale :
   - Création du client audio
   - Lancement des différents modes
@@ -238,64 +238,64 @@ L’entrée principale du logiciel est le fichier **`RecoVocale.py`**.
 
 ### 🧩 Modules secondaires
 
-### `Actions.py`
+### `Actions`
 - Déclenche des actions pour les micros USB (SpeechMike etc...)
 - Organise les actions en classes modulaires
 
-### `Correcteur.py`
+### `Correcteur`
 - Corrige la transcription : unités, chiffres romains, ponctuation, etc.
 
-### `fenetre_debug.py`
+### `fenetre_debug`
 - Outil de développement : redirige les logs dans une interface graphique
 
-### `ftp_upload.py` / `sftp_upload.py`
+### `ftp_upload` / `sftp_upload`
 - Envoient des fichiers audio/texte vers un serveur distant
-- `sftp_upload.py` utilise un canal sécurisé (SFTP)
+- `sftp_upload` utilise un canal sécurisé (SFTP)
 
-### `info.py`
+### `info`
 - Contient des **constantes globales** : version, services disponibles, chemins
 
-### `insertions.py`
+### `insertions`
 - Gère les **textes insérables par commande vocale**
 - Interface de création, édition, suppression
 
-### `loger.py`
+### `loger`
 - Écrit les événements de session dans des fichiers de log
 - Utilé pour les statistiques de transcription
 
-### `Micro.py`
+### `Micro`
 - Liste et teste les micros disponibles
 - Fournit une interface pour capturer depuis un micro externe
 
-### `shortcut_manager.py`
+### `shortcut_manager`
 - Permet à l’utilisateur de personnaliser les raccourcis clavier (start/pause)
 
-### `ToolTip.py`
+### `ToolTip`
 - Affiche une **bulle flottante contenant la transcription en cours**
 - Utilisé uniquement dans le **mode réduit**
 - La bulle apparaît **tant que la transcription n’est pas terminée**
 - Dès que la transcription est finalisée (ou interrompue), le texte est envoyé au **curseur système**
 
-### `Transcription.py`
+### `Transcription`
 - Gère la construction incrémentale du texte transcrit
 - Ajoute ou remplace dynamiquement le contenu affiché
 
-### `unite.py`
+### `unite`
 - Transforme automatiquement les unités médicales en notation correcte (ex : “mg litre” → “mg/L”)
 
-### `UserConfig.py`
+### `UserConfig`
 - Lit et écrit le fichier `config.ini` utilisateur (ex : mode par défaut, position fenêtre)
 
-### `utils.py`
+### `utils`
 - Fonctions génériques : manipulation de fichiers, formats, conversions
 
-### `utils_keyboard.py`
+### `utils_keyboard`
 - Simule des saisies clavier (copier/coller automatique, insertion de texte)
 
-### `utils_socket.py`
+### `utils_socket`
 - Vérifie l’état du serveur (ping WebSocket, test de disponibilité)
 
-### `utils_window.py`
+### `utils_window`
 - Manipule les fenêtres (position, focus, toujours au-dessus, etc.)
 
 <div style="page-break-after: always;"></div>
@@ -319,7 +319,7 @@ Ce chapitre décrit les principaux flux de données et logiques internes du logi
 ### 🔄 2. Réception et traitement de la transcription
 
 - Réception du texte transcrit par le serveur
-- Application de **corrections automatiques** via `Correcteur.py`
+- Application de **corrections automatiques** via `Correcteur`
   - Remplacement d’abréviations
   - Ajout d’unités manquantes
   - Mise en forme de dates / chiffres romains
@@ -491,7 +491,7 @@ Ce chapitre décrit comment le système capture l’audio, le découpe en blocs,
 
 ---
 
-## 🎙️ Classe `Client` (`client.py`)
+## 🎙️ Classe `Client` (`client`)
 
 Cette classe gère :
 - la **capture micro**
@@ -535,7 +535,7 @@ Permet une **réaction asynchrone** sans bloquer le thread principal.
 
 ---
 
-## 🧩 Classe `ClientManager` (`ClientManager.py`)
+## 🧩 Classe `ClientManager` (`ClientManager`)
 
 C’est le **chef d’orchestre** :
 - Il instancie et gère un objet `TranscriptionClient` (héritant de `Client`)
