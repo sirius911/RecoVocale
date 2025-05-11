@@ -1,8 +1,9 @@
 import re
 import string
+import time
 from Mode import Mode
 import tkinter as tk
-from utils_window import create_menus, create_buttons, show_bubble_message, remove_bubble
+from utils_window import create_menus, create_buttons, show_bubble_message, remove_bubble, update_bubble_background
 from info import REDUIT, VERSION
 from ClientManager import ClientManager
 from utils_keyboard import Simulator
@@ -36,6 +37,8 @@ class Mode_Reduit(Mode):
         super().enter()
         self.pile = ['']
         self.a_ecrit = False # permet de ne pas écrire deux fois si le client stop avant la fin
+        self.repetition = 0
+        self.texte_memoire = ""
 
     def ui(self): 
         create_menus(self)
@@ -68,7 +71,8 @@ class Mode_Reduit(Mode):
         # remove_bubble()
         if not self.a_ecrit:
             self.update_transcriptions(message=self.transcription.text_en_cours, ending=True)
-
+        else:
+            Simulator(['\n'])
     def valid_transcriptions(self):
         self.stop_client()
 
@@ -79,7 +83,8 @@ class Mode_Reduit(Mode):
             remove_bubble()
             # copie dans clipboard
             self.root.clipboard_clear()
-            text_to_copy = self.corriger_texte(self.transcription.text_en_cours)
+            text_to_copy = ' ' + self.corriger_texte(self.transcription.text_en_cours)
+
             self.root.clipboard_append(text_to_copy)
             # coller
             if not self.a_ecrit:
@@ -87,14 +92,23 @@ class Mode_Reduit(Mode):
                 self.a_ecrit = True
             self.transcription.validation()
             self.status_bar.config( text=f'RecoVocale {VERSION}', bg='lightblue', fg='darkblue', anchor=tk.W)
-            
+            self.repetition = 0
+            self.texte_memoire = ""
             envoyer_log("end_transcription", text_to_copy)
             if not self.app.recording:
                 self.pause()
                 self.status_bar.config( text=f'RecoVocale {VERSION}', bg='lightblue', fg='darkblue', anchor=tk.W)
         else:
+            if self.texte_memoire != message:
+                self.texte_memoire = message
+                self.repetition = 0
+            else:
+                self.repetition += 1
+            if self.repetition >= self.app.config.nb_repeat:
+                update_bubble_background("light green")
+
             show_bubble_message(self.root, message)
-            self.status_bar.config(text='* Transcription *', bg='lightblue', fg='darkblue', anchor=tk.CENTER)
+            self.status_bar.config(text=f'* Transcription ({self.repetition}) *', bg='lightblue', fg='darkblue', anchor=tk.CENTER)
             self.a_ecrit = False
             
     def corriger_texte(self, texte):

@@ -163,7 +163,7 @@ def create_menus(self):
 bubble = None
 label_in_bubble = None
 
-def show_bubble_message(parent, message):
+def show_bubble_message(parent, message, background="yellow"):
     """Affiche ou met à jour la bulle de message avec une taille dynamique, sur le même écran que la fenêtre principale."""
     global bubble, label_in_bubble
 
@@ -208,7 +208,7 @@ def show_bubble_message(parent, message):
         bubble.wm_overrideredirect(True)
         bubble.attributes("-topmost", True)
 
-        label_in_bubble = tk.Label(bubble, text=message, font=("Arial", 10), background="yellow", fg="black", borderwidth=0)
+        label_in_bubble = tk.Label(bubble, text=message, font=("Arial", 10), background=background, fg="black", borderwidth=0)
         label_in_bubble.pack(padx=10, pady=5)
 
         bubble.update_idletasks()
@@ -227,3 +227,9 @@ def remove_bubble():
     if bubble:
         bubble.destroy()
         bubble = None
+
+def update_bubble_background(color):
+    """Met à jour la couleur de fond de la bulle si elle existe."""
+    global label_in_bubble
+    if label_in_bubble is not None:
+        label_in_bubble.config(background=color)

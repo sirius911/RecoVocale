@@ -194,6 +194,7 @@ class Mode_Direct(Mode):
             self.text_box.config(state=tk.NORMAL)
             self.text_box.delete('1.0', tk.END)
             self.text_box.insert(tk.END, self.transcription.text_box_en_cours)
+
         if ending:
             self.text_box.config(state=tk.NORMAL)
             self.trash_button.config(state=tk.NORMAL)
@@ -201,18 +202,21 @@ class Mode_Direct(Mode):
             self.transcription_en_cours = False
             self.transcription.validation()
             self.set_pos_curseur(self.transcription.fin_insertion)
+
             model = ""
             if self.client_manager and self.client_manager.client:
                 model = f"[{self.client_manager.client.get_model_path()}]"
             envoyer_log("end_transcription", f"[{model}]{self.transcription.text_en_cours}")
+
             self.verification_dico(True)
-            if not self.app.recording:
-                self.pause()
-                self.status_bar.config(text="Transcription ...Terminée", bg='lightblue', fg='darkblue', anchor=tk.W)
-                
+
+            # ✅ on ne stoppe plus l'enregistrement
+            self.status_bar.config(text="Segment validé", bg='lightblue', fg='darkblue', anchor=tk.W)
+
         else:
             self.text_box.config(state=tk.DISABLED)
             self.set_pos_curseur(self.transcription.pos_cur)
+
 
     def copy_to_clipboard(self):
         self.status_bar.config(text='- Copie -', bg='lightblue', fg='darkblue', anchor=tk.CENTER)
