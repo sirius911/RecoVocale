@@ -234,5 +234,6 @@ class Mode_Direct(Mode):
         """
         Gère un fichier glissé-déposé en l'envoyant à la transcription.
         """
-        print(f"[Mode_Direct] Traitement du fichier : {file_path}")
-        self.unpause(file_path)
+        self.status_bar.config( text=f'Non implémenté', bg='lightblue', fg='darkblue', anchor=tk.W)
+        # print(f"[Mode_Direct] Traitement du fichier : {file_path}")
+        # self.unpause(file_path)

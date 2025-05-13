@@ -10,7 +10,6 @@ from shortcut_manager import ShortcutManager
 from UserConfig import UserConfig
 from Mode_Direct import Mode_Direct
 from Mode_Apprenti import Mode_Apprenti
-from Mode_Record import Mode_Record
 from Mode_Reduit import Mode_Reduit
 from utils_socket import check_server_status, get_windows_session
 from utils_keyboard import Simulator
@@ -59,13 +58,11 @@ class App:
 
         #----------------------MODE----------------------------
         mode = self.config.mode
-        if mode == "RECORD":
-            self.current_mode = Mode_Record(self)
-        elif mode == "APPRENTI":
+        if mode == "APPRENTI":
             self.current_mode = Mode_Apprenti(self)
         elif mode == "REDUIT":
             self.current_mode = Mode_Reduit(self)
-        else:
+        else: # Default to DIRECT mode
             self.current_mode = Mode_Direct(self)
 
         self.shortcut_manager = ShortcutManager(root, self.current_mode, self.config.shortcut)
@@ -122,8 +119,6 @@ class App:
                     self.current_mode.update_transcriptions(message=text_en_cours, ending=True)
                 elif mode == APPRENTI:
                     self.current_mode = Mode_Apprenti(self)
-                elif mode == RECORD:
-                    self.current_mode = Mode_Record(self)
                 elif mode == REDUIT:
                     self.current_mode = Mode_Reduit(self)
                     self.current_mode.update_transcriptions(message=text_en_cours, ending=True)
