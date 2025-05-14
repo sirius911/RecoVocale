@@ -7,6 +7,7 @@ from ClientManager import ClientManager
 from utils_keyboard import Simulator
 from pynput.keyboard import Key
 from loger import envoyer_log
+import tkinter.font as tkFont
 
 
 class Mode_Direct(Mode):
@@ -55,6 +56,10 @@ class Mode_Direct(Mode):
         # Add the text box
         self.text_box = tk.Text(self.text_box_frame, yscrollcommand=self.text_box_scrollbar.set, wrap='word')
         self.text_box.pack(fill=tk.BOTH, expand=True)
+        # Définir la police
+        font = tkFont.Font(family="Calibri", size=12)
+        self.text_box.configure(font=font)
+
         #balise pour les mots incorrects
         self.text_box.tag_config("incorrect", foreground="red", underline=True)
         # self.text_box.config(state=tk.DISABLED)
