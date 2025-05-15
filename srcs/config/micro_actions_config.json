@@ -59,5 +59,18 @@
             "[1, 1]": {"class": "NoAction"},
             "[1, 2]": {"class": "NoAction"}
         }
+    },
+    "Jabra EVOLVE 20 MS": {
+        "vendor_id": "0xb0e",
+        "product_id": "0x300",
+        "firmware": "0x0",
+        "actions": {
+            "5": {"class": "StopAction"},
+            "1": {"class": "NoAction"},
+            "3": {"class": "StopAction"},
+            "4411": {"class": "toggle_start_stop"},
+            "4409": {"class": "NoAction"}
+        },
+        "hash" : "0x02"
     }
 }

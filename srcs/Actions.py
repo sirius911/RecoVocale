@@ -11,6 +11,10 @@ class Action(ABC):
     def __init__(self, app):
         self.app = app
 
+    @property
+    def __name__(self):
+        return self.__class__.__name__
+
     @abstractmethod
     def execute(self):
         pass
@@ -41,6 +45,10 @@ class Clear(Action):
         if self.app.status_bar:
             self.app.status_bar.config(text=f'- Del -', bg='lightblue', fg='darkblue', anchor=tk.CENTER)
         self.app.clear_text_box()
+
+class toggle_start_stop(Action):
+    def execute(self):
+        self.app.toggle_start_stop()
 
 class Keyboard(Action):
     def __init__(self, app, keys="", status_bar=True):

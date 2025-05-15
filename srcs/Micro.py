@@ -23,7 +23,7 @@ def hash_code2(data):
     return result
 
 class BaseMic:
-    def __init__(self, loop, vendor_id, product_id, firmware, actions, app, micro_name, on_connect_disconnect=None):
+    def __init__(self, loop, vendor_id, product_id, firmware, actions, app, micro_name, on_connect_disconnect=None, hash=1):
         self.vendor_id = vendor_id
         self.product_id = product_id
         self.version = firmware
@@ -32,11 +32,11 @@ class BaseMic:
         self.loop = loop
         self.micro_name = micro_name  
         self.connected = False
-        self.device = None
+        self.device = []
         self.prev_data = None
         self.call_back = on_connect_disconnect
         # Choix de la fonction de hash selon le modèle
-        if "Premium" in micro_name or self.version == 0x0253:
+        if hash == 2:
             self.hash_function = hash_code2  # nouvelle méthode
         else:
             self.hash_function = hash_code   # méthode legacy
@@ -47,45 +47,56 @@ class BaseMic:
 
     async def check_connection(self):
         if self.version != 0:
-            all_hids = hid.HidDeviceFilter(vendor_id=self.vendor_id, product_id=self.product_id, version_number=self.version).get_devices()
+            all_hids = hid.HidDeviceFilter(
+                vendor_id=self.vendor_id,
+                product_id=self.product_id,
+                version_number=self.version
+            ).get_devices()
         else:
-            all_hids = hid.HidDeviceFilter(vendor_id=self.vendor_id, product_id=self.product_id).get_devices()
+            all_hids = hid.HidDeviceFilter(
+                vendor_id=self.vendor_id,
+                product_id=self.product_id
+            ).get_devices()
 
         if all_hids:
             if not self.connected:
-                # Si Premium, on cherche l'interface MI_04
-                if "Premium" in self.micro_name:
-                    for dev in all_hids:
-                        if "mi_04" in dev.device_path.lower():
-                            self.device = dev
-                            break
-                else:
-                    self.device = all_hids[0]
-
-                if self.device:
-                    self.connected = True
-                    self.connect()
-                else:
-                    print(f"Aucun device MI_04 trouvé pour {self.micro_name}")
+                self.devices = all_hids  # ← stocke toutes les interfaces
+                self.connected = True
+                self.connect()
         else:
             if self.connected:
-                self.device = None
+                self.devices = []
                 self.connected = False
                 self.disconnect()
                 print(f"{self.__class__.__name__} non trouvé. En attente de connexion...")
+
         self.call_back()
 
+
     def connect(self):
-        if self.connected and self.device:
-            self.device.open()
-            self.device.set_raw_data_handler(self.on_data_handler)
-            print(f"{self.micro_name} connecté")
+        if self.connected:
+            self.devices = hid.HidDeviceFilter(
+                vendor_id=self.vendor_id,
+                product_id=self.product_id
+            ).get_devices()
+
+            for dev in self.devices:
+                try:
+                    dev.open()
+                    dev.set_raw_data_handler(self.on_data_handler)
+                    col_name = "col" + dev.device_path.lower().split("col")[-1].split("#")[0]
+                    print(f"{self.micro_name} → Interface HID activée : {dev.product_name} | Serial: {dev.serial_number or 'N/A'} | Interface: {col_name}")
+
+                except Exception as e:
+                    print(f"Erreur ouverture interface : {e}")
 
     def disconnect(self):
-        if self.device:
-            self.device.close()
-            self.connected = False
-            print(f"{self.micro_name} déconnecté")
+        for dev in self.devices:
+            try:
+                dev.close()
+            except:
+                pass
+        self.devices = []
 
     def is_connected(self):
         return self.connected
@@ -111,6 +122,7 @@ class BaseMic:
             if ActionClass:
                 action = ActionClass(self.app)
                 # Vérifier si l'action a un argument
+                # print(f"Execution de {action.__name__}")
                 if "arg" in action_info:
                     action.execute(action_info["arg"])
                 else:
@@ -118,7 +130,7 @@ class BaseMic:
             else:
                 print(f"Classe d'action {action_class} introuvable pour {str(data)} ({hascode})")
         else:
-            print(f"No action found for data: {str(data)} ({hascode})")
+            print(f"No action found for data: {str(data)} {self.hash_function.__name__} ({hascode})")
 
     async def monitor(self):
         while True:
@@ -150,6 +162,8 @@ def Micro(loop, app, call_back):
             product_id = int(micro_info["product_id"], 16)
             firmware_revision = int(micro_info["firmware"], 16)
             actions = micro_info["actions"]
+            hash_value = int(micro_info.get("hash", "0x01"), 16)
+
         except Exception as e:
             print(f"Erreur dans la lecture du fichier [{file}]\n{e}\n Il faut mettre à jour le fichier json !")
             return None
@@ -161,7 +175,9 @@ def Micro(loop, app, call_back):
             all_hids = hid.HidDeviceFilter(vendor_id=vendor_id, product_id=product_id).get_devices()
 
         if all_hids:
-            temp_mic = BaseMic(loop, vendor_id, product_id, firmware_revision, actions, app, micro_name, call_back)
+            temp_mic = BaseMic(loop, vendor_id, product_id, firmware_revision, actions, app, micro_name, call_back, hash=hash_value)
             return temp_mic  # Retourne l'instance de la classe détectée
+        else:
+            print(f"{micro_name} ... non trouvé")
 
     return None  # Aucun micro compatible trouvé
