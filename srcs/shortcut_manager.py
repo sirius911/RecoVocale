@@ -52,7 +52,7 @@ class ShortcutManager:
 
         current_keys = self.keyboard_shortcut.split('+') if self.keyboard_shortcut else []
 
-        if key not in current_keys:
+        if key != '??' and key not in current_keys:
             current_keys.append(key)
 
         self.keyboard_shortcut = '+'.join(current_keys)
@@ -60,8 +60,10 @@ class ShortcutManager:
         self.shortcut_entry.insert(0, self.keyboard_shortcut)
 
     def is_valid_shortcut(self, keys):
-        if len(keys) == 1 and (keys[0].startswith('F') or keys[0] == 'fn'):
-            return True  # Touche de fonction seule ou Fn seule
+       # Filtrer les touches inconnues
+        keys = [k for k in keys if k != '??']
+        if len(keys) == 1 and (keys[0].lower().startswith('f') and keys[0][1:].isdigit() or keys[0] == 'fn'):
+            return True
         if len(keys) == 2 and ('ctrl' in keys or 'fn' in keys):
             return True  # Ctrl+quelque chose ou Fn+quelque chose
         if len(keys) == 3 and 'ctrl' in keys and 'shift' in keys:
