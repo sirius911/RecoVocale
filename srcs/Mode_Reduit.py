@@ -94,7 +94,10 @@ class Mode_Reduit(Mode):
             self.status_bar.config( text=f'RecoVocale {VERSION}', bg='lightblue', fg='darkblue', anchor=tk.W)
             self.repetition = 0
             self.texte_memoire = ""
-            envoyer_log("end_transcription", text_to_copy)
+            model = ""
+            if self.client_manager and self.client_manager.client:
+                model = f"[{self.client_manager.client.get_model_path()}]"
+            envoyer_log("transcription", texte=f"Mode:{self.mode.name}{"" if self.file_source is None else f' - fichier: {self.file_source}' }{model}{text_to_copy}")
             if not self.app.recording:
                 self.pause()
                 self.status_bar.config( text=f'RecoVocale {VERSION}', bg='lightblue', fg='darkblue', anchor=tk.W)

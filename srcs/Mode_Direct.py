@@ -211,7 +211,7 @@ class Mode_Direct(Mode):
             model = ""
             if self.client_manager and self.client_manager.client:
                 model = f"[{self.client_manager.client.get_model_path()}]"
-            envoyer_log("end_transcription", f"[{model}]{self.transcription.text_en_cours}")
+            envoyer_log("transcription", texte=f"Mode:{self.mode.name}{"" if self.file_source is None else f' - fichier: {self.file_source}' }{model}{self.transcription.text_en_cours}")
 
             self.verification_dico(True)
 

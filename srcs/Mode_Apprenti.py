@@ -261,7 +261,10 @@ class Mode_Apprenti(Mode):
             self.transcription.validation()
             self.set_pos_curseur(self.transcription.fin_insertion)
             self.ready_to_learn = True
-            envoyer_log("end_transcription", message)
+            model = ""
+            if self.client_manager and self.client_manager.client:
+                model = f"[{self.client_manager.client.get_model_path()}]"
+            envoyer_log("transcription", texte=f"Mode:{self.mode.name}{"" if self.file_source is None else f' - fichier: {self.file_source}' }{model}{message}")
             self.verification_dico(True)
             if not self.app.recording:
                 self.rec_button.config(state=tk.DISABLED)

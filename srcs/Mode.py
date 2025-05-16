@@ -7,7 +7,6 @@ import tkinter as tk
 from insertions import FenetreGestion
 import enchant
 from utils_socket import check_server_status
-from loger import envoyer_log
 
 class Mode:
     def __init__(self, app):
@@ -74,7 +73,6 @@ class Mode:
                                                      file_path,
                                                      self.app.config.play_audio)
                 self.app.recording = True
-                envoyer_log("start_transcription",texte=f"Mode:{self.mode.name}{"" if file_path is None else f' - fichier: {file_path}' }")
         else:
             self.app.status_server = check_server_status(self.app.config.server_ip, self.app.config.port, self.app.ip_client)
         self.update()
