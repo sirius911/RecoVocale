@@ -65,11 +65,24 @@ class App:
         else: # Default to DIRECT mode
             self.current_mode = Mode_Direct(self)
 
-        self.shortcut_manager = ShortcutManager(root, self.current_mode, self.config.shortcut)
-        try: #Verifier le raccourcis qui peut planter
-            keyboard.add_hotkey(self.shortcut_manager.keyboard_shortcut, self.current_mode.toggle_start_stop)
+        # ---- Touches de racourcis
+        self.shortcut_manager = ShortcutManager(
+            root,
+            self.current_mode,
+            self.config.shortcut,
+            self.config.shortcut_stop
+        )
+
+        # Enregistrer les deux raccourcis s’ils sont valides
+        # keyboard.clear_all_hotkeys()
+        try:
+            if self.shortcut_manager.keyboard_shortcut:
+                keyboard.add_hotkey(self.shortcut_manager.keyboard_shortcut, self.current_mode.toggle_start_stop)
+            if self.shortcut_manager.stop_keyboard_shortcut:
+                keyboard.add_hotkey(self.shortcut_manager.stop_keyboard_shortcut, self.current_mode.stop)
         except Exception:
             keyboard.add_hotkey("F3", self.current_mode.toggle_start_stop)
+            keyboard.add_hotkey("F4", self.current_mode.stop)
 
         self.root.protocol("WM_DELETE_WINDOW", self.current_mode.exit_app)
 
@@ -98,6 +111,7 @@ class App:
             self.mic.disconnect()
         # sauvegarde userConfig
         self.config.shortcut = self.shortcut_manager.keyboard_shortcut
+        self.config.shortcut_stop = self.shortcut_manager.stop_keyboard_shortcut
         self.config.mode = self.current_mode.name()
         self.config.x_window = self.root.winfo_rootx()
         self.config.y_window = self.root.winfo_rooty()
@@ -130,8 +144,14 @@ class App:
                 self.root.after_idle(lambda: self.root.geometry(f"{self.current_mode.mode.window_width}x{self.current_mode.mode.window_height}+{self.config.x_window}+{self.config.y_window}"))
                 if self.mic:
                     self.mic.change_mode(self.current_mode)
+
+                # touches de Raccourcis
                 keyboard.clear_all_hotkeys()
-                keyboard.add_hotkey(self.shortcut_manager.keyboard_shortcut, self.current_mode.toggle_start_stop)
+                if self.shortcut_manager.keyboard_shortcut:
+                    keyboard.add_hotkey(self.shortcut_manager.keyboard_shortcut, self.current_mode.toggle_start_stop)
+                if self.shortcut_manager.stop_keyboard_shortcut:
+                    keyboard.add_hotkey(self.shortcut_manager.stop_keyboard_shortcut, self.current_mode.stop)
+
 
                 try:
                     if self.config.debug:
@@ -179,8 +199,11 @@ class App:
             self.console_debug.append_status_with_format(" - Simul Clavier : ", font_style="italic")
             self.console_debug.append_status_with_format(f" {'Oui' if self.current_mode.simulator_keyboard else 'Non'}\n", color="green")
             
-            self.console_debug.append_status_with_format("Raccourci : ", font_style="italic")
+            self.console_debug.append_status_with_format("Raccourci rec/pause : ", font_style="italic")
             self.console_debug.append_status_with_format(f"{self.shortcut_manager.keyboard_shortcut}\n", color="green")
+
+            self.console_debug.append_status_with_format("Raccourci arrêt transcription : ", font_style="italic")
+            self.console_debug.append_status_with_format(f"{self.shortcut_manager.stop_keyboard_shortcut or '—'}\n", color="green")
 
             self.console_debug.append_status_with_format("Debug : ", font_style="italic")
             self.console_debug.append_status_with_format(f"{self.config.debug}\n", color="green")

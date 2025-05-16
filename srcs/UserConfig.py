@@ -12,6 +12,7 @@ class UserConfig:
         self._port = "30000"
         self._service = "Tous"
         self._shortcut = "F3"
+        self._shortcut_stop = "F4"
         self._play_audio = True
         self.mode = "DIRECT"
         self.x_window = "10"
@@ -45,6 +46,9 @@ class UserConfig:
         self._shortcut = config.get('SETTINGS', 'SHORTCUT', fallback=self._shortcut)
         if self._shortcut is None or self._shortcut == "":
             self._shortcut = "F3"
+        self._shortcut_stop = config.get('SETTINGS', 'SHORTCUT_STOP', fallback=self._shortcut_stop)
+        if self._shortcut_stop is None or self._shortcut_stop == "":
+            self._shortcut_stop = "F4"
         self.mode = config.get('SETTINGS', 'MODE', fallback=self.mode)
         self.x_window = config.get('SETTINGS', 'X_WINDOW', fallback=self.x_window)
         self.y_window = config.get('SETTINGS', 'Y_WINDOW', fallback=self.y_window)
@@ -65,6 +69,7 @@ class UserConfig:
             'PORT': self._port,
             'SERVICE': self._service,
             'SHORTCUT': self._shortcut,
+            'SHORTCUT_STOP': self._shortcut_stop,
             'MODE': self.mode,
             'X_WINDOW': root.winfo_x() if root else 0,
             'Y_WINDOW': root.winfo_y() if root else 0,
@@ -117,3 +122,11 @@ class UserConfig:
     @shortcut.setter
     def shortcut(self, value):
         self._shortcut = value
+
+    @property
+    def shortcut_stop(self):
+        return self._shortcut_stop
+
+    @shortcut_stop.setter
+    def shortcut_stop(self, value):
+        self._shortcut_stop = value

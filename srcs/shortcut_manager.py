@@ -5,59 +5,113 @@ import keyboard
 
 
 class ShortcutManager:
-    def __init__(self, root, current_mode, keyboard_shortcut):
+    def __init__(self, root, current_mode, keyboard_shortcut, stop_keyboard_shortcut=""):
         self.root = root
         self.current_mode = current_mode
         self.keyboard_shortcut = keyboard_shortcut
+        self.stop_keyboard_shortcut = stop_keyboard_shortcut
         self.shortcut_window = None
         self.shortcut_entry = None
+        self.stop_shortcut_entry = None
 
     def change_shortcut(self):
-        self.root.attributes("-topmost", False)  # Désactiver l'attribut "toujours au-dessus"
+        self._initial_shortcut = self.keyboard_shortcut
+        self._initial_stop_shortcut = self.stop_keyboard_shortcut
+        self._shortcuts_saved = False
+
+        self.root.attributes("-topmost", False)
         self.shortcut_window = tk.Toplevel(self.root)
-        self.shortcut_window.title("Changer le raccourci clavier")
-        self.shortcut_window.attributes("-topmost", True)  # S'assurer que la fenêtre est au-dessus
+        self.shortcut_window.title("Changer les raccourcis clavier")
+        self.shortcut_window.attributes("-topmost", True)
 
-        tk.Label(self.shortcut_window, text="Appuyez sur une nouvelle combinaison de touches :").pack(pady=10)
+        # Supprimer les raccourcis existants pendant l'édition
+        keyboard.clear_all_hotkeys()
+
+        # Label et champ pour Start/Stop
+        tk.Label(self.shortcut_window, text="Raccourci démarrer / arrêter :").pack(pady=(10, 0))
         self.shortcut_entry = tk.Entry(self.shortcut_window)
-        self.shortcut_entry.pack(pady=10)
-        self.shortcut_entry.bind('<KeyPress>', self.get_shortcut)
-        self.shortcut_entry.focus_set()
+        self.shortcut_entry.pack(pady=(0, 10))
+        self.shortcut_entry.bind('<KeyPress>', self.get_shortcut_start)
 
-        # Réinitialiser self.keyboard_shortcut
-        self.keyboard_shortcut = ''
-        self.shortcut_entry.delete(0, tk.END)
+        # Label et champ pour Arrêter transcription
+        tk.Label(self.shortcut_window, text="Raccourci arrêter transcription :").pack(pady=(10, 0))
+        self.stop_shortcut_entry = tk.Entry(self.shortcut_window)
+        self.stop_shortcut_entry.pack(pady=(0, 10))
+        self.stop_shortcut_entry.bind('<KeyPress>', self.get_shortcut_stop)
 
-        # Assurez-vous de réactiver "toujours au-dessus" lorsque la fenêtre est fermée
+        # Bouton Enregistrer
+        save_button = tk.Button(self.shortcut_window, text="Enregistrer", command=self.save_shortcuts)
+        save_button.pack(pady=10)
+
+        # Initialiser avec les raccourcis existants (ou vides)
+        self.shortcut_entry.insert(0, self.keyboard_shortcut or "")
+        self.stop_keyboard_shortcut = getattr(self, 'stop_keyboard_shortcut', '')
+        self.stop_shortcut_entry.insert(0, self.stop_keyboard_shortcut or "")
+
         self.shortcut_window.protocol("WM_DELETE_WINDOW", self.on_close_shortcut_window)
 
+        
     def on_close_shortcut_window(self):
-        self.root.attributes("-topmost", self.current_mode.mode.topmost)  # Réactiver l'attribut "toujours au-dessus"
+        if not self._shortcuts_saved:
+            self.keyboard_shortcut = self._initial_shortcut
+            self.stop_keyboard_shortcut = self._initial_stop_shortcut
+        self.root.attributes("-topmost", self.current_mode.mode.topmost)
         self.shortcut_window.destroy()
 
-    def get_shortcut(self, event):
+
+    def get_shortcut_start(self, event):
         key = self.map_key_name(event.keysym)
 
-        if key == 'Return':  # Ignore the Enter key itself
-            if self.is_valid_shortcut(self.keyboard_shortcut.split('+')):
-                keyboard.clear_all_hotkeys()
-                keyboard.add_hotkey(self.keyboard_shortcut, self.current_mode.toggle_start_stop)
-                change_toolTip(self.current_mode.rec_button, self.keyboard_shortcut)
-                self.on_close_shortcut_window()  # Fermer la fenêtre et réactiver "toujours au-dessus"
-            else:
-                messagebox.showerror("Raccourci invalide", "La combinaison de touches n'est pas valide.")
-                self.keyboard_shortcut = ''  # Reset the pressed keys
-                self.shortcut_entry.delete(0, tk.END)
+        if key != '??':
+            self.keyboard_shortcut = key
+            self.shortcut_entry.delete(0, tk.END)
+            self.shortcut_entry.insert(0, self.keyboard_shortcut)
+
+    def get_shortcut_stop(self, event):
+        key = self.map_key_name(event.keysym)
+
+        if key != '??':
+            self.stop_keyboard_shortcut = key
+            self.stop_shortcut_entry.delete(0, tk.END)
+            self.stop_shortcut_entry.insert(0, self.stop_keyboard_shortcut)
+
+
+    def save_shortcuts(self):
+        # Validation des deux raccourcis
+        start_keys = self.keyboard_shortcut.split('+')
+        stop_keys = self.stop_keyboard_shortcut.split('+')
+
+        if not self.is_valid_shortcut(start_keys):
+            messagebox.showerror("Raccourci invalide", "La combinaison pour démarrer/arrêter est invalide.")
             return
 
-        current_keys = self.keyboard_shortcut.split('+') if self.keyboard_shortcut else []
+        if not self.is_valid_shortcut(stop_keys):
+            messagebox.showerror("Raccourci invalide", "La combinaison pour arrêter la transcription est invalide.")
+            return
 
-        if key != '??' and key not in current_keys:
-            current_keys.append(key)
+        # Enregistrer les raccourcis clavier
+        keyboard.clear_all_hotkeys()
+        try:
+            keyboard.add_hotkey(self.keyboard_shortcut, self.current_mode.toggle_start_stop)
+            keyboard.add_hotkey(self.stop_keyboard_shortcut, self.current_mode.stop)
+        except Exception as e:
+            messagebox.showerror("Erreur", f"Erreur lors de l'enregistrement des raccourcis : {e}")
+            return
 
-        self.keyboard_shortcut = '+'.join(current_keys)
-        self.shortcut_entry.delete(0, tk.END)
-        self.shortcut_entry.insert(0, self.keyboard_shortcut)
+        # Mettre à jour le tooltip du bouton principal
+        change_toolTip(self.current_mode.rec_button, self.keyboard_shortcut)
+
+        # Sauvegarder immédiatement les raccourcis
+        self.current_mode.app.config.shortcut = self.keyboard_shortcut
+        self.current_mode.app.config.shortcut_stop = self.stop_keyboard_shortcut
+        self.current_mode.app.config.save_config(self.root)
+
+        # Marquer comme sauvegardé
+        self._shortcuts_saved = True
+
+        # Fermer la fenêtre
+        self.on_close_shortcut_window()
+
 
     def is_valid_shortcut(self, keys):
        # Filtrer les touches inconnues
