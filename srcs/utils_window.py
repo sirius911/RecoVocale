@@ -3,7 +3,7 @@ import sys
 import tkinter as tk
 from tkinter import BooleanVar
 from PIL import Image, ImageTk
-from info import DIRECT, RECORD, REDUIT, APPRENTI
+from info import DIRECT, REDUIT, APPRENTI
 from ToolTip import ToolTip
 from screeninfo import get_monitors
 
@@ -102,12 +102,6 @@ def create_menus(self):
                                    variable=self.mod_var,
                                    value=REDUIT,
                                    command= lambda: self.app.switch_mode(REDUIT))
-
-    self.mode_menu.add_radiobutton(label='Enregistrement',
-                                   variable=self.mod_var,
-                                   value=RECORD,
-                                   command= lambda: self.app.switch_mode(RECORD))
-    self.mode_menu.entryconfig('Enregistrement', state=tk.DISABLED) 
 
     self.mode_menu.add_radiobutton(label='Apprentissage',
                                    variable=self.mod_var,

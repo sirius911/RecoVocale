@@ -7,6 +7,7 @@ import tkinter as tk
 from insertions import FenetreGestion
 import enchant
 from utils_socket import check_server_status
+from loger import envoyer_log
 
 class Mode:
     def __init__(self, app):
@@ -21,7 +22,7 @@ class Mode:
         # # Définir le chemin du répertoire de configuration dans %APPDATA%\RecoVocale
         self.dico = enchant.Dict("fr_FR")
         self.mots_personnels = set()
-
+        self.model = ""
         self.enter()
 
     def enter(self):
@@ -335,3 +336,19 @@ class Mode:
         """
         self.file_source = file_path
         print(f"[Mode] Fichier reçu (non traité) : {file_path}")
+
+    def log(self, text = ""):
+        """
+        Envoie un log au serveur.
+        """
+        model = ""
+        if self.client_manager :
+            model = self.client_manager.model
+        if self.file_source is not None:
+            mode = f"[{self.mode.name}] - fichier: {self.file_source}"
+        else:
+            mode = f"{self.mode.name}"
+        envoyer_log(event="transcription", 
+                    texte= text,
+                    mode = mode,
+                    model = model)

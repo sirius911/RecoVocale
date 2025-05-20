@@ -6,7 +6,6 @@ from info import DIRECT
 from ClientManager import ClientManager
 from utils_keyboard import Simulator
 from pynput.keyboard import Key
-from loger import envoyer_log
 import tkinter.font as tkFont
 
 
@@ -20,7 +19,6 @@ class Mode_Direct(Mode):
             host = self.app.config.server_ip,
             port = self.app.config.port,
             lang = "fr",
-            model = "small",
             translate = False,
             use_vad = True,
             save_output_recording = False,
@@ -186,6 +184,8 @@ class Mode_Direct(Mode):
         self.text_box.see("insert")
     
     def update_transcriptions(self, message, ending):
+        if not hasattr(self, "text_box") or not self.text_box.winfo_exists():
+            return  # Le widget a été détruit
         if message is not None and not self.transcription_interrompue:
             if not self.transcription_en_cours:
                 self.transcription_en_cours = True
@@ -207,12 +207,7 @@ class Mode_Direct(Mode):
             self.transcription_en_cours = False
             self.transcription.validation()
             self.set_pos_curseur(self.transcription.fin_insertion)
-
-            model = ""
-            if self.client_manager and self.client_manager.client:
-                model = f"[{self.client_manager.client.get_model_path()}]"
-            envoyer_log("transcription", texte=f"Mode:{self.mode.name}{"" if self.file_source is None else f' - fichier: {self.file_source}' }{model}{self.transcription.text_en_cours}")
-
+            self.log(self.transcription.text_en_cours)
             self.verification_dico(True)
 
             # ✅ on ne stoppe plus l'enregistrement

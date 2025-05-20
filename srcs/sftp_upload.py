@@ -52,7 +52,7 @@ def upload_files_to_sftp(audio_file, text_file, filenames):
         sftp.close()
         transport.close()
         print("Fichiers envoyés avec succès")
-        return True
+        return True,""
     except Exception as e:
         print(f"Erreur : {e}")
-        return False
+        return False,e

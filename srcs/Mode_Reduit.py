@@ -8,7 +8,6 @@ from info import REDUIT, VERSION
 from ClientManager import ClientManager
 from utils_keyboard import Simulator
 from pynput.keyboard import Key
-from loger import envoyer_log
 
 
 class Mode_Reduit(Mode):
@@ -21,7 +20,6 @@ class Mode_Reduit(Mode):
             host = self.app.config.server_ip,
             port = self.app.config.port,
             lang = "fr",
-            model = "small",
             translate = False,
             use_vad = True,
             save_output_recording = False,
@@ -94,10 +92,7 @@ class Mode_Reduit(Mode):
             self.status_bar.config( text=f'RecoVocale {VERSION}', bg='lightblue', fg='darkblue', anchor=tk.W)
             self.repetition = 0
             self.texte_memoire = ""
-            model = ""
-            if self.client_manager and self.client_manager.client:
-                model = f"[{self.client_manager.client.get_model_path()}]"
-            envoyer_log("transcription", texte=f"Mode:{self.mode.name}{"" if self.file_source is None else f' - fichier: {self.file_source}' }{model}{text_to_copy}")
+            self.log(text=text_to_copy)
             if not self.app.recording:
                 self.pause()
                 self.status_bar.config( text=f'RecoVocale {VERSION}', bg='lightblue', fg='darkblue', anchor=tk.W)

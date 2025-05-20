@@ -8,11 +8,11 @@ from info import APPRENTI, REDUIT
 import traceback
 
 class ClientManager:
-    def __init__(self, host, port, lang, model, translate, use_vad, save_output_recording, output_recording_filename, update_callback, insertions, fenetre_gestion_insertions, mode, nb_repeat=2, ip_client="0.0.0.0", listen=False):
+    def __init__(self, host, port, lang, translate, use_vad, save_output_recording, output_recording_filename, update_callback, insertions, fenetre_gestion_insertions, mode, nb_repeat=2, ip_client="0.0.0.0", listen=False):
         self.host = host
         self.port = port
         self.lang = lang
-        self.model = model
+        self.model = None
         self.translate = translate
         self.use_vad = use_vad
         self.save_output_recording = save_output_recording
@@ -74,6 +74,7 @@ class ClientManager:
                 self.client.play_file(self.audio_file, listen=self.listen)
             else:
                 self.client.source_is_micro = True
+                self.model = self.client.get_model_path()
                 self.client.record()
 
             self.client = None
@@ -102,13 +103,7 @@ class ClientManager:
                 self._mode.app.recording = False
                 self.update_callback(None, True)
             return
-        
-        # if self.mode == REDUIT and self.client:
-        #     combined_text = (
-        #         self.client.get_transcription_complete().lstrip()
-        #         if ending else texte.lstrip()
-        #     )
-        # else:
+
         combined_text = texte.lstrip()
 
         if not (self.fenetre_gestion_insertions() or self.mode == APPRENTI):
@@ -117,30 +112,7 @@ class ClientManager:
                 combined_text = corrige_ponctuation(combined_text)
 
         if combined_text != "":
-            # if self.mode == REDUIT and not ending:
-            #     if not hasattr(self, "last_partial_text"):
-            #         self.last_partial_text = ""
-            #         self.repeat_counter = 0
-
-            #     if combined_text == self.last_partial_text:
-            #         # ✅ Si phrase stable ET ponctuée, ou répétée assez souvent
-            #         if combined_text.endswith(('.', '!', '?')) or self.repeat_counter >= self.nb_repeat:
-            #             self.repeat_counter += 1
-            #             if self.repeat_counter >= self.nb_repeat:
-            #                 print(f"[REPEAT] Texte stable détecté : {texte} (compteur = {self.repeat_counter})")
-            #                 ending = True
-            #                 print("[VALIDATION] Texte validé par répétition")
-
-            #         else:
-            #             self.repeat_counter += 1
-            #     else:
-            #         self.last_partial_text = combined_text
-            #         self.repeat_counter = 1
-            # elif self.mode != REDUIT:
-            #     # Réinitialiser pour les autres modes
-            #     self.last_partial_text = ""
-            #     self.repeat_counter = 0
-
+            # On ne fait pas de correction si on est en mode APPRENTI
             if not self.fenetre_gestion_insertions():
                 self.update_callback(combined_text, ending)
             else:
@@ -149,7 +121,6 @@ class ClientManager:
 
     def stop_client(self):
         self.running = False
-
         # Stopper le client WebSocket proprement
         if self.client:
             try:

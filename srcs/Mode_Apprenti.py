@@ -9,7 +9,6 @@ import pygame
 from datetime import datetime
 import tempfile
 from sftp_upload import upload_files_to_sftp
-from loger import envoyer_log
 
 
 class Mode_Apprenti(Mode):
@@ -26,7 +25,6 @@ class Mode_Apprenti(Mode):
             host = self.app.config.server_ip,
             port = self.app.config.port,
             lang = "fr",
-            model = "small",
             translate = False,
             use_vad = True,
             save_output_recording = True,
@@ -243,6 +241,8 @@ class Mode_Apprenti(Mode):
         self.text_box.see("insert")
 
     def update_transcriptions(self, message, ending):
+        if not hasattr(self, "text_box") or not self.text_box.winfo_exists():
+            return  # Le widget a été détruit
         if message is not None:
             if not self.transcription_en_cours:
                 self.trash_button.config(state=tk.DISABLED)
@@ -261,10 +261,7 @@ class Mode_Apprenti(Mode):
             self.transcription.validation()
             self.set_pos_curseur(self.transcription.fin_insertion)
             self.ready_to_learn = True
-            model = ""
-            if self.client_manager and self.client_manager.client:
-                model = f"[{self.client_manager.client.get_model_path()}]"
-            envoyer_log("transcription", texte=f"Mode:{self.mode.name}{"" if self.file_source is None else f' - fichier: {self.file_source}' }{model}{message}")
+                
             self.verification_dico(True)
             if not self.app.recording:
                 self.rec_button.config(state=tk.DISABLED)
@@ -272,6 +269,7 @@ class Mode_Apprenti(Mode):
                 self.play_button.config(state=tk.NORMAL)
                 self.trash_button.config(state=tk.NORMAL)
                 self.status_bar.config(text="Transcription ...Terminée", bg='lightblue', fg='darkblue', anchor=tk.W)
+                self.log(text=self.transcription.text_box_en_cours)
                 self.pause()
         else:
             self.text_box.config(state=tk.DISABLED)
@@ -287,13 +285,14 @@ class Mode_Apprenti(Mode):
 
         print(f"On a deux fichiers : \n\t-wav->{self.temp_wav_file} et \n\t-text->{self.temp_txt_file}")
         self.status_bar.config(text="Transfert des fichiers...")
-        upload_files_to_sftp(audio_file=self.temp_wav_file, text_file=self.temp_txt_file,filenames=filename)
+        result, e = upload_files_to_sftp(audio_file=self.temp_wav_file, text_file=self.temp_txt_file,filenames=filename)
         
         self.status_bar.config(text="Merci.")
         time.sleep(1)
         self.clear_text_box()
         self.pile = ['']
-        envoyer_log("learning", filename)
+        log_text = f"Learning : {"ok" if result else "echec : {e}"}"
+        self.log(log_text)
         
     def check_pygame_events(self):
         """
