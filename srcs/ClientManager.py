@@ -1,14 +1,44 @@
-from tkinter import messagebox
+import threading
 import wave
+import traceback
+from tkinter import messagebox
+
 from client import Client
 from Correcteur import intercept, corrige_ponctuation
 from utils_keyboard import Simulator
-import threading
-from info import APPRENTI, REDUIT
-import traceback
+from info import APPRENTI
+
 
 class ClientManager:
-    def __init__(self, host, port, lang, translate, use_vad, save_output_recording, output_recording_filename, update_callback, insertions, fenetre_gestion_insertions, mode, nb_repeat=2, ip_client="0.0.0.0", listen=False):
+    """
+    Gère la création, l'exécution et la communication avec une instance de Client (WebSocket).
+
+    Cette classe sert d'interface entre le programme principal (RecoVocale) et le serveur
+    WhisperLive. Elle gère également le traitement de la transcription reçue.
+    """
+    def __init__(self, host: str, port: int, lang: str, translate: bool, use_vad: bool,
+                 save_output_recording: bool, output_recording_filename: str,
+                 update_callback, insertions, fenetre_gestion_insertions,
+                 mode, nb_repeat: int = 2, ip_client: str = "0.0.0.0", listen: bool = False) -> None:
+        """
+        Initialise un gestionnaire de client.
+
+        Args:
+            host (str): Adresse IP ou nom d'hôte du serveur.
+            port (int): Port de communication WebSocket.
+            lang (str): Langue cible pour la transcription.
+            translate (bool): Active la traduction si True.
+            use_vad (bool): Active la détection de voix si True.
+            save_output_recording (bool): Enregistre localement l'audio si True.
+            output_recording_filename (str): Chemin du fichier de sortie.
+            update_callback (callable): Fonction de callback pour mettre à jour l'interface.
+            insertions: Gestionnaire des insertions personnalisées.
+            fenetre_gestion_insertions: Fonction qui retourne True si l'on est dans la gestion des insertions.
+            mode: Mode d'exécution (ex: DIRECT, APPRENTI, REDUIT).
+            nb_repeat (int): Nombre de répétitions avant de considérer une phrase comme terminée.
+            ip_client (str): IP du client à transmettre au serveur.
+            listen (bool): Active l'écoute locale de l'audio si True.
+        """
         self.host = host
         self.port = port
         self.lang = lang
@@ -24,14 +54,23 @@ class ClientManager:
         self.update_callback = update_callback
         self.insertions = insertions
         self.fenetre_gestion_insertions = fenetre_gestion_insertions
-        self.mode = mode.mode # Direct, Reduit etc...
-        self._mode = mode
-        self.nb_repeat = nb_repeat # nb de fois que la transcription doit etre répété pour demander un fin de transcription
+        self.mode = mode.mode  # Direct, Reduit etc...
+        self._mode = mode  # TODO: à simplifier !!
+        self.nb_repeat = nb_repeat
         self.last_partial_text = ""
         self.ip_client = ip_client
         self.listen = listen
 
-    def start_client(self, loop, port_service=None, audio_file=None, listen=False):
+    def start_client(self, loop, port_service=None, audio_file=None, listen=False) -> None:
+        """
+        Démarre une nouvelle instance de Client dans un thread séparé.
+
+        Args:
+            loop: Boucle asyncio utilisée par le client.
+            port_service (int | None): Port alternatif si différent de self.port.
+            audio_file (str | None): Chemin d'un fichier audio à lire au lieu du micro.
+            listen (bool): Si True, joue l'audio localement aussi.
+        """
         port = port_service
         if port is None:
             port = self.port
@@ -60,7 +99,11 @@ class ClientManager:
         self.client_thread = threading.Thread(target=self.run_client_thread)
         self.client_thread.start()
 
-    def run_client_thread(self):
+    def run_client_thread(self) -> None:
+        """
+        Fonction exécutée dans un thread. Gère la lecture du fichier audio ou l'enregistrement
+        micro et gère les erreurs si le serveur ne répond pas.
+        """
         try:
             # ⏳ Attente active de la WebSocket READY
             if not self.client.ready_event.wait(timeout=5):  # max 5 secondes
@@ -90,14 +133,20 @@ class ClientManager:
                 )
             else:
                 print(f"Erreur dans run_client :{repr(e)}")
-                      
-            self.stop_client()
-            self._mode.stop_client() # on stop le client appelant
 
-    def call_back(self, texte, ending, force=False):
-        # Fonction appelé par Client.py suite a evenement websocket serveur WhisperLive
-        # print(f"[DEBUG] call_back('{texte}', {ending}, {force})")
-        if texte is None: # appel du call back suite à ending=True
+            self.stop_client()
+            self._mode.stop_client()  # on stop le client appelant
+
+    def call_back(self, texte: str, ending: bool, force: bool = False) -> None:
+        """
+        Fonction appelée par le client lorsqu'une transcription est reçue.
+
+        Args:
+            texte (str): Le texte transcrit.
+            ending (bool): True si la phrase est terminée.
+            force (bool): Si True, force l'arrêt même sans audio_file.
+        """
+        if texte is None:  # appel du call back suite à ending=True
             # print(f"*************ici self._mode.app.recording = {self._mode.app.recording}")
             if self.audio_file is not None or force:
                 self._mode.app.recording = False
@@ -119,9 +168,11 @@ class ClientManager:
                 if ending:
                     Simulator(combined_text)
 
-    def stop_client(self):
+    def stop_client(self) -> None:
+        """
+        Stoppe proprement le client et attend la fin du thread associé.
+        """
         self.running = False
-        # Stopper le client WebSocket proprement
         if self.client:
             try:
                 self.client.stop()
@@ -135,6 +186,9 @@ class ClientManager:
                 self.client_thread.join()
             self.client_thread = None
 
-    def pause(self):
+    def pause(self) -> None:
+        """
+        Met le client en pause si celui-ci est actif.
+        """
         if self.client:
             self.client.set_pause(True)

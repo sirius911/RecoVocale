@@ -2,10 +2,17 @@ import os
 import socket
 import time
 import tkinter as tk
-from tkinterdnd2 import TkinterDnD
 import asyncio
 import threading
 import keyboard
+import atexit
+import sys
+import win32api
+import win32event
+import winerror
+from tkinter import messagebox
+from tkinterdnd2 import TkinterDnD
+from pynput.keyboard import Key
 from shortcut_manager import ShortcutManager
 from UserConfig import UserConfig
 from Mode_Direct import Mode_Direct
@@ -14,33 +21,39 @@ from Mode_Reduit import Mode_Reduit
 from utils_socket import check_server_status, get_windows_session
 from utils_keyboard import Simulator
 from Micro import Micro
-from info import *
-from pynput.keyboard import Key
+from info import VERSION, DIRECT, REDUIT, APPRENTI
 from fenetre_debug import DebugWindow
 from insertions import GestionnaireInsertion
 from utils_window import get_config_path
-import win32api
-import sys
-import win32event
-import winerror
-from tkinter import messagebox
-import atexit
 from loger import envoyer_log
 
+# Envoi d'un log "stop" à la fermeture du programme
 atexit.register(lambda: envoyer_log("stop"))
 
+
 class App:
-    def __init__(self, root, loop):
+    """Classe principale de l'application RecoVocale.
+
+    Gère l'initialisation, le changement de mode, les raccourcis, le microphone et la fenêtre principale.
+    """
+    def __init__(self, root: tk.Tk, loop: asyncio.AbstractEventLoop) -> None:
+        """
+        Initialise l'application avec la fenêtre principale et la boucle asyncio.
+
+        Args:
+            root (tk.Tk): La fenêtre principale Tkinter.
+            loop (asyncio.AbstractEventLoop): La boucle asyncio utilisée par l'application.
+        """
         self.config = UserConfig()
         self.insertions = GestionnaireInsertion(self.config.insertions)
         self.console_debug = DebugWindow(root)
         self.debug_window_id = self.console_debug.debug_window.winfo_id()
 
         if self.config.debug:
-           self.console_debug.debug_window.deiconify()  # Afficher la fenêtre de débogage
+            self.console_debug.debug_window.deiconify()  # Afficher la fenêtre de débogage
         else:
             self.console_debug.debug_window.withdraw()
-       
+
         self.root = root
         # Récupérer l'adresse IP locale du client
         try:
@@ -52,17 +65,17 @@ class App:
         self.loop = loop
         self.recording = False
         self.root.attributes("-topmost", True)  # Keep the window on top of others
- 
-        #-------------------check serveur-----------------------
+
+        # -------------------check serveur-----------------------
         self.status_server = check_server_status(self.config.server_ip, self.config.port, self.ip_client, timeout=5)
 
-        #----------------------MODE----------------------------
+        # ----------------------MODE----------------------------
         mode = self.config.mode
         if mode == "APPRENTI":
             self.current_mode = Mode_Apprenti(self)
         elif mode == "REDUIT":
             self.current_mode = Mode_Reduit(self)
-        else: # Default to DIRECT mode
+        else:  # Default to DIRECT mode
             self.current_mode = Mode_Direct(self)
 
         # ---- Touches de racourcis
@@ -74,7 +87,6 @@ class App:
         )
 
         # Enregistrer les deux raccourcis s’ils sont valides
-        # keyboard.clear_all_hotkeys()
         try:
             if self.shortcut_manager.keyboard_shortcut:
                 keyboard.add_hotkey(self.shortcut_manager.keyboard_shortcut, self.current_mode.toggle_start_stop)
@@ -87,25 +99,35 @@ class App:
         self.root.protocol("WM_DELETE_WINDOW", self.current_mode.exit_app)
 
         # #---------------------------MICRO----------------------------
-        # Initialize the microphone 
+        # Initialize the microphone
         self.mic = Micro(loop=self.loop, app=self.current_mode, call_back=self.update)
         self.info()
 
-    def paste_from_clipboard(self):
+    def paste_from_clipboard(self) -> None:
+        """Colle le contenu du presse-papier dans la fenêtre active via une simulation clavier."""
         self.current_mode.status_bar.config(text='- Coller -', bg='lightblue', fg='darkblue', anchor=tk.CENTER)
         Simulator([Key.ctrl, 'v'])
         time.sleep(0.5)
         self.current_mode._update_barre_status()
-            
-    def running(self):
-        return self.client_manager.running
 
-    def update(self):
+    def running(self) -> bool:
+        """
+        Renvoie l'état d'exécution du client manager.
+
+        Returns:
+            bool: True si le client est actif, False sinon.
+        """
+        if self.current_mode.client_manager:
+            return self.client_manager.running
+
+    def update(self) -> None:
+        """Met à jour l'affichage du mode courant et les informations de débogage."""
         if self.current_mode:
-            self.current_mode.update() 
+            self.current_mode.update()
             self.info()
 
-    def on_closing(self):
+    def on_closing(self) -> None:
+        """Gère la fermeture de l'application en sauvegardant la configuration."""
         self.current_mode.stop()
         if self.mic:
             self.mic.disconnect()
@@ -119,7 +141,13 @@ class App:
         self.loop.stop()
         self.root.quit()
 
-    def switch_mode(self, mode):
+    def switch_mode(self, mode) -> None:
+        """
+        Permet de changer dynamiquement de mode d'utilisation.
+
+        Args:
+            mode: Le nouveau mode à activer.
+        """
         if self.config.debug:
             print(f"switch_mode({mode.name})")
         if self.current_mode:
@@ -143,7 +171,13 @@ class App:
                     self.on_closing()
 
                 # Utiliser after_idle pour s'assurer que geometry est bien appliqué
-                self.root.after_idle(lambda: self.root.geometry(f"{self.current_mode.mode.window_width}x{self.current_mode.mode.window_height}+{self.config.x_window}+{self.config.y_window}"))
+                geometry_str = (
+                    f"{self.current_mode.mode.window_width}"
+                    f"x{self.current_mode.mode.window_height}"
+                    f"+{self.config.x_window}"
+                    f"+{self.config.y_window}"
+                )
+                self.root.after_idle(lambda: self.root.geometry(geometry_str))
                 if self.mic:
                     self.mic.change_mode(self.current_mode)
 
@@ -155,7 +189,6 @@ class App:
                     keyboard.add_hotkey(self.shortcut_manager.keyboard_shortcut, self.current_mode.toggle_start_stop)
                 if self.shortcut_manager.stop_keyboard_shortcut:
                     keyboard.add_hotkey(self.shortcut_manager.stop_keyboard_shortcut, self.current_mode.stop)
-
 
                 try:
                     if self.config.debug:
@@ -172,22 +205,26 @@ class App:
 
                 self.info()
                 self.console_debug.log_message(log_en_cours)
-    
-    def info(self):
+
+    def info(self) -> None:
+        """Affiche les informations de débogage si activé."""
         if self.config.debug:
             self.console_debug.delete_status()
             self.console_debug.append_status_with_format("Version : ", font_style="italic")
             self.console_debug.append_status_with_format(f"v{VERSION}\n", color="green")
             self.console_debug.append_status_with_format("Modèle : ", font_style="italic")
             if self.current_mode.client_manager:
-                self.console_debug.append_status_with_format(f"{self.current_mode.client_manager.model}\n", color="green")
+                self.console_debug.append_status_with_format(
+                    f"{self.current_mode.client_manager.model}\n", color="green")
             else:
                 self.console_debug.append_status_with_format("None\n", color="blue")
             self.console_debug.append_status_with_format("Serveur : ", font_style="italic")
             if check_server_status(self.config.server_ip, self.config.port, self.ip_client):
-                self.console_debug.append_status_with_format(f"Connected @{self.config.server_ip}:{self.config._port} \n", color="green")
+                self.console_debug.append_status_with_format(
+                    f"Connected @{self.config.server_ip}:{self.config._port}\n", color="green")
             else:
-                self.console_debug.append_status_with_format(f"NOT Connected @{self.config.server_ip}:{self.config.port} \n", color="red")
+                self.console_debug.append_status_with_format(
+                    f"NOT Connected @{self.config.server_ip}:{self.config.port}\n", color="red")
             self.console_debug.append_status_with_format("Service : ", font_style="italic")
             self.console_debug.append_status_with_format(f"{self.config.service}\n", color="green")
             self.console_debug.append_status_with_format("IP client : ", font_style="italic")
@@ -201,13 +238,14 @@ class App:
             self.console_debug.append_status_with_format("Mode : ", font_style="italic")
             self.console_debug.append_status_with_format(self.current_mode.name(), color="green")
             self.console_debug.append_status_with_format(" - Simul Clavier : ", font_style="italic")
-            self.console_debug.append_status_with_format(f" {'Oui' if self.current_mode.simulator_keyboard else 'Non'}\n", color="green")
-            
+            self.console_debug.append_status_with_format(
+                f" {'Oui' if self.current_mode.simulator_keyboard else 'Non'}\n", color="green")
             self.console_debug.append_status_with_format("Raccourci rec/pause : ", font_style="italic")
             self.console_debug.append_status_with_format(f"{self.shortcut_manager.keyboard_shortcut}\n", color="green")
 
             self.console_debug.append_status_with_format("Raccourci arrêt transcription : ", font_style="italic")
-            self.console_debug.append_status_with_format(f"{self.shortcut_manager.stop_keyboard_shortcut or '—'}\n", color="green")
+            self.console_debug.append_status_with_format(f"{self.shortcut_manager.stop_keyboard_shortcut or '—'}\n",
+                                                         color="green")
 
             self.console_debug.append_status_with_format("Debug : ", font_style="italic")
             self.console_debug.append_status_with_format(f"{self.config.debug}\n", color="green")
@@ -223,32 +261,47 @@ class App:
             self.console_debug.append_status_with_format("Nb répétitions : ", font_style="italic")
             self.console_debug.append_status_with_format(f"{self.config.nb_repeat}", color="green")
 
-    def change_shortcut(self):
+    def change_shortcut(self) -> None:
+        """Permet à l'utilisateur de modifier les raccourcis clavier."""
         self.shortcut_manager.change_shortcut()
 
 
-def start_loop(loop):
+def start_loop(loop: asyncio.AbstractEventLoop) -> None:
+    """
+    Lance la boucle asyncio dans un thread séparé.
+
+    Args:
+        loop (asyncio.AbstractEventLoop): La boucle à exécuter.
+    """
     asyncio.set_event_loop(loop)
     loop.run_forever()
 
-def on_resize(event):
-        width = event.width
-        height = event.height
-        print(f"Ma fenêtre Tkinter - Dimensions: {width}x{height}")
+# def on_resize(event):
+#         width = event.width
+#         height = event.height
+#         print(f"Ma fenêtre Tkinter - Dimensions: {width}x{height}")
 
-def show_drop_overlay(app):
+
+def show_drop_overlay(app: App) -> None:
+    """Affiche un label de dépôt sur la fenêtre principale."""
     app.drop_label = tk.Label(app.root, text="📁 Déposez ici", font=("Arial", 24), bg="yellow", fg="black")
     app.drop_label.place(relx=0.5, rely=0.5, anchor="center")
 
-def hide_drop_overlay(app):
+
+def hide_drop_overlay(app: App) -> None:
+    """Supprime le label de dépôt de la fenêtre principale."""
     if hasattr(app, 'drop_label'):
         app.drop_label.destroy()
         del app.drop_label
 
 
-
 if __name__ == "__main__":
-    #mutex unique pour l'application
+    """
+    Point d'entrée principal du programme.
+    Vérifie qu'une seule instance est en cours grâce à un mutex Windows,
+    puis initialise la fenêtre Tkinter, l'application et les événements DnD.
+    """
+    # mutex unique pour l'application
     mutex_name = "recovocale_mutex"
     mutex = win32event.CreateMutex(None, False, mutex_name)
 
@@ -259,7 +312,7 @@ if __name__ == "__main__":
     else:
         envoyer_log("start")
     try:
-        
+
         root = TkinterDnD.Tk()
         # Chemin vers l'icône (dans le répertoire de l'application installée)
         if getattr(sys, 'frozen', False):  # Mode exécutable compilé
@@ -278,6 +331,7 @@ if __name__ == "__main__":
 
         app = App(root, new_loop)  # Pass the new loop to the app
         # root.bind("<Configure>", on_resize)
+
         def on_file_drop(event):
             file_path = event.data.strip("{}")  # Nettoyer le nom du fichier
             if file_path.lower().endswith((".wav", ".mp3", ".flac", ".ogg")):
@@ -286,8 +340,9 @@ if __name__ == "__main__":
                 hide_drop_overlay(app)
             else:
                 print("Format non supporté :", file_path)
-                messagebox.showerror("Format non pris en charge",
-                                     f"Le fichier déposé n'est pas dans un format audio supporté.\n\nFichier :\n{file_path}")
+                messagebox.showerror(
+                    "Format non pris en charge",
+                    f"Le fichier déposé n'est pas dans un format audio supporté.\n\nFichier :\n{file_path}")
                 return
 
         # Activer le drop sur la fenêtre principale

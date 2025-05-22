@@ -2,6 +2,7 @@ import sys
 import tkinter as tk
 from tkinter import scrolledtext
 
+
 class RedirectOutput:
     def __init__(self, text_widget):
         """Initialise la redirection des sorties vers un widget Tkinter."""
@@ -19,6 +20,7 @@ class RedirectOutput:
     def flush(self):
         """Flush requis pour la compatibilité avec certains systèmes."""
         pass
+
 
 class DebugWindow:
     def __init__(self, root):
@@ -48,7 +50,6 @@ class DebugWindow:
         if getattr(sys, 'frozen', False):
             sys.stdout = RedirectOutput(self.log_area)
             sys.stderr = RedirectOutput(self.log_area)  # Redirige aussi les erreurs
-        
 
     def log_message(self, message):
         """Ajoute un message personnalisé à la zone de logs."""
@@ -71,17 +72,25 @@ class DebugWindow:
         sys.stdout = self.original_stdout
         sys.stderr = self.original_stderr
 
-
     def append_status_with_format(self, message, color="black", font_style="normal"):
         """Ajoute du texte à la zone de statut avec une couleur et un style de police."""
         if self.status_area.winfo_exists():
             # Configurer le style du texte
             if font_style == "italic":
-                self.status_area.tag_configure(f"formatted_{font_style}", font=("Helvetica",  self.taille_font_status, "italic"))
+                self.status_area.tag_configure(f"formatted_{font_style}",
+                                               font=("Helvetica",
+                                                     self.taille_font_status,
+                                                     "italic"))
             elif font_style == "bold":
-                self.status_area.tag_configure(f"formatted_{font_style}", font=("Helvetica",  self.taille_font_status, "bold"))
+                self.status_area.tag_configure(f"formatted_{font_style}",
+                                               font=("Helvetica",
+                                                     self.taille_font_status,
+                                                     "bold"))
             else:
-                self.status_area.tag_configure(f"formatted_{font_style}", font=("Helvetica", self.taille_font_status, "normal"))
+                self.status_area.tag_configure(f"formatted_{font_style}",
+                                               font=("Helvetica",
+                                                     self.taille_font_status,
+                                                     "normal"))
 
             # Configurer la couleur du texte
             self.status_area.tag_configure(f"colored_{color}", foreground=color)
@@ -93,6 +102,7 @@ class DebugWindow:
     def delete_status(self):
         if self.status_area.winfo_exists():
             self.status_area.delete('1.0', tk.END)
+
 
 # Test rapide pour voir la fenêtre en fonctionnement
 if __name__ == "__main__":

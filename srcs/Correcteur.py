@@ -1,8 +1,19 @@
-from datetime import datetime
 import re
+from datetime import datetime
+
 from unite import convertir_unites
 
-def int_to_roman(number:int):
+
+def int_to_roman(number: int) -> str:
+    """
+    Convertit un entier en chiffre romain.
+
+    Args:
+        number (int): Un nombre entier entre 1 et 3999.
+
+    Returns:
+        str: La représentation en chiffres romains du nombre.
+    """
     if not (0 < number < 4000):
         print("Nombre hors des limites (doit être entre 1 et 3999)")
         return str(number)
@@ -20,27 +31,37 @@ def int_to_roman(number:int):
 
     return ''.join(result)
 
-def detecter_chiffre_roman(text):
-    # Dictionnaire pour les nombres en lettres
+
+def detecter_chiffre_roman(text: str) -> str | None:
+    """
+    Détecte les expressions du type "chiffre romain" dans le texte
+    et retourne leur équivalent en chiffres romains.
+
+    Args:
+        text (str): La phrase à analyser.
+
+    Returns:
+        str | None: Le chiffre romain trouvé, ou None si rien n'est détecté.
+    """
     nombres_en_lettres = {
         "un": 1, "deux": 2, "trois": 3, "quatre": 4, "cinq": 5, "six": 6,
-        "sept": 7, "huit": 8, "neuf": 9, "dix": 10, "onze": 11, "douze": 12, 
-        "treize": 13, "quatorze": 14, "quinze": 15, "seize": 16, "dix-sept": 17, 
+        "sept": 7, "huit": 8, "neuf": 9, "dix": 10, "onze": 11, "douze": 12,
+        "treize": 13, "quatorze": 14, "quinze": 15, "seize": 16, "dix-sept": 17,
         "dix-huit": 18, "dix-neuf": 19, "vingt": 20
     }
     # Expression régulière pour capturer les nombres en chiffres
     pattern_chiffre = r"chiffre roma[i]?n[t]?\s*(\d+)"
-    
+
     # Vérifier si un chiffre numérique suit "romain"
     match_chiffre = re.search(pattern_chiffre, text.lower())
     if match_chiffre:
         # Convertir le chiffre capturé en entier
         print("[Insérer][CHIFFRE ROMAIN]")
         return int_to_roman(int(match_chiffre.group(1)))
-    
+
     # Expression régulière pour capturer les nombres en lettres
     pattern_lettres = r"chiffre[s]? roma[i]?n[t]?[s]?\s*(\w+)"
-    
+
     # Vérifier si un nombre en lettres suit "romain"
     match_lettres = re.search(pattern_lettres, text.lower())
     if match_lettres:
@@ -49,20 +70,53 @@ def detecter_chiffre_roman(text):
         if nombre_en_lettres in nombres_en_lettres:
             print("[Insérer][CHIFFRE ROMAIN]")
             return int_to_roman(nombres_en_lettres[nombre_en_lettres])
-    
+
     return None  # Retourner None si aucun chiffre n'est trouvé
 
-def remplacement_special(text:str):
+
+def remplacement_special(text: str) -> str | None:
+    """
+    Traite les commandes spéciales comme "date" ou "chiffre romain".
+
+    Args:
+        text (str): Le texte après "insérer".
+
+    Returns:
+        str | None: Le remplacement à effectuer, ou None si aucun remplacement.
+    """
     retour = None
     if text.lower() == "date":
-        print( "[Insérer][DATE]")
+        print("[Insérer][DATE]")
         return datetime.now().strftime("%d/%m/%Y")
     retour = detecter_chiffre_roman(text)
     return retour
 
-def remplacer_avec_dictionnaire(texte, pattern, dico_insertion):
+
+def remplacer_avec_dictionnaire(texte: str, pattern: str, dico_insertion: dict[str, str]) -> str:
+    """
+    Remplace les expressions dans le texte selon un pattern et un dictionnaire d'insertions.
+
+    Args:
+        texte (str): Le texte source contenant les expressions à remplacer.
+        pattern (str): Le motif regex pour détecter les expressions de type "insérer X".
+        dico_insertion (dict[str, str]): Un dictionnaire contenant des expressions regex comme clés
+        et leurs remplacements.
+
+    Returns:
+        str: Le texte modifié avec les remplacements effectués.
+    """
     insertion = False
-    def remplacement(match):
+
+    def remplacement(match: re.Match) -> str:
+        """
+        Fonction interne utilisée pour remplacer les occurrences trouvées par le pattern.
+
+        Args:
+            match (re.Match): L'objet regex contenant l'expression "insérer X".
+
+        Returns:
+            str: Le texte remplacé ou original si rien ne correspond.
+        """
         nonlocal insertion  # Permet de modifier la variable `insertion` dans la fonction englobante
         # Capture le texte après "insérer" (ce qui inclut plusieurs mots possibles)
         texte_suivant = match.group(2).strip()
@@ -77,34 +131,68 @@ def remplacer_avec_dictionnaire(texte, pattern, dico_insertion):
                 print(f" -> trouvé [{remplacement}]")
                 insertion = True
                 return remplacement
-        
+
         # Si aucune correspondance, on laisse tel quel
-        print(f" -> non trouvé")
+        print(" -> non trouvé")
         return match.group(0)
     # Utilise re.sub pour remplacer les occurrences du pattern
     return re.sub(pattern, remplacement, texte, flags=re.IGNORECASE)
 
-def insertion(phrase, dico_insertion):
 
+def insertion(phrase: str, dico_insertion: dict[str, str]) -> str:
+    """
+    Applique la logique d'insertion vocale à une phrase.
+
+    Args:
+        phrase (str): La phrase à analyser.
+        dico_insertion (dict[str, str]): Le dictionnaire d'insertions vocales à utiliser.
+
+    Returns:
+        str: La phrase modifiée après traitement.
+    """
     pattern = r"\bins[éèêe]r(é|ez|er|ée|ées|és)[,. ]+([\w\s]+)"
-    
+
     # match = re.search(pattern, phrase)
     nouveau_texte = remplacer_avec_dictionnaire(phrase, pattern, dico_insertion)
     # print(f"nouvelle phrase = {nouveau_texte}")
     return nouveau_texte
 
-def proteger_points_speciaux(phrases):
-    # Protéger les occurrences de "point" ou "points" précédées par des articles ou des chiffres
+
+def proteger_points_speciaux(phrases: str) -> str:
+    """
+    Protège temporairement les expressions contenant 'point(s)' précédées d'articles ou de chiffres
+    afin d'éviter leur remplacement automatique.
+
+    Args:
+        phrases (str): Le texte à traiter.
+
+    Returns:
+        str: Le texte avec les expressions protégées.
+    """
     pattern_protection = r"\b(des|les|le|de \d+|les \d+|des \d+|\d+) point[s]?\b"
     # Ajout d'un préfixe et des caractères uniques pour protéger ces éléments -> on efface ensuite
-    return re.sub(pattern_protection, lambda match: f"PROTECT_{match.group(0).replace(' ', '_')}", phrases, flags=re.IGNORECASE)
+    return re.sub(pattern_protection,
+                  lambda match: f"PROTECT_{match.group(0).replace(' ', '_')}",
+                  phrases,
+                  flags=re.IGNORECASE)
 
-def remplacement_normal(phrases):
+
+def remplacement_normal(phrases: str) -> str:
+    """
+    Applique des remplacements classiques dictés oralement dans le texte
+    (ex : "point virgule", "ouvrons les guillemets", etc.).
+
+    Args:
+        phrases (str): Le texte dans lequel effectuer les remplacements.
+
+    Returns:
+        str: Le texte après remplacements.
+    """
     expression_remplacement = {
         r"[.,]*tir(ée|é|è|er|et|ez)[., ]*": " - ",
         r"[., ]*trois point[s]? de suspension[s]?[., ]*": "...",
         r"[., ]*3 point[s]? de suspension[s]?[., ]*": "...",
-        r"[., ]*3 petit[s]?.": "...",r"[., ]*trois petit[s]?.": "...",
+        r"[., ]*3 petit[s]?.": "...", r"[., ]*trois petit[s]?.": "...",
         r"[.,]*ouvr\w*\s+(les\s|le\s)?guillemet[s]?[., ]*": "«",
         r"[.,]*ouvr\w*\s+(la\s|les\s)?parenthèse[s]?[,. ]*": "(",
         r"[.,]*entre guillemet[s]?[,. ]*": "«",
@@ -114,7 +202,7 @@ def remplacement_normal(phrases):
         r"[., ]*\b(deux|de|2)\b point[s]?[,.]*": ":",
         r"[., ]*point d'interrogation[,.]*": "?",
         r"[.,]*point d'exclamation[s]?[,.]*": "! ",
-        r"[., ]*point [àa] la ligne":".\n",
+        r"[., ]*point [àa] la ligne": ".\n",
         r"[., ]*point virgule": "; ",
         r"[., ]*retour [àa] la ligne[,. ]*": "\n",
         r"[., ]*[àa] la ligne": "\n",
@@ -123,23 +211,43 @@ def remplacement_normal(phrases):
         r"[., ]*backslash[,. ]*": "\\",
         r"[., ]*sl[aâ](s?ch|sh)[e]?[,. ]*": "/",
         r"[., ]*underscore[,. ]*": "_",
-        r"[., ]*arobase[,. ]*" : "@",
+        r"[., ]*arobase[,. ]*": "@",
     }
-    
+
     # Appliquer les remplacements
     for seq_to_find, substitute in expression_remplacement.items():
         phrases = re.sub(seq_to_find, lambda match: substitute, phrases, flags=re.IGNORECASE)
-    
+
     return phrases
 
-def restaurer_points_speciaux(phrases):
+
+def restaurer_points_speciaux(phrases: str) -> str:
+    """
+    Restaure les mots protégés par `proteger_points_speciaux()` dans leur forme originale.
+
+    Args:
+        phrases (str): Le texte dans lequel restaurer les points.
+
+    Returns:
+        str: Le texte avec les éléments protégés remis en forme.
+    """
+
     # Restaurer les occurrences protégées en supprimant "PROTECT_" et remplaçant les "_" par des espaces
-    return re.sub(r"PROTECT_(des|les|le|de_\d+|les_\d+|des_\d+|\d+)_point[s]?", lambda match: match.group(0).replace("PROTECT_", "").replace('_', ' '), phrases, flags=re.IGNORECASE)
+    return re.sub(r"PROTECT_(des|les|le|de_\d+|les_\d+|des_\d+|\d+)_point[s]?",
+                  lambda match: match.group(0).replace("PROTECT_", "").replace('_', ' '),
+                  phrases, flags=re.IGNORECASE)
 
 
-def corrige_ponctuation(phrases:str):
-    
-    
+def corrige_ponctuation(phrases: str) -> str:
+    """
+    Corrige la ponctuation dans la phrase selon des règles dictées à l'oral.
+
+    Args:
+        phrases (str): Texte à corriger.
+
+    Returns:
+        str: Texte corrigé.
+    """
     # Ponctuations à enlever
     # ponctuations = ".,;:!?"
 
@@ -159,7 +267,7 @@ def corrige_ponctuation(phrases:str):
     phrases_finale = restaurer_points_speciaux(phrases_remplacee)
     # print("Phrase finale :", phrases_finale)
 
-    #supprimer la ponctuation après le \n
+    # supprimer la ponctuation après le \n
     phrases_finale = re.sub(r'(?<=\n)[.,;:!?]', '',  phrases_finale)
     # capture deux signes de ponctuation consécutifs et ne garde que le dernier sauf si 3 points
     phrases_finale = re.sub(r'(?<!\.)[.,;:!?]{2}(?!\.)', lambda match: match.group(0)[-1], phrases_finale)
@@ -171,7 +279,20 @@ def corrige_ponctuation(phrases:str):
 
     return phrases_finale
 
-def intercept(phrases, dico_insertion):
+
+def intercept(phrases: str, dico_insertion: dict[str, str]) -> str:
+    """
+    Intercepte des expressions vocales spécifiques dans une phrase et applique les conversions définies,
+    notamment les insertions et les unités.
+
+    Args:
+        phrases (str): La phrase dictée.
+        dico_insertion (dict[str, str]): Dictionnaire contenant les insertions personnalisées.
+
+    Returns:
+        str: La phrase modifiée après traitement.
+    """
+
     '''
     doit intercepter des mots clefs dans une liste de phrase
     renvoi la phrase corrigée et un flag ending indiquand si on doit terminé la transcription

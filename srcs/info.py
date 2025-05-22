@@ -2,7 +2,7 @@ from types import SimpleNamespace
 
 VERSION = '1.28'
 
-#------------------------ M O D E S ----------------------
+# ------------------------ M O D E S ----------------------
 DIRECT = SimpleNamespace()
 DIRECT.name = "DIRECT"
 DIRECT.resizable = True

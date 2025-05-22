@@ -1,21 +1,35 @@
 import ftplib
-import os
 
 SERVER = '10.1.147.12'
 USERNAME = 'ftpuser'
 PASSWORD = 'DoW8EssZuCa2'
 AUDIO_DIRECTORY = '/var/ftp/utilisateurs/audios'
-TEXT_DIRECTORY =  '/var/ftp/utilisateurs/rapports'
+TEXT_DIRECTORY = '/var/ftp/utilisateurs/rapports'
 
-def upload_files_to_ftp(audio_file, text_file, filenames):
-    # Connexion au serveur FTP
+
+def upload_files_to_ftp(audio_file: str, text_file: str, filenames: str) -> bool:
+    """
+    Envoie un fichier audio et un fichier texte sur un serveur FTP distant.
+
+    Le fichier audio est stocké dans le dossier AUDIO_DIRECTORY et le fichier texte dans TEXT_DIRECTORY,
+    tous deux nommés selon la chaîne `filenames` (avec extensions `.wav` et `.txt` respectivement).
+
+    Args:
+        audio_file (str): Chemin local vers le fichier audio à envoyer.
+        text_file (str): Chemin local vers le fichier texte à envoyer.
+        filenames (str): Nom de base des fichiers (sans extension) à utiliser sur le serveur.
+
+    Returns:
+        bool: True si l'opération a réussi, False sinon.
+    """
+
     try:
         ftp = ftplib.FTP(SERVER)
         ftp.login(user=USERNAME, passwd=PASSWORD)
     except Exception as e:
         print(f"Erreur: {e}")
         return False
-        
+
     # Création du répertoire 'audio/' s'il n'existe pas et changement de répertoire
     try:
         ftp.mkd(AUDIO_DIRECTORY)
@@ -26,7 +40,7 @@ def upload_files_to_ftp(audio_file, text_file, filenames):
         print(f"Erreur: {e}")
         return False
     ftp.cwd(AUDIO_DIRECTORY)
-    
+
     # Envoi du fichier audio
     with open(audio_file, 'rb') as file:
         ftp.storbinary(f'STOR {filenames}.wav', file)
@@ -43,7 +57,7 @@ def upload_files_to_ftp(audio_file, text_file, filenames):
     except Exception as e:
         print(f"Erreur: {e}")
         return False
-    
+
     ftp.cwd(TEXT_DIRECTORY)
 
     # Envoi du fichier texte
@@ -54,4 +68,3 @@ def upload_files_to_ftp(audio_file, text_file, filenames):
     ftp.quit()
     print("Fichiers envoyés avec succès")
     return True
-
