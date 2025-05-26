@@ -1,21 +1,42 @@
 import os
 import sys
 import tkinter as tk
+from screeninfo import get_monitors
 from tkinter import BooleanVar
 from PIL import Image, ImageTk
+
 from info import DIRECT, REDUIT, APPRENTI
 from ToolTip import ToolTip
-from screeninfo import get_monitors
 
-def get_config_path(file:str):
-    """Retourne le chemin du fichier de configuration du micro dans %APPDATA%"""
+
+def get_config_path(file: str) -> str:
+    """
+    Retourne le chemin absolu d’un fichier de configuration dans le répertoire `%APPDATA%/RecoVocale`.
+
+    Args:
+        file (str): Nom du fichier.
+
+    Returns:
+        str: Chemin complet vers le fichier dans le répertoire de config.
+    """
+
     config_dir = os.path.join(os.getenv('APPDATA'), 'RecoVocale')
     if not os.path.exists(config_dir):
         os.makedirs(config_dir)
     return os.path.join(config_dir, file)
 
-def resource_path(relative_path):
-    """Obtenir le chemin absolu d'une ressource, en tenant compte du fait qu'on est dans un exécutable ou non"""
+
+def resource_path(relative_path: str) -> str:
+    """
+    Donne le chemin absolu vers une ressource, compatible avec PyInstaller.
+
+    Args:
+        relative_path (str): Chemin relatif dans le projet.
+
+    Returns:
+        str: Chemin absolu vers la ressource.
+    """
+
     try:
         # PyInstaller crée un dossier temporaire et stocke le chemin dans _MEIPASS
         base_path = sys._MEIPASS
@@ -24,12 +45,30 @@ def resource_path(relative_path):
 
     return os.path.join(base_path, relative_path)
 
-def _load_and_resize_image(path, size):
-     image = Image.open(path)
-     image = image.resize(size, Image.LANCZOS)  # Use LANCZOS for high-quality downsizing
-     return ImageTk.PhotoImage(image)
 
-def create_buttons(self):
+def _load_and_resize_image(path: str, size: tuple[int, int]) -> ImageTk.PhotoImage:
+    """
+    Charge et redimensionne une image pour affichage dans Tkinter.
+
+    Args:
+        path (str): Chemin vers l’image.
+        size (tuple): Dimensions (largeur, hauteur).
+
+    Returns:
+        ImageTk.PhotoImage: Image redimensionnée prête à être utilisée dans un widget Tkinter.
+    """
+
+    image = Image.open(path)
+    image = image.resize(size, Image.LANCZOS)  # Use LANCZOS for high-quality downsizing
+    return ImageTk.PhotoImage(image)
+
+
+def create_buttons(self) -> None:
+    """
+    Crée et affiche dynamiquement les boutons de contrôle (rec, pause, trash...),
+    selon le mode actif. Attache les raccourcis et icônes aux boutons.
+    """
+
     padx = 2 if self.mode == REDUIT else 5
     pady = 10 if self.mode == REDUIT else 10
     # Load, resize and convert images using Pillow
@@ -48,9 +87,10 @@ def create_buttons(self):
     self.root.grid_columnconfigure(0, weight=1)  # Center the frame in the window
 
     # Add buttons and center them within the frame
-    self.rec_button = tk.Button(self.button_frame, image=self.record_image, command=self.toggle_start_stop, state=tk.DISABLED)
+    self.rec_button = tk.Button(self.button_frame, image=self.record_image,
+                                command=self.toggle_start_stop, state=tk.DISABLED)
     self.rec_button.grid(row=0, column=0, padx=padx)
-    if self.app.status_server == True:
+    if self.app.status_server is True:
         self.rec_button.config(state=tk.NORMAL)
     change_toolTip(self.rec_button, self.app.config.shortcut)
     self.rec_canvas = tk.Canvas(self.button_frame, width=button_width, height=button_width)
@@ -62,7 +102,8 @@ def create_buttons(self):
         self.trash_button.grid(row=0, column=2, padx=padx)
         self.trash_button.config(state=tk.DISABLED)
     if self.mode == APPRENTI:
-        self.learning_button = tk.Button(self.button_frame, image=self.learn_image, command=self.learning, state=tk.DISABLED)
+        self.learning_button = tk.Button(self.button_frame, image=self.learn_image,
+                                         command=self.learning, state=tk.DISABLED)
         self.learning_button.grid(row=0, column=3, padx=padx)
         self.play_button = tk.Button(self.button_frame, image=self.play_image, command=self.play, state=tk.DISABLED)
         self.play_button.grid(row=0, column=4, padx=padx)
@@ -71,14 +112,28 @@ def create_buttons(self):
     self.button_frame.grid_columnconfigure(1, weight=1)
     self.button_frame.grid_columnconfigure(2, weight=1)
 
-    # Optional: If you want the frame to be centered horizontally in the window
-    # self.button_frame.grid(row=0, column=0, sticky="n")  # This will keep it centered
 
-def change_toolTip(button, texte):
+def change_toolTip(button: tk.Widget, texte: str) -> None:
+    """
+    Attribue une infobulle à un bouton.
+
+    Args:
+        button (tk.Widget): Le bouton auquel assigner une infobulle.
+        texte (str): Texte de l’infobulle.
+    """
+
     ToolTip(button, f"{texte}")
 
-def create_menus(self):
-    
+
+def create_menus(self) -> None:
+    """
+    Crée la barre de menus principale, incluant :
+    - les modes d’utilisation,
+    - les paramètres,
+    - le menu d’édition (copier, coller, undo...),
+    - les options comme debug, dictionnaire, service.
+    """
+
     self.menu_bar = tk.Menu(self.root)
     self.root.config(menu=self.menu_bar)
 
@@ -88,7 +143,7 @@ def create_menus(self):
 
     # Raccourci Clavier
     self.settings_menu.add_command(label="Raccourci Clavier", command=self.app.change_shortcut)
-    
+
     # Mode
     self.mode_menu = tk.Menu(self.settings_menu, tearoff=0)
 
@@ -96,34 +151,34 @@ def create_menus(self):
     self.mode_menu.add_radiobutton(label='Direct',
                                    variable=self.mod_var,
                                    value=DIRECT,
-                                   command= lambda: self.app.switch_mode(DIRECT))
-    
+                                   command=lambda: self.app.switch_mode(DIRECT))
+
     self.mode_menu.add_radiobutton(label='Réduit',
                                    variable=self.mod_var,
                                    value=REDUIT,
-                                   command= lambda: self.app.switch_mode(REDUIT))
+                                   command=lambda: self.app.switch_mode(REDUIT))
 
     self.mode_menu.add_radiobutton(label='Apprentissage',
                                    variable=self.mod_var,
                                    value=APPRENTI,
-                                   command= lambda: self.app.switch_mode(APPRENTI))
+                                   command=lambda: self.app.switch_mode(APPRENTI))
 
     # Menu Service
     self.service_var = tk.StringVar(value=self.app.config.service)
     self.service_menu = tk.Menu(self.settings_menu, tearoff=0)
-    
+
     self.settings_menu.add_cascade(label="Service", menu=self.service_menu, state=tk.NORMAL)
 
     for service in self.app.config.get_services():
         self.service_menu.add_radiobutton(label=service,
-                                        variable=self.service_var,
-                                        value=service,
-                                        command=lambda s=service: self.set_service(s))
-    
+                                          variable=self.service_var,
+                                          value=service,
+                                          command=lambda s=service: self.set_service(s))
+
     self.settings_menu.add_separator()
     self.play_audio_var = BooleanVar(value=self.app.config.play_audio)
     self.settings_menu.add_checkbutton(label="Lecture audio locale", variable=self.play_audio_var,
-                                   command=self.toggle_play_audio)
+                                       command=self.toggle_play_audio)
 
     # Autres options du menu Paramètres
     self.settings_menu.add_separator()
@@ -131,11 +186,11 @@ def create_menus(self):
     self.settings_menu.add_separator()
 
     self.debug_var = BooleanVar(value=self.app.config.debug)
-    self.settings_menu.add_checkbutton(label="Debug", variable=self.debug_var, 
-                                   command=self.toggle_debug)
+    self.settings_menu.add_checkbutton(label="Debug", variable=self.debug_var,
+                                       command=self.toggle_debug)
     self.dico_var = BooleanVar(value=self.app.config.dictionnaire)
     self.settings_menu.add_checkbutton(label="Dictionnaire", variable=self.dico_var,
-                                   command=self.toggle_dictionnaire)
+                                       command=self.toggle_dictionnaire)
 
     self.settings_menu.add_separator()
     self.settings_menu.add_command(label="Quitter", command=self.exit_app)
@@ -154,11 +209,21 @@ def create_menus(self):
     if self.mode == DIRECT:
         self.edit_menu.add_command(label="Effacer", command=self.clear_text_box)
 
+
 bubble = None
 label_in_bubble = None
 
-def show_bubble_message(parent, message, background="yellow"):
-    """Affiche ou met à jour la bulle de message avec une taille dynamique, sur le même écran que la fenêtre principale."""
+
+def show_bubble_message(parent: tk.Tk, message: str, background: str = "yellow") -> None:
+    """
+    Affiche ou met à jour une bulle flottante centrée sur l'écran contenant un message.
+
+    Args:
+        parent (tk.Tk): Fenêtre parente Tkinter.
+        message (str): Texte à afficher.
+        background (str): Couleur de fond de la bulle.
+    """
+
     global bubble, label_in_bubble
 
     # Obtenir les informations des écrans
@@ -202,7 +267,8 @@ def show_bubble_message(parent, message, background="yellow"):
         bubble.wm_overrideredirect(True)
         bubble.attributes("-topmost", True)
 
-        label_in_bubble = tk.Label(bubble, text=message, font=("Arial", 10), background=background, fg="black", borderwidth=0)
+        label_in_bubble = tk.Label(bubble, text=message, font=("Arial", 10),
+                                   background=background, fg="black", borderwidth=0)
         label_in_bubble.pack(padx=10, pady=5)
 
         bubble.update_idletasks()
@@ -215,15 +281,26 @@ def show_bubble_message(parent, message, background="yellow"):
 
         bubble.geometry(f"+{x}+{y}")
 
-def remove_bubble():
-    """Ferme la bulle de message si elle est active."""
+
+def remove_bubble() -> None:
+    """
+    Ferme la bulle de message si elle existe.
+    """
+
     global bubble
     if bubble:
         bubble.destroy()
         bubble = None
 
-def update_bubble_background(color):
-    """Met à jour la couleur de fond de la bulle si elle existe."""
+
+def update_bubble_background(color: str) -> None:
+    """
+    Modifie la couleur de fond de la bulle de message active.
+
+    Args:
+        color (str): Nouvelle couleur de fond.
+    """
+
     global label_in_bubble
     if label_in_bubble is not None:
         label_in_bubble.config(background=color)

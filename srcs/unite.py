@@ -1,7 +1,22 @@
 import re
 
-def convertir_unites(texte):
-    # Mapping des unités françaises vers leurs abréviations
+
+def convertir_unites(texte: str) -> str:
+    """
+    Convertit les unités écrites en toutes lettres dans un texte en leurs abréviations normalisées.
+
+    Cette fonction traite également des cas complexes comme :
+    - "X unité par Y unité" → "Xunit/Yunit"
+    - "5,7 mg par litre" → "5,7mg/L"
+    - "comprimé par jour" → "comp./jour"
+
+    Args:
+        texte (str): Le texte contenant des unités médicales à convertir.
+
+    Returns:
+        str: Le texte avec les unités remplacées par leurs formes abrégées.
+    """
+
     unit_mapping = {
         r"\blitres?\b": "L",
         r"\bdécilitres?\b": "dL",
@@ -36,8 +51,10 @@ def convertir_unites(texte):
 
     # Cas 2 : valeur + unité par unité longue (ex: 5,7 mg par litre → 5,7mg/L)
     texte = re.sub(
-        fr"\b(\d+(?:,\d+)?\s?{unites})\b\s+par\s+(litres?|décilitres?|centilitres?|millilitres?|heures?|minutes?|secondes?|jour[s]?)\b",
-        lambda m: f"{m.group(1).replace(' ', '')}/{unit_mapping.get(fr'\\b{m.group(2).lower()}\\b', m.group(2))}",
+        fr"\b(\d+(?:,\d+)?\s?{unites})\b\s+par\s+"
+        r"(litres?|décilitres?|centilitres?|millilitres?|heures?|minutes?|secondes?|jour[s]?)\b",
+        lambda m: f"{m.group(1).replace(' ', '')}/"
+        f"{unit_mapping.get(fr'\\b{m.group(2).lower()}\\b', m.group(2))}",
         texte,
         flags=re.IGNORECASE
     )
@@ -68,22 +85,23 @@ def convertir_unites(texte):
     return texte
 
 
+'''
+Exemple d'utilisation :
+    phrases = [
+        "La boîte contient 100 millilitres et 200 grammes de liquide.",
+        "16,2 grammes par 100 décilitres",
+        "12 centimètres de mèche plus 4 centimètres cubes de 1 litre",
+        "16,2 grammes par décilitre 200 Kilos sur 35 centimètres carré.",
+        "16,2 grammes par 100 décilitres.",
+        "La boîte contient 12 centimètres par 4 centimètres cubes de 1 litre.",
+        "16,2 grammes par décilitre.",
+        "Sotalol 80 milligramme dose réduite à 1/2 comp. par jour le soir",
+        "créatininémie à 5,7 mg par litre",
+        "rythme sinusal à 70 par minute",
+        "5,7 mg par litre",
+        "Un comprimé par jour le soir",
+    ]
 
-# # Exemple d'utilisation
-# phrases = [
-#     "La boîte contient 100 millilitres et 200 grammes de liquide.",
-#     "16,2 grammes par 100 décilitres",
-#     "12 centimètres de mèche plus 4 centimètres cubes de 1 litre",
-#     "16,2 grammes par décilitre 200 Kilos sur 35 centimètres carré.",
-#     "16,2 grammes par 100 décilitres.",
-#     "La boîte contient 12 centimètres par 4 centimètres cubes de 1 litre.",
-#     "16,2 grammes par décilitre.",
-#     "Sotalol 80 milligramme dose réduite à 1/2 comp. par jour le soir",
-#     "créatininémie à 5,7 mg par litre", 
-#     "rythme sinusal à 70 par minute",
-#     "5,7 mg par litre",
-#     "Un comprimé par jour le soir",
-# ]
-
-# for phrase in phrases:
-#     print(f"{phrase} => {convertir_unites(phrase)}")
+    for phrase in phrases:
+        print(f"{phrase} => {convertir_unites(phrase)}")
+'''

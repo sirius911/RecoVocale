@@ -1,8 +1,32 @@
 import os
 import configparser
 
+
 class UserConfig:
+    """
+    Gère la configuration utilisateur de l'application RecoVocale.
+
+    Cette classe charge, sauvegarde et expose les paramètres de configuration stockés
+    dans un fichier `user_config.ini` dans `%APPDATA%/RecoVocale`.
+
+    Elle prend en charge :
+    - les ports et adresses du serveur,
+    - les raccourcis clavier,
+    - le mode de démarrage,
+    - la position de la fenêtre,
+    - les options de transcription.
+
+    Les attributs sont exposés via des propriétés pour permettre une validation et
+    un comportement dynamique (ex : changer de port selon le service).
+    """
+
     def __init__(self):
+        """
+        Initialise la configuration utilisateur :
+        - définit les valeurs par défaut,
+        - crée ou charge le fichier `user_config.ini`.
+        """
+
         # Définir le chemin du répertoire de configuration dans %APPDATA%\RecoVocale
         self.config_dir = os.path.join(os.getenv('APPDATA'), 'RecoVocale')
         self.config_file = os.path.join(self.config_dir, "user_config.ini")
@@ -34,12 +58,16 @@ class UserConfig:
             self.load_config()
         else:
             self.save_config(None)
-    
-    def load_config(self):
-        """Charge la configuration depuis le fichier."""
+
+    def load_config(self) -> None:
+        """
+        Charge la configuration depuis le fichier `user_config.ini`.
+        Utilise des valeurs par défaut si des champs sont manquants.
+        """
+
         config = configparser.ConfigParser()
         config.read(self.config_file)
-        
+
         self.server_ip = config.get('SETTINGS', 'SERVEUR_IP', fallback=self.server_ip)
         self._port = config.get('SETTINGS', 'PORT', fallback=self._port)
         self._service = config.get('SETTINGS', 'SERVICE', fallback=self._service)
@@ -58,11 +86,17 @@ class UserConfig:
         self.dictionnaire = (config.get('SETTINGS', 'DICTIONNAIRE', fallback=self.dictionnaire) == 'True')
         self._play_audio = (config.get('SETTINGS', 'PLAY_AUDIO', fallback=self._play_audio) == 'True')
 
-    def save_config(self, root):
-        """Sauvegarde la configuration dans un fichier."""
+    def save_config(self, root) -> None:
+        """
+        Sauvegarde la configuration actuelle dans `user_config.ini`.
+
+        Args:
+            root: Fenêtre Tkinter (utilisée pour enregistrer la position de la fenêtre).
+        """
+
         if not os.path.exists(self.config_dir):
             os.makedirs(self.config_dir)
-        
+
         config = configparser.ConfigParser()
         config['SETTINGS'] = {
             'SERVEUR_IP': self.server_ip,
@@ -79,54 +113,78 @@ class UserConfig:
             'DICTIONNAIRE': self.dictionnaire,
             'PLAY_AUDIO': self._play_audio,
         }
-        print(f"Sauvegarde {self.config_file} ...", end =' ')
+        print(f"Sauvegarde {self.config_file} ...", end=' ')
 
         with open(self.config_file, 'w') as configfile:
             config.write(configfile)
         print("Ok")
 
-    def get_services(self):
+    def get_services(self) -> list[str]:
+        """
+        Retourne la liste des services disponibles dans la configuration.
+
+        Returns:
+            list[str]: Liste des noms de service configurés.
+        """
+
         return list(self._service_port_map.keys())
-        
-    # Getters et Setters
+
     @property
-    def port(self):
+    def port(self) -> str:
+        """Retourne le port utilisé actuellement."""
+
         return self._port
-    
+
     @port.setter
-    def port(self, value):
+    def port(self, value: str) -> None:
+        """Définit manuellement un nouveau port."""
         self._port = value
 
     @property
-    def service(self):
+    def service(self) -> str:
+        """Retourne le nom du service sélectionné."""
         return self._service
 
     @service.setter
-    def service(self, value):
+    def service(self, value: str) -> None:
+        """
+        Définit un nouveau service et adapte automatiquement le port correspondant
+        s'il est connu.
+
+        Args:
+            value (str): Nom du service à activer.
+        """
         self._service = value
         if value in self._service_port_map:
             self._port = self._service_port_map[value]
             print(f"changement de Port : {self._port}")
+
     @property
-    def play_audio(self):
+    def play_audio(self) -> bool:
+        """Retourne l'état de l'option 'play_audio'."""
         return self._play_audio
-    
+
     @play_audio.setter
-    def play_audio(self, value:bool):
+    def play_audio(self, value: bool) -> None:
+        """Active ou désactive l'écoute locale de l'audio."""
         self._play_audio = value
 
     @property
-    def shortcut(self):
+    def shortcut(self) -> str:
+        """Retourne le raccourci clavier principal."""
         return self._shortcut
-    
+
     @shortcut.setter
-    def shortcut(self, value):
+    def shortcut(self, value: str) -> None:
+        """Définit le raccourci clavier principal."""
         self._shortcut = value
 
     @property
-    def shortcut_stop(self):
+    def shortcut_stop(self) -> str:
+        """Retourne le raccourci pour arrêter la transcription."""
         return self._shortcut_stop
 
     @shortcut_stop.setter
-    def shortcut_stop(self, value):
+    def shortcut_stop(self, value: str) -> None:
+        """Définit le raccourci pour arrêter la transcription."""
         self._shortcut_stop = value

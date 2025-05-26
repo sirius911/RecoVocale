@@ -1,7 +1,22 @@
 import tkinter as tk
 
+
 class ToolTip:
-    def __init__(self, widget, text):
+    """
+    Gère l'affichage d'une infobulle (tooltip) pour un widget Tkinter.
+
+    Affiche automatiquement un petit encart d'aide lorsqu'on survole le widget
+    avec la souris, et le masque lorsqu'on en sort.
+    """
+
+    def __init__(self, widget: tk.Widget, text: str):
+        """
+        Initialise l'infobulle pour un widget donné.
+
+        Args:
+            widget (tk.Widget): Le widget Tkinter auquel attacher l'infobulle.
+            text (str): Le texte à afficher dans l'infobulle.
+        """
         self.widget = widget
         self.text = text
         self.tooltip_window = None
@@ -10,7 +25,11 @@ class ToolTip:
         self.widget.bind("<Enter>", self.show_tooltip)
         self.widget.bind("<Leave>", self.hide_tooltip)
 
-    def show_tooltip(self, event=None):
+    def show_tooltip(self, event=None) -> None:
+        """
+        Affiche l'infobulle à proximité du curseur si elle n'est pas déjà visible.
+        """
+
         if self.tooltip_window or not self.text:
             return
 
@@ -30,7 +49,11 @@ class ToolTip:
                          font=("tahoma", "8", "normal"))
         label.pack(ipadx=1)
 
-    def hide_tooltip(self, event=None):
+    def hide_tooltip(self, event=None) -> None:
+        """
+        Masque et détruit l'infobulle si elle est visible.
+        """
+
         if self.tooltip_window:
             self.tooltip_window.destroy()
             self.tooltip_window = None

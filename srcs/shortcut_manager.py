@@ -1,11 +1,28 @@
+import keyboard
 import tkinter as tk
 from tkinter import messagebox
+
 from utils_window import change_toolTip
-import keyboard
 
 
 class ShortcutManager:
+    """
+    Gère les raccourcis clavier de l'application RecoVocale.
+
+    Permet à l'utilisateur de modifier dynamiquement les raccourcis pour démarrer,
+    arrêter la transcription et les appliquer dans l'interface graphique.
+    """
+
     def __init__(self, root, current_mode, keyboard_shortcut, stop_keyboard_shortcut=""):
+        """
+        Initialise le gestionnaire de raccourcis.
+
+        Args:
+            root: Fenêtre principale Tkinter.
+            current_mode: Référence au mode actif (Direct, Réduit, etc.).
+            keyboard_shortcut (str): Raccourci clavier principal pour start/stop.
+            stop_keyboard_shortcut (str): Raccourci clavier pour arrêter la transcription.
+        """
         self.root = root
         self.current_mode = current_mode
         self.keyboard_shortcut = keyboard_shortcut
@@ -14,7 +31,11 @@ class ShortcutManager:
         self.shortcut_entry = None
         self.stop_shortcut_entry = None
 
-    def change_shortcut(self):
+    def change_shortcut(self) -> None:
+        """
+        Ouvre une fenêtre de configuration pour modifier les raccourcis clavier.
+        """
+
         self._initial_shortcut = self.keyboard_shortcut
         self._initial_stop_shortcut = self.stop_keyboard_shortcut
         self._shortcuts_saved = False
@@ -50,16 +71,26 @@ class ShortcutManager:
 
         self.shortcut_window.protocol("WM_DELETE_WINDOW", self.on_close_shortcut_window)
 
-        
-    def on_close_shortcut_window(self):
+    def on_close_shortcut_window(self) -> None:
+        """
+        Ferme la fenêtre de configuration des raccourcis et restaure les valeurs initiales
+        si les changements n’ont pas été sauvegardés.
+        """
+
         if not self._shortcuts_saved:
             self.keyboard_shortcut = self._initial_shortcut
             self.stop_keyboard_shortcut = self._initial_stop_shortcut
         self.root.attributes("-topmost", self.current_mode.mode.topmost)
         self.shortcut_window.destroy()
 
+    def get_shortcut_start(self, event) -> None:
+        """
+        Capture la touche pressée pour définir le raccourci start/stop.
 
-    def get_shortcut_start(self, event):
+        Args:
+            event: Événement clavier Tkinter.
+        """
+
         key = self.map_key_name(event.keysym)
 
         if key != '??':
@@ -67,7 +98,14 @@ class ShortcutManager:
             self.shortcut_entry.delete(0, tk.END)
             self.shortcut_entry.insert(0, self.keyboard_shortcut)
 
-    def get_shortcut_stop(self, event):
+    def get_shortcut_stop(self, event) -> None:
+        """
+        Capture la touche pressée pour définir le raccourci stop transcription.
+
+        Args:
+            event: Événement clavier Tkinter.
+        """
+
         key = self.map_key_name(event.keysym)
 
         if key != '??':
@@ -75,8 +113,12 @@ class ShortcutManager:
             self.stop_shortcut_entry.delete(0, tk.END)
             self.stop_shortcut_entry.insert(0, self.stop_keyboard_shortcut)
 
+    def save_shortcuts(self) -> None:
+        """
+        Valide et enregistre les nouveaux raccourcis clavier définis.
+        Met à jour le config, les hotkeys actifs, et ferme la fenêtre.
+        """
 
-    def save_shortcuts(self):
         # Validation des deux raccourcis
         start_keys = self.keyboard_shortcut.split('+')
         stop_keys = self.stop_keyboard_shortcut.split('+')
@@ -112,9 +154,18 @@ class ShortcutManager:
         # Fermer la fenêtre
         self.on_close_shortcut_window()
 
+    def is_valid_shortcut(self, keys: list[str]) -> bool:
+        """
+        Vérifie si une combinaison de touches représente un raccourci valide.
 
-    def is_valid_shortcut(self, keys):
-       # Filtrer les touches inconnues
+        Args:
+            keys (list[str]): Liste des touches pressées.
+
+        Returns:
+            bool: True si la combinaison est valide, sinon False.
+        """
+
+        # Filtrer les touches inconnues
         keys = [k for k in keys if k != '??']
         if len(keys) == 1 and (keys[0].lower().startswith('f') and keys[0][1:].isdigit() or keys[0] == 'fn'):
             return True
@@ -134,7 +185,17 @@ class ShortcutManager:
             return True  # Fn+Alt+Ctrl+Shift+quelque chose
         return False
 
-    def map_key_name(self, key):
+    def map_key_name(self, key: str) -> str:
+        """
+        Traduit les noms de touches complexes en noms standards (ex: Control_L → ctrl).
+
+        Args:
+            key (str): Nom de la touche.
+
+        Returns:
+            str: Nom mappé, ou la valeur originale si non reconnue.
+        """
+
         key_mapping = {
             'Control_L': 'ctrl',
             'Control_R': 'ctrl',

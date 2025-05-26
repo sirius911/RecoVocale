@@ -1,5 +1,3 @@
-import tkinter as tk
-
 def first_char_lower(s):
     """
     Convertit uniquement le premier caractère d'une chaîne en minuscule,
@@ -16,42 +14,56 @@ def first_char_lower(s):
     return s[:1].lower() + s[1:] if s else s
 
 
-
-def _insert_text(texte_depart, message, pos_curseur=0, cur_selec=(0,0)):
+def _insert_text(texte_depart, message, pos_curseur=0, cur_selec=(0, 0)):
     """
     Insert `message` dans `texte_depart` à la position `pos_curseur`.
     Si `start_selection` et `end_selection` existent, il insère le message en effaçant la sélection.
-    
+
     Args:
         texte_depart (str): Le texte d'origine.
         message (str): Le message à insérer.
         pos_curseur (int): Position actuelle du curseur (index global).
         start_selection (int): Début de la sélection (facultatif).
         end_selection (int): Fin de la sélection (facultatif).
-    
+
     Returns:
         tuple: Le texte modifié et la position juste après le texte inséré (fin_insertion).
     """
-    start_selection,end_selection = cur_selec
+    start_selection, end_selection = cur_selec
     insertion = start_selection < end_selection
     if insertion:
         # Si une sélection est présente, on supprime la sélection et insère à la position start_selection
         texte_depart = texte_depart[:start_selection] + texte_depart[end_selection:]
         pos_curseur = start_selection
-        message = first_char_lower(message) # essais !! quand on insert on met en minuscule
-   
+        message = first_char_lower(message)  # essais !! quand on insert on met en minuscule
+
     # Insérer le message à la position pos_curseur
     nouveau_text = (texte_depart[:pos_curseur] + ' ' + message + ' ' + texte_depart[pos_curseur:]).strip()
-    
+
     # Calculer fin_insertion comme la position juste après l'insertion du message
     fin_insertion = pos_curseur + len(message) + 2
-    
+
     return nouveau_text, fin_insertion
 
 
 class Transcription:
+    """
+    Gère l’état et les opérations sur le texte transcrit dans l’application.
+
+    Cette classe maintient deux versions du texte :
+    - `text_box` : le texte global affiché à l’écran,
+    - `text_en_cours` : le segment de texte actuellement en traitement.
+
+    Elle gère aussi les positions du curseur, les sélections, et prend en charge
+    l’insertion conditionnelle, le undo, et la validation.
+    """
 
     def __init__(self):
+        """
+        Initialise une nouvelle instance de transcription avec des valeurs vides et
+        un historique de texte pour les actions d’annulation.
+        """
+
         self.text_transcription = ""
         self.text_en_cours = ""
         self.text_box = ""
@@ -59,14 +71,27 @@ class Transcription:
         self.pos_cur = 0
         self.fin_insertion = 0
         self.cur_selec = (0, 0)
-        self.pile = [''] # pour le undo
+        self.pile = ['']  # pour le undo
 
-    def validation(self):
+    def validation(self) -> None:
+        """
+        Valide le texte courant en le copiant dans le texte final,
+        puis le place dans `text_transcription`.
+        """
+
         self.set(self.text_box_en_cours)
         self.text_transcription += self.text_en_cours
 
-    def update(self, message, pos_curseur=0):
-        if pos_curseur == -1 :
+    def update(self, message: str, pos_curseur: int = 0) -> None:
+        """
+        Insère un nouveau segment dans le texte courant à la position indiquée.
+
+        Args:
+            message (str): Le texte à insérer.
+            pos_curseur (int): Position d’insertion. Si -1, insère à la fin.
+        """
+
+        if pos_curseur == -1:
             # Si pos_curseur est -1, on insère à la fin du texte
             pos_curseur = len(self.text_box)
         else:
@@ -76,17 +101,36 @@ class Transcription:
                                                                   pos_curseur,
                                                                   self.cur_selec)
         self.text_en_cours = message
-    
-    def clear(self):
+
+    def clear(self) -> None:
+        """
+        Réinitialise complètement la transcription, y compris les curseurs,
+        le texte en cours, et le texte validé.
+        """
+
         self.text_transcription = ""
         self.text_en_cours = ""
         self.set("")
         self.text_box_en_cours = ""
         self.pos_cur = 0
         self.fin_insertion = 0
-    
-    def get(self) -> str :
+
+    def get(self) -> str:
+        """
+        Retourne le texte global de la zone de transcription.
+
+        Returns:
+            str: Texte de la transcription.
+        """
+
         return (self.text_box)
-    
-    def set(self, text:str):
+
+    def set(self, text: str) -> None:
+        """
+        Définit un nouveau texte dans la zone principale de transcription.
+
+        Args:
+            text (str): Texte à assigner à `text_box`.
+        """
+
         self.text_box = text

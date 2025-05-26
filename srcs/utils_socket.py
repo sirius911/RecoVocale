@@ -3,7 +3,15 @@ import getpass
 import json
 import websockets
 
-def get_windows_session():
+
+def get_windows_session() -> str:
+    """
+    Récupère le nom de session de l'utilisateur Windows actuel.
+
+    Returns:
+        str: Le nom d'utilisateur ou "None" en cas d'erreur.
+    """
+
     try:
         return getpass.getuser()
 
@@ -11,19 +19,22 @@ def get_windows_session():
         print(f"[ERROR]: Impossible de récupérer la session Windows : {e}")
         return "None"
 
+
 async def check_websocket_status(host: str, port: int, ip_client: str, timeout: int = 2) -> bool:
     """
-    Teste si le serveur WebSocket répond avec un ping-pong en incluant l'IP du client.
+    Teste la disponibilité d'un serveur WebSocket en lui envoyant un message ping
+    contenant l'adresse IP du client. Attend une réponse pong.
 
     Args:
-        host (str): Adresse IP ou hostname du serveur.
-        port (int): Port WebSocket.
-        ip_client (str): Adresse IP du client pour identification.
-        timeout (int): Temps maximum pour établir la connexion (en secondes).
+        host (str): Adresse IP ou nom d'hôte du serveur.
+        port (int): Port utilisé par le serveur WebSocket.
+        ip_client (str): Adresse IP du client (utilisée dans la requête).
+        timeout (int): Délai maximal d'attente pour la connexion (en secondes).
 
     Returns:
-        bool: True si le serveur répond avec un pong, False sinon.
+        bool: True si une réponse pong est reçue, False sinon.
     """
+
     uri = f"ws://{host}:{port}"
     try:
         # Appliquer le timeout uniquement sur l'appel de websockets.connect
@@ -66,17 +77,19 @@ async def check_websocket_status(host: str, port: int, ip_client: str, timeout: 
 
 def check_server_status(host: str, port: int, ip_client: str, timeout: int = 2) -> bool:
     """
-    Vérifie si le serveur WebSocket répond en testant un ping-pong avec timeout.
+    Fonction synchrone qui encapsule `check_websocket_status` pour tester
+    la connexion au serveur WebSocket, même si une boucle asyncio est déjà en cours.
 
     Args:
-        host (str): Adresse IP ou hostname du serveur.
-        port (int): Port WebSocket.
+        host (str): Adresse IP ou nom d'hôte du serveur.
+        port (int): Port utilisé par le serveur WebSocket.
         ip_client (str): Adresse IP du client pour identification.
-        timeout (int): Temps maximum pour établir la connexion (en secondes).
+        timeout (int): Délai maximal d'attente pour la réponse.
 
     Returns:
-        bool: True si le serveur répond correctement, False sinon.
+        bool: True si le serveur est accessible, False sinon.
     """
+
     try:
         # Récupérer ou créer une boucle événementielle
         try:

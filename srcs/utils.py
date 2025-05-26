@@ -18,24 +18,33 @@ FFMPEG_PATH = os.path.join(BASE_PATH, "bin", "ffmpeg.exe")
 
 
 def print_transcript(text):
-    """Prints formatted transcript text."""
+    """
+    Affiche un texte de transcription formaté en lignes de 60 caractères.
+
+    Args:
+        text (str | list[str]): Texte à afficher (chaîne ou liste de segments).
+    """
+
     wrapper = textwrap.TextWrapper(width=60)
     for line in wrapper.wrap(text="".join(text)):
         print(f"[{line}]")
 
-def resample(file: str, sr: int = 16000):
+
+def resample(file: str, sr: int = 16000) -> str:
     """
-    # https://github.com/openai/whisper/blob/7858aa9c08d98f75575035ecd6481f462d66ca27/whisper/audio.py#L22
-    Open an audio file and read as mono waveform, resampling as necessary,
-    save the resampled audio
+    Ouvre un fichier audio, le convertit en mono 16 bits PCM et le resample à la fréquence donnée.
+    https://github.com/openai/whisper/blob/7858aa9c08d98f75575035ecd6481f462d66ca27/whisper/audio.py#L22
+
+    Utilise `ffmpeg` pour effectuer le traitement et enregistre le résultat en `.wav`.
 
     Args:
-        file (str): The audio file to open
-        sr (int): The sample rate to resample the audio if necessary
+        file (str): Chemin du fichier audio original.
+        sr (int): Fréquence cible (par défaut : 16000 Hz).
 
     Returns:
-        resampled_file (str): The resampled audio file
+        str: Chemin du fichier audio resamplé.
     """
+
     try:
         # This launches a subprocess to decode audio while down-mixing and resampling as necessary.
         # Requires the ffmpeg CLI and `ffmpeg-python` package to be installed.
@@ -53,17 +62,19 @@ def resample(file: str, sr: int = 16000):
     print(f"[utils] Fichier resamplé : {resampled_file}")
     return resampled_file
 
-def needs_resample(filepath, target_rate=16000):
+
+def needs_resample(filepath: str, target_rate: int = 16000) -> bool:
     """
-    Vérifie si un fichier WAV est déjà en 16kHz, mono, 16 bits PCM.
+    Vérifie si un fichier audio doit être resamplé en 16 kHz, mono, 16 bits.
 
     Args:
-        filepath (str): Chemin du fichier WAV.
-        target_rate (int): Fréquence attendue (par défaut : 16000).
+        filepath (str): Chemin vers le fichier .wav.
+        target_rate (int): Fréquence souhaitée (default = 16000 Hz).
 
     Returns:
-        bool: True s'il faut le resampler, False s'il est déjà conforme.
+        bool: True si le fichier ne respecte pas les critères et doit être resamplé.
     """
+
     try:
         with contextlib.closing(wave.open(filepath, 'rb')) as wf:
             nchannels = wf.getnchannels()
@@ -81,7 +92,18 @@ def needs_resample(filepath, target_rate=16000):
         print(f"[utils] Erreur lors de la vérification du fichier audio : {e}")
         return False
 
-def remove_audio_file(file):
+
+def remove_audio_file(file: str) -> bool:
+    """
+    Supprime un fichier audio s’il existe, avec gestion d’erreur.
+
+    Args:
+        file (str): Chemin du fichier à supprimer.
+
+    Returns:
+        bool: True si la suppression a réussi ou que le fichier n'existe pas, False sinon.
+    """
+
     """
     Supprime le fichier audio spécifié.
 

@@ -2,11 +2,12 @@ import time
 from pynput.keyboard import Controller, Key
 from typing import Union, List
 
-TIME_WRITE = 0.001   #delay for typing speed of all Char 
-TIME_DELETE = 0.01  #delay for typing speed for backspace
 
-#Touches qui peuvent etre maintenues
-hold_key = [Key.ctrl, Key.ctrl_l, Key.ctrl_r, Key.shift, Key.shift_l, Key.shift_r,\
+TIME_WRITE = 0.001  # delay for typing speed of all Char
+TIME_DELETE = 0.01  # delay for typing speed for backspace
+
+# Touches qui peuvent etre maintenues
+hold_key = [Key.ctrl, Key.ctrl_l, Key.ctrl_r, Key.shift, Key.shift_l, Key.shift_r,
             Key.alt, Key.alt_l, Key.alt_r, Key.alt_gr]
 
 key_display_names = {
@@ -30,12 +31,37 @@ key_display_names = {
     Key.tab: 'Tabulation',
 }
 
+
 class Simulator:
-    def __init__(self, data= List[Union[Key, str]] | None, debug=False):
+    """
+    Simule des frappes clavier en utilisant la bibliothèque `pynput`.
+
+    Cette classe permet :
+    - de taper un texte caractère par caractère,
+    - de maintenir certaines touches comme Ctrl, Shift, etc.,
+    - de simuler des séquences complexes (ex: Ctrl+V, flèches...),
+    - d'animer la saisie en comparant deux états de texte.
+
+    Attributes:
+        keyboard (Controller): Contrôleur clavier de `pynput`.
+        previous_text (str): Dernier texte tapé, pour comparaison.
+        debug (bool): Active ou non les impressions de débogage.
+        pressed_key (list): Pile des touches actuellement maintenues.
+    """
+
+    def __init__(self, data=List[Union[Key, str]] | None, debug=False):
+        """
+        Initialise le simulateur clavier. Exécute immédiatement une séquence si `data` est fournie.
+
+        Args:
+            data (list[Key | str] | None): Liste de touches à simuler immédiatement.
+            debug (bool): Active le mode débogage si True.
+        """
+
         self.keyboard = Controller()
         self.previous_text = ""
         self.debug = debug
-        self.pressed_key = [] # stack de touches pressées et non relachées
+        self.pressed_key = []  # stack de touches pressées et non relachées
         self.special_keys_mapping = {
             '\n': Key.enter,
             ' ': Key.space,
@@ -54,37 +80,48 @@ class Simulator:
     def init(self):
         self.previous_text = ""
 
-    def animate_typing (self, new_text:str):
-            if self.debug:
-                print(f"On me demande d'écrire : [{new_text}]") #debug
-                print(f"j'ai en mémoire : [{self.previous_text}]")
-            def find_common_prefix(s1, s2):
-                #fonction renvoyant le nombre de caractère commun entre s1 et s2
-                common_prefix_length = 0
-                for c1, c2 in zip(s1, s2):
-                    if c1 != c2:
-                        break
-                    common_prefix_length += 1
-                return common_prefix_length
-            
-            common_prefix_length = find_common_prefix(self.previous_text, new_text)
-            for _ in range(len(self.previous_text) - common_prefix_length):
-                self.keyboard.press(Key.backspace)
-                self.keyboard.release(Key.backspace)
-                time.sleep(TIME_DELETE)
+    def animate_typing(self, new_text: str):
+        """
+        Simule la frappe du `new_text` en supprimant les différences avec le texte précédent.
 
-            new_part = new_text[common_prefix_length:]
-            self.simule_key(new_part) 
-            self.previous_text = new_text
+        Args:
+            new_text (str): Texte à écrire, modifié dynamiquement.
+        """
+
+        def find_common_prefix(s1, s2):
+            # fonction renvoyant le nombre de caractère commun entre s1 et s2
+            common_prefix_length = 0
+            for c1, c2 in zip(s1, s2):
+                if c1 != c2:
+                    break
+                common_prefix_length += 1
+            return common_prefix_length
+
+        common_prefix_length = find_common_prefix(self.previous_text, new_text)
+        for _ in range(len(self.previous_text) - common_prefix_length):
+            self.keyboard.press(Key.backspace)
+            self.keyboard.release(Key.backspace)
+            time.sleep(TIME_DELETE)
+
+        new_part = new_text[common_prefix_length:]
+        self.simule_key(new_part)
+        self.previous_text = new_text
 
     def simule_key(self, input_data: List[Union[Key, str]]) -> None:
+        """
+        Simule la frappe d’une séquence de touches.
+
+        Args:
+            input_data (list): Liste de caractères ou de touches spéciales (`Key`).
+        """
+
         for item in input_data:
-            if isinstance(item, Key) and item in hold_key: #touche à maintenir
+            if isinstance(item, Key) and item in hold_key:  # touche à maintenir
                 # print(f"Key = {item}")
-                self.keyboard.press(item) # On reste appuyé
+                self.keyboard.press(item)  # On reste appuyé
                 self.pressed_key.append(item)
                 # print(f"push1 [{item}]")
-            elif isinstance(item, str): #str
+            elif isinstance(item, str):
                 # print(f"simule : {item}")
                 self._type_character(item)
             else:
@@ -92,15 +129,22 @@ class Simulator:
         # On vide la stack des touches qui doivent être maintenues
         # print(f"nb touche appuyée = {len(self.pressed_key)}")
         while len(self.pressed_key) > 0:
-                release_key = self.pressed_key.pop()
-                self.keyboard.release(release_key) # On relache
-                # print(f" Release [{release_key}]")
+            release_key = self.pressed_key.pop()
+            self.keyboard.release(release_key)  # On relache
+            # print(f" Release [{release_key}]")
 
-    def _type_character(self, char:str):
+    def _type_character(self, char: str):
+        """
+        Tape un caractère unique, ou simule une touche spéciale (Enter, Tab, etc.).
+
+        Args:
+            char (str): Le caractère ou la commande à taper.
+        """
+
         key = self.special_keys_mapping.get(char, char)
         if isinstance(key, Key) and key in hold_key:
-            self.keyboard.press(key) # On reste appuyé
+            self.keyboard.press(key)  # On reste appuyé
             self.pressed_key.append(key)
             # print(f"push2 [{key}]")
         else:
-            self.keyboard.tap(key) # On 'tape' la touche
+            self.keyboard.tap(key)  # On 'tape' la touche
