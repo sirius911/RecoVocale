@@ -287,10 +287,15 @@ def remove_bubble() -> None:
     Ferme la bulle de message si elle existe.
     """
 
-    global bubble
-    if bubble:
-        bubble.destroy()
+    global bubble, label_in_bubble
+    try:
+        if bubble is not None:
+            bubble.destroy()
+    except tk.TclError as e:
+        print(f"[utils_window] Erreur lors de la destruction de la bulle : {e}")
+    finally:
         bubble = None
+        label_in_bubble = None
 
 
 def update_bubble_background(color: str) -> None:
