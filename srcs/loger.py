@@ -1,9 +1,27 @@
 import requests
 import socket
 import getpass
+
 from datetime import datetime, timezone
 
-def envoyer_log(event="start", texte ="", mode="Inconnu", model="Inconnu"):
+
+def envoyer_log(event="start", texte: str = "", mode: str = "Inconnu", model: str = "Inconnu") -> None:
+    """
+    Envoie un événement de log au serveur distant pour journalisation.
+
+    Cette fonction collecte des informations système (nom d'utilisateur, IP, horodatage UTC)
+    et les envoie au serveur via une requête HTTP POST.
+
+    Args:
+        event (str): Type d'événement à enregistrer (ex: "start", "stop", "erreur").
+        texte (str): Texte complémentaire associé à l’événement.
+        mode (str): Mode d’utilisation en cours (ex: "DIRECT", "APPRENTI").
+        model (str): Modèle utilisé pour la transcription.
+
+    Returns:
+        None
+    """
+
     try:
         log_data = {
             "event": event,

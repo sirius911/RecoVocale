@@ -2,35 +2,89 @@ import json
 import os
 import pywinusb.hid as hid
 import asyncio
-from Actions import *
+from Actions import (  # noqa: F401
+    Action, NoAction, Pause, Unpause, ValidTranscriptions, StopAction,
+    Clear, Toggle_start_stop, Keyboard, Copie_clipboard, CopierColler, Attendre, Run
+)
+from typing import Optional, Callable
+
 from utils_window import resource_path, get_config_path
 
-def hash_code(data):
-    # Pour les Micro 1ere génération
-    # On pourra prendre le hash_code2 en mettant à jour le fichier de configuration micro_actions_config.json
+
+def hash_code(data: list[int]) -> int:
+    """
+    Calcule un code de hachage à partir des deux derniers octets de `data`.
+    Utilisé pour les micros de première génération.
+    On pourra prendre le hash_code2 en mettant à jour le fichier de configuration micro_actions_config.json
+
+    Args:
+        data (list[int]): Données brutes reçues du micro.
+
+    Returns:
+        int: Code de hachage calculé.
+
+    Raises:
+        ValueError: Si `data` a une longueur inférieure à 2.
+    """
+
     if len(data) < 2:
         raise ValueError(f"Bad hash_code: {data}")
-    
+
     avant_dernier = data[-2]
     dernier = data[-1]
     hash_code = avant_dernier*256 + dernier
     return hash_code
 
-def hash_code2(data):
+
+def hash_code2(data: list[int]) -> int:
+    """
+    Calcule un code de hachage basé sur la somme pondérée des octets.
+
+    Args:
+        data (list[int]): Données brutes reçues du micro.
+
+    Returns:
+        int: Code de hachage calculé.
+    """
+
     result = 0
     for i, val in enumerate(data):
         result += val * (i + 1)
     return result
 
+
 class BaseMic:
-    def __init__(self, loop, vendor_id, product_id, firmware, actions, app, micro_name, on_connect_disconnect=None, hash=1):
+    """
+    Classe représentant un microphone HID avec prise en charge des actions personnalisées.
+
+    Cette classe détecte les connexions/déconnexions du micro, gère les données HID reçues
+    et déclenche dynamiquement les actions associées définies dans un fichier de configuration.
+    """
+
+    def __init__(self, loop, vendor_id, product_id, firmware, actions,
+                 app, micro_name, on_connect_disconnect=None, hash=1):
+        """
+        Initialise le micro HID avec ses paramètres et démarre la surveillance asynchrone.
+
+        Args:
+            loop: Boucle asyncio dans laquelle exécuter les tâches.
+            vendor_id (int): ID du fabricant USB.
+            product_id (int): ID du produit USB.
+            firmware (int): Version du firmware du micro.
+            actions (dict): Dictionnaire de hash → actions à exécuter.
+            app: Référence à l'application principale.
+            micro_name (str): Nom logique du micro (utilisé pour affichage).
+            on_connect_disconnect (callable | None): Callback appelé lors des changements de connexion.
+            hash (int): Méthode de hachage à utiliser (1 pour `hash_code`, 2 pour `hash_code2`).
+        """
+
         self.vendor_id = vendor_id
         self.product_id = product_id
         self.version = firmware
         self.actions = actions
         self.app = app
         self.loop = loop
-        self.micro_name = micro_name  
+        self.micro_name = micro_name
         self.connected = False
         self.device = []
         self.prev_data = None
@@ -41,11 +95,14 @@ class BaseMic:
         else:
             self.hash_function = hash_code   # méthode legacy
 
-
         # Démarre la coroutine monitor dans une tâche
         asyncio.run_coroutine_threadsafe(self.monitor(), self.loop)
 
-    async def check_connection(self):
+    async def check_connection(self) -> None:
+        """
+        Vérifie si le micro est connecté, et appelle `connect` ou `disconnect` en conséquence.
+        """
+
         if self.version != 0:
             all_hids = hid.HidDeviceFilter(
                 vendor_id=self.vendor_id,
@@ -72,8 +129,11 @@ class BaseMic:
 
         self.call_back()
 
+    def connect(self) -> None:
+        """
+        Ouvre les interfaces HID disponibles et associe un gestionnaire de données à chaque interface.
+        """
 
-    def connect(self):
         if self.connected:
             self.devices = hid.HidDeviceFilter(
                 vendor_id=self.vendor_id,
@@ -85,38 +145,71 @@ class BaseMic:
                     dev.open()
                     dev.set_raw_data_handler(self.on_data_handler)
                     col_name = "col" + dev.device_path.lower().split("col")[-1].split("#")[0]
-                    print(f"{self.micro_name} → Interface HID activée : {dev.product_name} | Serial: {dev.serial_number or 'N/A'} | Interface: {col_name}")
+                    print(f"{self.micro_name} → Interface HID activée : {dev.product_name} | " +
+                          f"Serial: {dev.serial_number or 'N/A'} | Interface: {col_name}")
 
                 except Exception as e:
                     print(f"Erreur ouverture interface : {e}")
 
-    def disconnect(self):
+    def disconnect(self) -> None:
+        """
+        Ferme toutes les interfaces HID ouvertes et nettoie la liste des périphériques.
+        """
+
         for dev in self.devices:
             try:
                 dev.close()
-            except:
+            except Exception:
                 pass
         self.devices = []
 
-    def is_connected(self):
+    def is_connected(self) -> bool:
+        """
+        Indique si le micro est actuellement connecté.
+
+        Returns:
+            bool: True si connecté, False sinon.
+        """
+
         return self.connected
 
-    def change_mode(self, mode):
+    def change_mode(self, mode) -> None:
+        """
+        Change l'objet `app` pour rediriger les actions du micro vers un nouveau mode.
+
+        Args:
+            mode: Instance de mode (`Mode_Direct`, `Mode_Apprenti`, etc.)
+        """
+
         self.app = mode
 
-    def on_data_handler(self, data):
+    def on_data_handler(self, data: list[int]) -> None:
+        """
+        Appelé automatiquement lorsqu'une nouvelle donnée HID est reçue.
+
+        Args:
+            data (list[int]): Tableau de données HID.
+        """
+
         if data != self.prev_data:
             self.prev_data = data
             self.handle_data(data)
 
-    def handle_data(self, data):
+    def handle_data(self, data: list[int]) -> None:
+        """
+        Traite les données HID et déclenche l'action associée si un code de hachage est reconnu.
+
+        Args:
+            data (list[int]): Tableau de données brutes du micro.
+        """
+
         hascode = str(self.hash_function(data))
 
         if hascode in self.actions:
-            
+
             action_info = self.actions[hascode]
             action_class = action_info["class"]
-            
+
             # Instancier dynamiquement la classe d'action
             ActionClass = globals().get(action_class)
             if ActionClass:
@@ -132,12 +225,35 @@ class BaseMic:
         else:
             print(f"No action found for data: {str(data)} {self.hash_function.__name__} ({hascode})")
 
-    async def monitor(self):
+    async def monitor(self) -> None:
+        """
+        Coroutine qui vérifie en boucle la connexion du micro toutes les 5 secondes.
+        """
+
         while True:
             await self.check_connection()
             await asyncio.sleep(5)
 
-def Micro(loop, app, call_back):
+
+def Micro(
+    loop: asyncio.AbstractEventLoop,
+    app: object,
+    call_back: Callable[[], None]
+) -> Optional[BaseMic]:
+    """
+    Initialise et retourne une instance de `BaseMic` si un micro compatible est détecté.
+
+    Lit la configuration JSON des micros autorisés et leur associe les actions définies.
+
+    Args:
+        loop: Boucle asyncio utilisée pour la surveillance du micro.
+        app: Instance de l'application qui exécutera les actions.
+        call_back: Fonction appelée lors des événements de connexion/déconnexion.
+
+    Returns:
+        BaseMic | None: Instance de BaseMic si un micro est trouvé, sinon None.
+    """
+
     # Charger le fichier JSON depuis le répertoire utilisateur
     config_path = get_config_path("micro_actions_config.json")
     # Vérifier si le fichier de config existe dans %APPDATA%, sinon le copier depuis le package
@@ -167,15 +283,17 @@ def Micro(loop, app, call_back):
         except Exception as e:
             print(f"Erreur dans la lecture du fichier [{file}]\n{e}\n Il faut mettre à jour le fichier json !")
             return None
-        
+
         if firmware_revision > 0:
             # si pas de firmware c'est que l'on prend le speech Mike generique
-            all_hids = hid.HidDeviceFilter(vendor_id=vendor_id, product_id=product_id, version_number=firmware_revision).get_devices()
+            all_hids = hid.HidDeviceFilter(vendor_id=vendor_id, product_id=product_id,
+                                           version_number=firmware_revision).get_devices()
         else:
             all_hids = hid.HidDeviceFilter(vendor_id=vendor_id, product_id=product_id).get_devices()
 
         if all_hids:
-            temp_mic = BaseMic(loop, vendor_id, product_id, firmware_revision, actions, app, micro_name, call_back, hash=hash_value)
+            temp_mic = BaseMic(loop, vendor_id, product_id, firmware_revision,
+                               actions, app, micro_name, call_back, hash=hash_value)
             return temp_mic  # Retourne l'instance de la classe détectée
         else:
             print(f"{micro_name} ... non trouvé")

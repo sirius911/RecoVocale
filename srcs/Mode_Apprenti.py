@@ -1,18 +1,35 @@
 import os
 import time
-from Mode import Mode
+import pygame
+import tempfile
+from datetime import datetime
 import tkinter as tk
+
+from Mode import Mode
 from utils_window import create_menus, create_buttons
 from info import APPRENTI
 from ClientManager import ClientManager
-import pygame
-from datetime import datetime
-import tempfile
 from sftp_upload import upload_files_to_sftp
 
 
 class Mode_Apprenti(Mode):
-    def enter(self):
+    """
+    Mode d'apprentissage de RecoVocale.
+
+    Ce mode est destiné à entraîner les utilisateurs à relire, corriger et valider
+    leurs transcriptions. Il permet de rejouer l'audio, de copier le texte corrigé,
+    puis de l’envoyer automatiquement sur un serveur distant via SFTP.
+
+    Il fournit un retour utilisateur clair via des boutons, la lecture audio,
+    et une interface restreinte à l’essentiel pour l’apprentissage.
+    """
+
+    def enter(self) -> None:
+        """
+        Initialise l'interface et le client Whisper, prépare les chemins
+        de fichiers temporaires et configure les éléments nécessaires à l'apprentissage.
+        """
+
         self.mode = APPRENTI
         self.mod_var.set(APPRENTI)
         self.ui()
@@ -20,18 +37,18 @@ class Mode_Apprenti(Mode):
         self.temp_dir = tempfile.gettempdir()  # Utiliser le répertoire temporaire du système
         self.temp_wav_file = os.path.join(self.temp_dir, "temp.wav")
         self.temp_txt_file = os.path.join(self.temp_dir, "temp.txt")
-        #----------------- Lien Client Whisper -----------------------
+        # ----------------- Lien Client Whisper -----------------------
         self.client_manager = ClientManager(
-            host = self.app.config.server_ip,
-            port = self.app.config.port,
-            lang = "fr",
-            translate = False,
-            use_vad = True,
-            save_output_recording = True,
-            output_recording_filename = self.temp_wav_file,
-            update_callback = self.update_transcriptions,  # Pass the callback to ClientManager
-            insertions = self.app.insertions,
-            fenetre_gestion_insertions = self.is_ouverte,
+            host=self.app.config.server_ip,
+            port=self.app.config.port,
+            lang="fr",
+            translate=False,
+            use_vad=True,
+            save_output_recording=True,
+            output_recording_filename=self.temp_wav_file,
+            update_callback=self.update_transcriptions,  # Pass the callback to ClientManager
+            insertions=self.app.insertions,
+            fenetre_gestion_insertions=self.is_ouverte,
             mode=self,
             nb_repeat=self.app.config.nb_repeat,
             ip_client=self.app.ip_client,
@@ -42,10 +59,15 @@ class Mode_Apprenti(Mode):
         self.ready_to_learn = False
         self.audio_playing = False
 
-    def ui(self):
-       
+    def ui(self) -> None:
+        """
+        Construit l'interface utilisateur du mode Apprenti, incluant :
+        - une zone de texte avec scroll,
+        - une barre de statut,
+        - le menu et les boutons spécifiques.
+        """
 
-         # Configure the grid system of the root window
+        # Configure the grid system of the root window
         self.root.grid_rowconfigure(1, weight=1)
         self.root.grid_columnconfigure(0, weight=1)
 
@@ -60,7 +82,7 @@ class Mode_Apprenti(Mode):
         # Add the text box
         self.text_box = tk.Text(self.text_box_frame, yscrollcommand=self.text_box_scrollbar.set, wrap="word")
         self.text_box.pack(fill=tk.BOTH, expand=True)
-        #balise pour les mots incorrects
+        # balise pour les mots incorrects
         self.text_box.tag_config("incorrect", foreground="red", underline=True)
         self.text_box.config(state=tk.DISABLED)
 
@@ -84,10 +106,11 @@ class Mode_Apprenti(Mode):
         create_menus(self)
         create_buttons(self)
 
-    def init_pygame_mixer(self):
+    def init_pygame_mixer(self) -> None:
         """
-        Initialise pygame.mixer et configure les événements pour la gestion audio.
+        Initialise `pygame.mixer` et les événements associés à la lecture audio.
         """
+
         try:
             if not pygame.mixer.get_init():  # Ne pas réinitialiser si déjà initialisé
                 pygame.mixer.init()
@@ -99,40 +122,59 @@ class Mode_Apprenti(Mode):
             pygame.mixer.music.set_endevent(self.end_event)
             self.monitoring_events = False
         except pygame.error as e:
-            print(f"Erreur d'initialisation de pygame : {e}") 
+            print(f"Erreur d'initialisation de pygame : {e}")
 
-    def quit_pygame_mixer(self):
+    def quit_pygame_mixer(self) -> None:
         """
-        Ferme proprement pygame.mixer.
+        Ferme proprement `pygame.mixer` si initialisé.
         """
+
         if pygame.mixer.get_init():
             pygame.mixer.quit()
             print("Pygame mixer fermé proprement.")
 
-    def pause(self):
+    def pause(self) -> None:
+        """
+        Met le client en pause avec un léger délai pour éviter les conflits.
+        """
+
         time.sleep(0.1)
         if self.app.config.debug:
             print("Pausing client in Mode Direct")
         super().pause()
 
-    def unpause(self, audio_file=None):
+    def unpause(self, audio_file=None) -> None:
+        """
+        Relance le client si l'utilisateur est prêt à apprendre.
+
+        Args:
+            audio_file (str | None): Fichier audio à transcrire.
+        """
+
         time.sleep(0.1)
         if self.app.config.debug:
-            print(f"UnPausing client in Mode Direct")
+            print("UnPausing client in Mode Direct")
         if not self.ready_to_learn:
             super().unpause(audio_file)
 
-    def stop_client(self):
+    def stop_client(self) -> None:
+        """
+        Arrête le client et interrompt la lecture audio si nécessaire.
+        """
+
         if self.app.config.debug:
-            print(f"Stop client in Mode Direct")
+            print("Stop client in Mode Direct")
         if self.audio_playing:
             pygame.mixer.music.stop()
         super().stop_client()
 
+    def stop(self) -> None:
+        """
+        Stoppe la transcription, réactive les boutons, valide le texte
+        et relance la vérification orthographique.
+        """
 
-    def stop(self):
         self.stop_client()
-        #essais------------------------
         self.text_box.config(state=tk.NORMAL)
         self.trash_button.config(state=tk.NORMAL)
         self.rec_button.config(state=tk.NORMAL)
@@ -141,24 +183,32 @@ class Mode_Apprenti(Mode):
         self.set_pos_curseur(self.transcription.fin_insertion)
         self.status_bar.config(text="Transcription ...interrompue", bg='lightblue', fg='darkblue', anchor=tk.W)
         self.verification_dico(True)
-        #essais------------------------
 
-    def valid_transcriptions(self):
+    def valid_transcriptions(self) -> None:
+        """
+        Valide la transcription actuelle (alias de `stop_client`).
+        """
         self.stop_client()
 
-    def copy_to_clipboard(self):
+    def copy_to_clipboard(self) -> None:
+        """
+        Copie le texte sélectionné (ou entier) dans le presse-papier.
+        """
+
         self.status_bar.config(text='- Copie -', bg='lightblue', fg='darkblue', anchor=tk.CENTER)
         self.root.clipboard_clear()
         self.root.clipboard_append(self.get_selected_text()[0])
         time.sleep(0.5)
         self._update_barre_status()
 
-    def get_selected_text(self):
+    def get_selected_text(self) -> tuple[str, bool]:
         """
-            renvoi le texte selectionné de la TextBox + Flag
-            Si aucune selection renvoi toute le text
-            le Flag est True si on envoi l'integralité et False si une partie
+        Récupère le texte sélectionné dans la zone de texte.
+
+        Returns:
+            tuple[str, bool]: Le texte et un booléen indiquant si tout le texte est retourné.
         """
+
         try:
             # Vérifie s'il y a une sélection
             if self.text_box.tag_ranges("sel"):
@@ -171,32 +221,37 @@ class Mode_Apprenti(Mode):
         except tk.TclError:
             # Gestion d'erreur si aucune sélection n'est faite
             return self.transcription.get(), True
-        
-    def get_pos_select(self):
+
+    def get_pos_select(self) -> tuple[int, int]:
         """
-            retourne un couple (start,end) si selection dans text_box ou None 
+        Récupère les positions globales de la sélection texte.
+
+        Returns:
+            tuple[int, int]: (start, end) ou (0, 0) si rien sélectionné.
         """
+
         try:
             if self.text_box.tag_ranges("sel"):
                 # Obtenir les positions 'ligne.colonne' de la sélection
                 start = self.text_box.index(tk.SEL_FIRST)
                 end = self.text_box.index(tk.SEL_LAST)
-                
+
                 # Convertir ces positions en indices globaux
                 start_index = self.text_box.count("1.0", start)[0]  # Distance depuis le début du texte
                 end_index = self.text_box.count("1.0", end)[0]      # Distance jusqu'à la fin du texte sélectionné
-                
+
                 return (start_index, end_index)
             else:
                 return (0, 0)
         except tk.TclError:
             return (0, 0)
 
-    def clear_text_box(self):
+    def clear_text_box(self) -> None:
         """
-        Clear the content of the text box.
+        Vide la zone de texte, supprime les fichiers temporaires,
+        et remet l'interface dans son état initial.
         """
-        print("Clear_text_box()")
+
         time.sleep(0.5)
         self.save_text_box()
         self.transcription.clear()
@@ -208,7 +263,7 @@ class Mode_Apprenti(Mode):
         self.text_box.config(state=tk.DISABLED)
         self.audio_playing = False
         self.ready_to_learn = False
-        
+
         # Fermer pygame.mixer et effacer les fichiers
         self.quit_pygame_mixer()
 
@@ -223,24 +278,46 @@ class Mode_Apprenti(Mode):
 
         self.root.update()
 
-    def get_pos_curseur(self):
+    def get_pos_curseur(self) -> int:
+        """
+        Donne la position actuelle du curseur dans la zone de texte.
+
+        Returns:
+            int: Position globale en caractères.
+        """
+
         # Utiliser "1.0" comme point de départ et obtenir le nombre total de caractères jusqu'au curseur
         position_globale = self.text_box.count("1.0", "insert", "chars")
         if position_globale:
             return position_globale[0]
         return 0
 
-    def set_pos_curseur(self, position_globale):
+    def set_pos_curseur(self, position_globale: int) -> None:
+        """
+        Replace le curseur à une position donnée.
+
+        Args:
+            position_globale (int): Position en caractères depuis le début.
+        """
+
         # Utiliser "1.0" comme point de départ et déplacer le curseur à la position globale
         index_ligne_colonne = self.text_box.index(f"1.0 + {position_globale}c")
-        
+
         # Repositionner le curseur à l'index ligne.colonne calculé
         self.text_box.mark_set("insert", index_ligne_colonne)
-        
+
         # S'assurer que le curseur est visible
         self.text_box.see("insert")
 
-    def update_transcriptions(self, message, ending):
+    def update_transcriptions(self, message: str, ending: bool) -> None:
+        """
+        Met à jour le contenu de la transcription affiché à l’écran.
+
+        Args:
+            message (str): Nouveau texte à insérer.
+            ending (bool): True si la phrase est terminée.
+        """
+
         if not hasattr(self, "text_box") or not self.text_box.winfo_exists():
             return  # Le widget a été détruit
         if message is not None:
@@ -261,7 +338,7 @@ class Mode_Apprenti(Mode):
             self.transcription.validation()
             self.set_pos_curseur(self.transcription.fin_insertion)
             self.ready_to_learn = True
-                
+
             self.verification_dico(True)
             if not self.app.recording:
                 self.rec_button.config(state=tk.DISABLED)
@@ -275,7 +352,12 @@ class Mode_Apprenti(Mode):
             self.text_box.config(state=tk.DISABLED)
             self.set_pos_curseur(self.transcription.pos_cur)
 
-    def learning(self):
+    def learning(self) -> None:
+        """
+        Enregistre le texte et l'audio temporaire, les envoie par SFTP,
+        puis réinitialise l'interface pour une nouvelle session d’apprentissage.
+        """
+
         label_service = "" if self.app.config.service.lower() == "tous" else f"[{self.app.config.service}]"
         transcription = f"{label_service}{self.text_box.get("1.0", tk.END)}"
         self.copy_to_clipboard()
@@ -285,19 +367,22 @@ class Mode_Apprenti(Mode):
 
         print(f"On a deux fichiers : \n\t-wav->{self.temp_wav_file} et \n\t-text->{self.temp_txt_file}")
         self.status_bar.config(text="Transfert des fichiers...")
-        result, e = upload_files_to_sftp(audio_file=self.temp_wav_file, text_file=self.temp_txt_file,filenames=filename)
-        
+        result, e = upload_files_to_sftp(audio_file=self.temp_wav_file,
+                                         text_file=self.temp_txt_file,
+                                         filenames=filename)
+
         self.status_bar.config(text="Merci.")
         time.sleep(1)
         self.clear_text_box()
         self.pile = ['']
         log_text = f"Learning : {"ok" if result else "echec : {e}"}"
         self.log(log_text)
-        
-    def check_pygame_events(self):
+
+    def check_pygame_events(self) -> None:
         """
-        Vérifie périodiquement les événements pygame seulement lorsqu'on surveille les événements.
+        Vérifie les événements pygame (fin de lecture) de façon cyclique.
         """
+
         if self.monitoring_events:
             for event in pygame.event.get():
                 if event.type == self.end_event:
@@ -306,19 +391,25 @@ class Mode_Apprenti(Mode):
             # Planifier la vérification à nouveau dans 100 ms si la surveillance est active
             self.root.after(100, self.check_pygame_events)
 
-    def on_audio_end(self):
+    def on_audio_end(self) -> None:
         """
-        Appelé lorsque la lecture audio est terminée.
+        Gère la fin de lecture de l’audio : remet les boutons à l’état initial.
         """
+
         # Remettre l'état des boutons à "play"
         self.audio_playing = False
         self.play_button.config(image=self.play_image)  # Remettre l'image à "play"
         self.status_bar.config(text="Lecture terminée.")
-        
+
         # Arrêter la surveillance des événements
         self.monitoring_events = False
-       
-    def play(self):
+
+    def play(self) -> None:
+        """
+        Lance ou arrête la lecture du fichier audio temporaire selon l’état actuel.
+        Gère aussi la reprise depuis la dernière position.
+        """
+
         time.sleep(0.1)
         # Vérifiez si pygame.mixer est initialisé avant de jouer l'audio
         if not pygame.mixer.get_init():
@@ -326,17 +417,17 @@ class Mode_Apprenti(Mode):
             self.init_pygame_mixer()
         if self.ready_to_learn:
             if not self.audio_playing:
-                #playing
+                # playing
                 try:
                     if self.pos_lecture > 0:
                         # on reprend la lecture
                         pygame.mixer.music.play(start=self.pos_lecture)
                     else:
-                        # Charger le fichier 
+                        # Charger le fichier
                         print(f"Ouverture de {self.temp_wav_file}")
                         pygame.mixer.music.load(self.temp_wav_file)
                         pygame.mixer.music.play()
-                    
+
                     self.play_button.config(image=self.pause_image)
                     self.play_button.config(text="Stop Audio")
                     self.status_bar.config(text="Lecture en cours...")
@@ -357,15 +448,26 @@ class Mode_Apprenti(Mode):
                 self.status_bar.config(text="Lecture arrêtée.")
                 self.audio_playing = False
 
-    def exit(self):
-        retour = self.text_box.get("1.0", tk.END) # on retourne la transcription en cours
+    def exit(self) -> str:
+        """
+        Ferme le mode Apprenti et retourne le texte transcrit en cours.
+
+        Returns:
+            str: Texte affiché dans la zone de transcription.
+        """
+
+        retour = self.text_box.get("1.0", tk.END)  # on retourne la transcription en cours
         super().exit()
         return retour
-    
-    def handle_dropped_file(self, file_path):
+
+    def handle_dropped_file(self, file_path: str) -> None:
         """
-        Gère un fichier glissé-déposé en l'envoyant à la transcription.
+        Gère un fichier glissé-déposé (non implémenté dans ce mode).
+
+        Args:
+            file_path (str): Chemin vers le fichier audio.
         """
-        self.status_bar.config( text=f'Non implémenté', bg='lightblue', fg='darkblue', anchor=tk.W)
+
+        self.status_bar.config(text='Non implémenté', bg='lightblue', fg='darkblue', anchor=tk.W)
         # print(f"[Mode_Direct] Traitement du fichier : {file_path}")
         # self.unpause(file_path)

@@ -65,7 +65,7 @@ class Clear(Action):
         self.app.clear_text_box()
 
 
-class toggle_start_stop(Action):
+class Toggle_start_stop(Action):
     def execute(self) -> None:
         self.app.toggle_start_stop()
 
