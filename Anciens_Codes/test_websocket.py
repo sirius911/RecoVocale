@@ -2,6 +2,7 @@ import asyncio
 import websockets
 import json
 
+
 async def test_websocket():
     uri = "ws://10.1.11.215:30000"  # Adresse du serveur WebSocket
     try:
@@ -11,7 +12,7 @@ async def test_websocket():
             # Exemple de message JSON à envoyer
             message = json.dumps({
                 "uid": "test_client",
-                "language": "en",
+                "language": "fr",
                 "task": "transcribe"
             })
             await websocket.send(message)
@@ -24,4 +25,3 @@ async def test_websocket():
         print(f"Erreur lors de la connexion : {e}")
 
 asyncio.run(test_websocket())
-
