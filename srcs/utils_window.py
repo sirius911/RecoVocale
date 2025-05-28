@@ -122,7 +122,8 @@ def change_toolTip(button: tk.Widget, texte: str) -> None:
         texte (str): Texte de l’infobulle.
     """
 
-    ToolTip(button, f"{texte}")
+    if button and button.winfo_exists():
+        ToolTip(button, f"{texte}")
 
 
 def create_menus(self) -> None:

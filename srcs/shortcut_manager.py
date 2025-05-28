@@ -30,6 +30,7 @@ class ShortcutManager:
         self.shortcut_window = None
         self.shortcut_entry = None
         self.stop_shortcut_entry = None
+        self._pressed_keys = []
 
     def change_shortcut(self) -> None:
         """
@@ -52,13 +53,15 @@ class ShortcutManager:
         tk.Label(self.shortcut_window, text="Raccourci démarrer / arrêter :").pack(pady=(10, 0))
         self.shortcut_entry = tk.Entry(self.shortcut_window)
         self.shortcut_entry.pack(pady=(0, 10))
-        self.shortcut_entry.bind('<KeyPress>', self.get_shortcut_start)
+        self.shortcut_entry.bind('<KeyPress>', self.on_key_press_start)
+        self.shortcut_entry.bind('<KeyRelease>', self.on_key_release_start)
 
         # Label et champ pour Arrêter transcription
         tk.Label(self.shortcut_window, text="Raccourci arrêter transcription :").pack(pady=(10, 0))
         self.stop_shortcut_entry = tk.Entry(self.shortcut_window)
         self.stop_shortcut_entry.pack(pady=(0, 10))
-        self.stop_shortcut_entry.bind('<KeyPress>', self.get_shortcut_stop)
+        self.stop_shortcut_entry.bind('<KeyPress>', self.on_key_press_stop)
+        self.stop_shortcut_entry.bind('<KeyRelease>', self.on_key_release_stop)
 
         # Bouton Enregistrer
         save_button = tk.Button(self.shortcut_window, text="Enregistrer", command=self.save_shortcuts)
@@ -208,3 +211,31 @@ class ShortcutManager:
             # Ajoutez d'autres mappages si nécessaire
         }
         return key_mapping.get(key, key)
+
+    def on_key_press_start(self, event):
+        key = self.map_key_name(event.keysym)
+        if key not in self._pressed_keys:
+            self._pressed_keys.append(key)
+        combo = '+'.join(self._pressed_keys)
+        self.shortcut_entry.delete(0, tk.END)
+        self.shortcut_entry.insert(0, combo)
+        self.keyboard_shortcut = combo
+
+    def on_key_release_start(self, event):
+        key = self.map_key_name(event.keysym)
+        if key in self._pressed_keys:
+            self._pressed_keys.remove(key)
+
+    def on_key_press_stop(self, event):
+        key = self.map_key_name(event.keysym)
+        if key not in self._pressed_keys:
+            self._pressed_keys.append(key)
+        combo = '+'.join(self._pressed_keys)
+        self.stop_shortcut_entry.delete(0, tk.END)
+        self.stop_shortcut_entry.insert(0, combo)
+        self.stop_keyboard_shortcut = combo
+
+    def on_key_release_stop(self, event):
+        key = self.map_key_name(event.keysym)
+        if key in self._pressed_keys:
+            self._pressed_keys.remove(key)
