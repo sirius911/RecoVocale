@@ -42,7 +42,7 @@ async def check_websocket_status(host: str, port: int, ip_client: str, timeout: 
         try:
             # Envoyer un message "ping" au serveur
             init_message = json.dumps({
-                "uid": "1234",
+                "uid": ip_client,
                 "language": "fr",
                 "task": "transcribe",
                 "use_vad": True,
@@ -56,8 +56,8 @@ async def check_websocket_status(host: str, port: int, ip_client: str, timeout: 
             response_data = json.loads(response)
 
             # Vérifier la réponse
+            print(f"[INFO]: Réponse reçue : {response_data}")
             if response_data.get("ping") == "pong":
-                # print(f"[INFO]: Réponse reçue : {response_data}")
                 await websocket.close(code=1000, reason=ip_client)
                 return True
             else:

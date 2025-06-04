@@ -458,3 +458,13 @@ class Client:
             str: Chemin du modèle chargé.
         """
         return self.model_path
+    
+    def send_end_of_audio_signal(self) -> None:
+        """
+        Envoie le signal de fin d'audio au serveur TensorRT.
+        """
+        try:
+            self.send_packet_to_server(Client.END_OF_AUDIO.encode("utf-8"))
+            print("[INFO] Signal END_OF_AUDIO envoyé au serveur.")
+        except Exception as e:
+            print(f"[ERROR] Impossible d'envoyer END_OF_AUDIO : {e}")

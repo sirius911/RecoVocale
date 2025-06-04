@@ -192,3 +192,4 @@ class ClientManager:
         """
         if self.client:
             self.client.set_pause(True)
+            self.client.send_end_of_audio_signal()
