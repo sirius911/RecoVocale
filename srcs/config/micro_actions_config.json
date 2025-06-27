@@ -13,7 +13,8 @@
         "416": {"class": "Keyboard", "arg":["\u0002"]},
         "896": {"class": "Keyboard", "arg":["\u0001","v"]},
         "1417": {"class": "NoAction"}
-        }
+        },
+        "audio": true
     },
     "Philips (2.6-3.83)": {
         "vendor_id": "0x0911",
@@ -30,7 +31,8 @@
             "512": {"class": "Clear"},
             "1024": {"class": "Keyboard", "arg":["\u0001","a"]},
             "2048": {"class": "Keyboard", "arg":["\u0001","z"]}
-        }
+        },
+        "audio": true
     },
     "Nuance": {
         "vendor_id": "0x0554",
@@ -48,7 +50,8 @@
             "32768": {"class": "Clear"},
             "1": {"class": "Keyboard", "arg":["\u0001","a"]},
             "2": {"class": "Keyboard", "arg":["\u0001","z"]}
-        }
+        },
+        "audio": true
     },
     "Jabra": {
         "vendor_id": "0x0b0e",
@@ -71,6 +74,52 @@
             "4411": {"class": "toggle_start_stop"},
             "4409": {"class": "NoAction"}
         },
-        "hash" : "0x02"
+        "hash" : "0x02",
+        "audio": true
+    },
+    "Footcontol USB": {
+        "vendor_id": "0x911",
+        "product_id": "0x91a",
+        "firmware": "0x0303",
+        "actions": {
+            "16": {
+                "class": "Unpause"
+            },
+            "0": {
+                "class": "Pause"
+            },
+            "4": {
+                "class": "NoAction"
+            },
+            "2": {
+                "class": "NoAction"
+            },
+            "8": {
+                "class": "NoAction"
+            }
+        },
+        "hash": "0x02",
+        "audio": false
+    },
+     "USB Audio": {
+        "vendor_id": "0x3f0",
+        "product_id": "0x56b",
+        "firmware": "0x0006",
+        "actions": {
+            "52480": {
+                "class": "toggle_start_stop"
+            },
+            "0": {
+                "class": "NoAction"
+            },
+            "59648": {
+                "class": "toggle_start_stop"
+            },
+            "59904": {
+                "class": "toggle_start_stop"
+            }
+        },
+        "hash": "0x01",
+        "audio": true
     }
 }

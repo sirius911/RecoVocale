@@ -458,7 +458,7 @@ class Client:
             str: Chemin du modèle chargé.
         """
         return self.model_path
-    
+
     def send_end_of_audio_signal(self) -> None:
         """
         Envoie le signal de fin d'audio au serveur TensorRT.

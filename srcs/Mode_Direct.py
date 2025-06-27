@@ -1,13 +1,14 @@
 import time
 import tkinter as tk
 import tkinter.font as tkFont
-
+import threading
 from Mode import Mode
 from utils_window import create_menus, create_buttons
 from info import DIRECT
-from ClientManager import ClientManager
+# from ClientManager import ClientManager
 from utils_keyboard import Simulator
 from pynput.keyboard import Key
+# from Correcteur import intercept, corrige_ponctuation, corriger_texte
 
 
 class Mode_Direct(Mode):
@@ -30,23 +31,8 @@ class Mode_Direct(Mode):
         self.mode = DIRECT
         self.mod_var.set(DIRECT)
         self.ui()
-        # ----------------- Lien Client Whisper -----------------------
-        self.client_manager = ClientManager(
-            host=self.app.config.server_ip,
-            port=self.app.config.port,
-            lang="fr",
-            translate=False,
-            use_vad=True,
-            save_output_recording=False,
-            output_recording_filename="",
-            update_callback=self.update_transcriptions,  # Pass the callback to ClientManager
-            insertions=self.app.insertions,
-            fenetre_gestion_insertions=self.is_ouverte,
-            mode=self,
-            nb_repeat=self.app.config.nb_repeat,
-            ip_client=self.app.ip_client,
-            listen=self.app.config.play_audio,
-        )
+        self.client_manager = None
+
         super().enter()
         self.pile = ['']
         self.transcription_interrompue = False
@@ -101,17 +87,49 @@ class Mode_Direct(Mode):
         self.status_bar.grid(row=2, column=0, sticky="ew")
 
     def pause(self) -> None:
-        print("Pausing client in Mode Direct")
-        super().pause()
+        # print("Pausing client in Mode Direct")
+        # super().pause()
+        if self.app.recording:
+            print("Pause() in Mode Direct", flush=True)
+            self.engine.stop()
+            self.running_thread = False
+            self.app.recording = False
+            self.update()
+            # print("A la fin de pause()", flush=True)
+            # self.engine.print_all_segments(flush=True)
+            # print("--------------------------")
 
     def unpause(self, audio_file=None):
-        print("UnPausing client in Mode Direct")
         self.transcription_interrompue = False
-        super().unpause(audio_file)
+        # super().unpause(audio_file)
+        if not self.app.recording:
+            print("UnPausing() client in Mode Direct", flush=True)
+            self.engine.start()
+            if not self.engine.is_connected():
+                if not self.engine.connect():
+                    print("❌ Impossible de se connecter au serveur WhisperLive via DLL.")
+                    return
+            if not self.running_thread:
+                self.engine.start()
+                self.thread = threading.Thread(target=self.start_transcription_loop, daemon=True)
+                self.thread.start()
+
+            self.app.recording = True
+        self.update()
 
     def stop_client(self):
-        print("Stop client in Mode Direct")
-        super().stop_client()
+        # print("Stop client in Mode Direct")
+        # super().stop_client()
+        print("Stop_client() in Mode Direct", flush=True)
+        self.app.recording = False
+        self.running_thread = False
+        if self.thread and self.thread.is_alive():
+            self.thread.join(timeout=0.5)
+        self.engine.stop()
+        self.update()
+        # print("A la fin de stop_client()", flush=True)
+        # self.engine.print_all_segments(flush=True)
+        # print("--------------------------", flush=True)
 
     def stop(self) -> None:
         """
@@ -119,8 +137,15 @@ class Mode_Direct(Mode):
         repositionne le curseur et vérifie l’orthographe du texte.
         """
 
+        # self.stop_client()
+        # # si le bouton stop est demandé
+        print("Stop() dans Mode Direct", flush=True)
         self.stop_client()
-        # si le bouton stop est demandé
+        self.engine.wait_transcription_en_cours(1.0)
+        self.engine.clear_transcriptions()
+        self.engine.merge()
+        # self.engine.clear_transcriptions()
+        self.running_thread = False
         self.text_box.config(state=tk.NORMAL)
         self.trash_button.config(state=tk.NORMAL)
         self.rec_button.config(state=tk.NORMAL)
@@ -130,9 +155,13 @@ class Mode_Direct(Mode):
         self.status_bar.config(text="Transcription ...interrompue", bg='lightblue', fg='darkblue', anchor=tk.W)
         self.transcription_interrompue = True
         self.verification_dico(True)
+        # print("A la fin de stop()", flush=True)
+        # self.engine.print_all_segments(flush=True)
+        # print("--------------------------", flush=True)
 
     def valid_transcriptions(self):
-        self.stop_client()
+        pass
+        # self.stop_client()
 
     def get_selected_text(self) -> tuple[str, bool]:
         """
@@ -184,14 +213,14 @@ class Mode_Direct(Mode):
         """
         Efface le texte sélectionné ou tout le texte s’il n’y a pas de sélection.
         """
-
         time.sleep(0.5)
         self.save_text_box()
         _, all = self.get_selected_text()
-        self.valid_transcriptions()
 
+        self.text_box.config(state=tk.NORMAL)
         if all:
-            self.transcription.clear()
+
+            self.engine.clear()
             self.text_box.delete('1.0', tk.END)
         else:
             Simulator([Key.delete])
@@ -269,6 +298,67 @@ class Mode_Direct(Mode):
         else:
             self.text_box.config(state=tk.DISABLED)
             self.set_pos_curseur(self.transcription.pos_cur)
+
+    def update_text_box(self):
+        self.text_box.config(state=tk.NORMAL)
+        self.text_box.delete('1.0', tk.END)
+        self.text_box.insert(tk.END, self.engine.get(insertions=self.app.insertions,
+                                                     dico=self.app.config.dictionnaire))
+        self.text_box.config(state=tk.DISABLED)
+
+    def start_transcription_loop(self):
+        """
+        Thread de transcription qui affiche les segments partiels et colle les segments complets.
+        """
+        self.running_thread = True
+        self.save_text_box()
+        # while self.running_thread and self.engine.is_connected():
+        while not self.engine.is_transcription_terminee():
+            if not hasattr(self, "text_box") or not self.text_box.winfo_exists():
+                return  # Le widget a été détruit
+            try:
+                self.trash_button.config(state=tk.DISABLED)
+                self.update_text_box()
+                #     self.trash_button.config(state=tk.DISABLED)
+
+                #     self.transcription.pos_cur = self.get_pos_curseur()
+                #     self.transcription.cur_selec = self.get_pos_select()
+                #     self.save_text_box()
+                # self.transcription.update(partial)
+                # self.text_box.config(state=tk.NORMAL)
+                # self.text_box.delete('1.0', tk.END)
+                # self.text_box.insert(tk.END, self.transcription.text_box_en_cours)
+
+                # if complete:  # and complete not in self.shown_segments:
+                #     self.text_box.config(state=tk.NORMAL)
+                #     self.trash_button.config(state=tk.NORMAL)
+                #     self.rec_button.config(state=tk.NORMAL)
+                #     self.transcription_en_cours = False
+                #     self.transcription.validation()
+                #     self.set_pos_curseur(self.transcription.fin_insertion)
+                #     self.log(self.transcription.text_en_cours)
+                #     self.verification_dico(True)
+
+                #     # ✅ on ne stoppe plus l'enregistrement
+                #     self.status_bar.config(text="Segment validé", bg='lightblue', fg='darkblue', anchor=tk.W)
+                #     # text_apres_insertion = corrige_ponctuation(intercept(complete, self.app.insertions.get()))
+                #     # text_to_copy = self.corriger_texte(text_apres_insertion)
+                # else:
+                #     self.text_box.config(state=tk.DISABLED)
+                #     self.set_pos_curseur(self.transcription.pos_cur)
+
+            except KeyboardInterrupt:
+                break
+            except Exception as e:
+                print(f"[Mode_Direct] Erreur dans le thread : {e}")
+
+            time.sleep(0.1)
+        print("Fin du Thread")
+        self.text_box.config(state=tk.NORMAL)
+        self.trash_button.config(state=tk.NORMAL)
+        self.rec_button.config(state=tk.NORMAL)
+        self.engine.print_all_segments()
+        self.update_text_box()
 
     def copy_to_clipboard(self) -> None:
         """

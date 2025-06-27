@@ -151,7 +151,8 @@ class App:
         if self.config.debug:
             print(f"switch_mode({mode.name})")
         if self.current_mode:
-            if self.current_mode.client_manager:
+            last_model = None
+            if self.current_mode.client_manager and self.current_mode.client_manager is not None:
                 last_model = self.current_mode.client_manager.model
             if self.current_mode.mode != mode:
                 self.current_mode.stop()
@@ -181,7 +182,7 @@ class App:
                 if self.mic:
                     self.mic.change_mode(self.current_mode)
 
-                if self.current_mode.client_manager:
+                if self.current_mode.client_manager and self.current_mode.client_manager is not None:
                     self.current_mode.client_manager.model = last_model
                 # touches de Raccourcis
                 keyboard.clear_all_hotkeys()

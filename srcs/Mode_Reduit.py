@@ -1,13 +1,14 @@
-import re
-import string
+import threading
 import tkinter as tk
 from pynput.keyboard import Key
 
+import time
 from Mode import Mode
-from utils_window import create_menus, create_buttons, show_bubble_message, remove_bubble, update_bubble_background
+from utils_window import create_menus, create_buttons, show_bubble_message, remove_bubble
 from info import REDUIT, VERSION
-from ClientManager import ClientManager
 from utils_keyboard import Simulator
+# from RecoVocaleClientEngine import RecoVocaleClientEngine
+from Correcteur import intercept, corrige_ponctuation, corriger_texte
 
 
 class Mode_Reduit(Mode):
@@ -28,28 +29,19 @@ class Mode_Reduit(Mode):
         self.mode = REDUIT
         self.mod_var.set(REDUIT)
         self.ui()
-        # ----------------- Lien Client Whisper -----------------------
-        self.client_manager = ClientManager(
-            host=self.app.config.server_ip,
-            port=self.app.config.port,
-            lang="fr",
-            translate=False,
-            use_vad=True,
-            save_output_recording=False,
-            output_recording_filename="",
-            update_callback=self.update_transcriptions,  # Pass the callback to ClientManager
-            insertions=self.app.insertions,
-            fenetre_gestion_insertions=self.is_ouverte,
-            mode=self,
-            nb_repeat=self.app.config.nb_repeat,
-            ip_client=self.app.ip_client,
-        )
+        self.client_manager = None
 
         super().enter()
         self.pile = ['']
         self.a_ecrit = False  # permet de ne pas écrire deux fois si le client stop avant la fin
         self.repetition = 0
         self.texte_memoire = ""
+        # self.engine = RecoVocaleClientEngine(ip=self.app.config.server_ip,
+        #                                      port=int(self.app.config.port),
+        #                                      ip_client=self.app.ip_client)
+        self.running_thread = False
+        self.shown_segments = set()
+        self.thread = None
 
     def ui(self) -> None:
         """
@@ -67,26 +59,48 @@ class Mode_Reduit(Mode):
         self.status_bar = tk.Label(self.root, text=f"RecoVocale {VERSION}", bd=1, relief=tk.SUNKEN, anchor=tk.W)
         self.status_bar.grid(row=2, column=0, sticky="ew")
 
-    def pause(self) -> None:
+    def _update_barre_status(self) -> None:
         """
-        Met en pause la transcription si elle est active.
+        Met à jour le message affiché dans la barre de statut selon l'état de l'application.
         """
+        message = f"RecoVocale {VERSION}"
 
+        if not self.engine.is_connected():
+            self.status_bar.config(text=message, fg='red', bg='lightblue', anchor=tk.W)
+        elif self.engine.is_capturing():
+            if self.file_source is not None:
+                message = f"Transcription de [{self.file_source}] ... en cours"
+            else:
+                message = "Transcription en cours..."
+            self.status_bar.config(text=message, fg='black', bg='red', anchor=tk.CENTER)
+        elif not self.engine.is_transcription_terminee():
+            self.status_bar.config(text="Transcription ...en cours", bg='lightblue', fg='darkblue', anchor=tk.W)
+        else:
+            self.status_bar.config(text=message, bg='lightblue', fg='darkblue', anchor=tk.W)
+
+    def pause(self) -> None:
         if self.app.recording:
-            print("Pausing client in Mode Réduit")
-            super().pause()
+            print("Pause() in Mode Réduit")
+            self.engine.stop()
+            # self.running_thread = False
+            self.app.recording = False
+            self.update()
 
     def unpause(self, audio_file=None) -> None:
-        """
-        Relance la transcription si elle est inactive.
-
-        Args:
-            audio_file (str | None): Fichier audio à transcrire si applicable.
-        """
-
         if not self.app.recording:
             print("UnPausing client in Mode Réduit")
-            super().unpause(audio_file)
+            self.engine.start()
+            if not self.engine.is_connected():
+                if not self.engine.connect():
+                    print("❌ Impossible de se connecter au serveur WhisperLive via DLL.")
+                    return
+            if not self.running_thread:
+                self.engine.start()
+                self.thread = threading.Thread(target=self.start_transcription_loop, daemon=True)
+                self.thread.start()
+
+            self.app.recording = True
+        self.update()
 
     def stop_client(self) -> None:
         """
@@ -94,114 +108,107 @@ class Mode_Reduit(Mode):
         """
 
         print("Stop client in Mode Réduit")
-        super().stop_client()
+        self.app.recording = False
+        # self.running_thread = False
+        self.engine.stop()
+        self.update()
+        # super().stop_client()
 
     def stop(self) -> None:
         """
         Arrête la transcription et, si besoin, colle le texte automatiquement.
         """
-
+        print("Stop dans Mode Reduit")
         self.stop_client()
-        # remove_bubble()
-        if not self.a_ecrit:
-            self.update_transcriptions(message=self.transcription.text_en_cours, ending=True)
+        remove_bubble()
+        self.a_ecrit = True
+        self.engine.clear_transcriptions()
+        self.running_thread = False
+
+    def update_reduit(self):
+        self.engine._update()
+        partial = self.engine.transcription_en_cours
+        if self.engine.transcription_totale:
+            complete = list(self.engine.transcription_totale.keys())[-1]
         else:
-            Simulator(['\n'])
+            complete = ""
 
-    def valid_transcriptions(self) -> None:
-        """
-        Valide la transcription actuelle (alias de stop_client).
-        """
-
-        self.stop_client()
-
-    def update_transcriptions(self, message: str, ending: bool) -> None:
-        """
-        Met à jour la transcription affichée dans la bulle contextuelle.
-
-        Args:
-            message (str): Texte reçu.
-            ending (bool): Indique si le segment est terminé.
-        """
-
-        if message is not None:
-            self.transcription.update(message, -1)
-        if ending:
-            remove_bubble()
-            # copie dans clipboard
-            self.root.clipboard_clear()
-            text_to_copy = ' ' + self.corriger_texte(self.transcription.text_en_cours)
-
-            self.root.clipboard_append(text_to_copy)
-            # coller
-            if not self.a_ecrit:
-                Simulator([Key.ctrl, 'v'])
-                self.a_ecrit = True
-            self.transcription.validation()
-            self.status_bar.config(text=f'RecoVocale {VERSION}', bg='lightblue', fg='darkblue', anchor=tk.W)
-            self.repetition = 0
-            self.texte_memoire = ""
-            self.log(text=text_to_copy)
-            if not self.app.recording:
-                self.pause()
-                self.status_bar.config(text=f'RecoVocale {VERSION}', bg='lightblue', fg='darkblue', anchor=tk.W)
-        else:
-            if self.texte_memoire != message:
-                self.texte_memoire = message
-                self.repetition = 0
-            else:
-                self.repetition += 1
-            if self.repetition >= self.app.config.nb_repeat:
-                update_bubble_background("light green")
-
-            show_bubble_message(self.root, message)
-            self.status_bar.config(text=f'* Transcription ({self.repetition}) *',
+        if partial:
+            show_bubble_message(self.root, partial)
+            self.status_bar.config(text="* Transcription ... *",
                                    bg='lightblue', fg='darkblue', anchor=tk.CENTER)
             self.a_ecrit = False
 
-    def corriger_texte(self, texte: str) -> str:
+        if complete and complete not in self.shown_segments:
+            self.shown_segments.add(complete)
+            remove_bubble()
+            self.root.clipboard_clear()
+            text_apres_intercept, _ = intercept(complete, self.app.insertions.get())
+            text_apres_ponctuation = corrige_ponctuation(text_apres_intercept)
+            if self.app.config.dictionnaire:
+                text_to_copy = corriger_texte(text_apres_ponctuation)
+            else:
+                text_to_copy = text_apres_ponctuation
+            self.root.clipboard_append(text_to_copy)
+            if not self.a_ecrit:
+                Simulator([Key.ctrl, 'v'])
+                self.a_ecrit = True
+                # self.log(text=text_to_copy)
+
+    def start_transcription_loop(self):
         """
-        Corrige automatiquement les mots mal orthographiés si une seule suggestion est trouvée.
-
-        Args:
-            texte (str): Texte à corriger.
-
-        Returns:
-            str: Texte corrigé.
+        Thread de transcription qui affiche les segments partiels et colle les segments complets.
         """
+        self.running_thread = True
 
-        if not self.app.config.dictionnaire:
-            return texte
-        # Séparer le contenu en mots
-        mots = re.findall(r'\b[\w-]+\b', texte)  # Prend en compte les mots composés avec des traits d'union
+        while True:
+            try:
+                print(self.engine.is_transcription_terminee(), self.a_ecrit, self.running_thread)
+                self.update_reduit()
+                print(self.engine.is_transcription_terminee(), self.a_ecrit, self.running_thread)
+                if (self.engine.is_transcription_terminee() and self.a_ecrit) or not self.running_thread:
+                    break
+                # self.engine.get(insertions=self.app.insertions,
+                #                 dico=self.app.config.dictionnaire)
+                # partial = self.engine.transcription_en_cours
+                # if list(self.engine.transcription_totale.keys()):
+                #     complete = list(self.engine.transcription_totale.keys())[-1]
+                # else:
+                #     complete = ""
 
-        texte_corrige = texte  # Crée une copie du texte original pour les corrections
-        offset = 0  # Utilisé pour ajuster les indices après chaque correction
+                # if partial:
+                #     show_bubble_message(self.root, partial)
+                #     self.status_bar.config(text="* Transcription ... *",
+                #                            bg='lightblue', fg='darkblue', anchor=tk.CENTER)
+                #     self.a_ecrit = False
 
-        for mot in mots:
-            # Nettoyer le mot de la ponctuation en début et fin, sans modifier l'original
-            mot_nettoye = mot.strip(string.punctuation)
+                # if complete and complete not in self.shown_segments:
+                #     self.shown_segments.add(complete)
+                #     remove_bubble()
+                #     self.root.clipboard_clear()
+                #     text_apres_intercept, _ = intercept(complete, self.app.insertions.get())
+                #     text_apres_ponctuation = corrige_ponctuation(text_apres_intercept)
+                #     if self.app.config.dictionnaire:
+                #         text_to_copy = corriger_texte(text_apres_ponctuation)
+                #     else:
+                #         text_to_copy = text_apres_ponctuation
+                #     self.root.clipboard_append(text_to_copy)
+                #     if not self.a_ecrit:
+                #         Simulator([Key.ctrl, 'v'])
+                #         self.a_ecrit = True
+                #         # self.log(text=text_to_copy)
+                #     self.status_bar.config(text=f'RecoVocale {VERSION}',
+                #                            bg='lightblue', fg='darkblue', anchor=tk.W)
 
-            # Vérifier chaque mot
-            if mot_nettoye and not self.dico.check(mot_nettoye):
-                # Obtenir les suggestions
-                suggestions = self.dico.suggest(mot_nettoye)
+            except Exception as e:
+                print(f"[Mode_Reduit] Erreur dans le thread : {e}")
+            time.sleep(0.1)
 
-                # Si une seule suggestion est disponible et l'option auto est activée, remplacer automatiquement le mot
-                if len(suggestions) == 1:
-                    correct_mot = suggestions[0]
-
-                    # Calculer les positions dans le texte corrigé en utilisant l'offset
-                    start_idx = texte_corrige.find(mot, offset)
-                    end_idx = start_idx + len(mot)
-
-                    # Remplacer le mot incorrect par le mot correct
-                    texte_corrige = texte_corrige[:start_idx] + correct_mot + texte_corrige[end_idx:]
-
-                    # Ajuster l'offset pour prendre en compte la différence de longueur
-                    offset += len(correct_mot) - len(mot)
-
-        return texte_corrige
+        print("Sortie du thread")
+        print(self.engine.is_transcription_terminee(), self.a_ecrit , self.running_thread)
+        self.engine.print_transcriptions_lignes()
+        self.running_thread = False
+        # self.update_reduit()
 
     def clear_text_box(self) -> None:
         """
@@ -214,20 +221,16 @@ class Mode_Reduit(Mode):
         """
         Simule Ctrl+Z pour annuler la dernière action dans l'application cible.
         """
-
         Simulator([Key.ctrl, "z"])
 
     def exit(self) -> str:
-        """
-        Ferme proprement le mode Réduit et retourne le texte transcrit.
-
-        Returns:
-            str: Texte en cours de transcription.
-        """
-
         remove_bubble()
+        self.running_thread = False
+        if self.engine.is_connected():
+            self.engine.stop()
+            self.engine.disconnect()
         super().exit()
-        return self.transcription.get()  # on retourne la transcription en cours
+        return ""
 
     def handle_dropped_file(self, file_path: str) -> None:
         """

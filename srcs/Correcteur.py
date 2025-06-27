@@ -1,5 +1,8 @@
 import re
 from datetime import datetime
+import string
+
+import enchant
 
 from unite import convertir_unites
 
@@ -57,7 +60,7 @@ def detecter_chiffre_roman(text: str) -> str | None:
     if match_chiffre:
         # Convertir le chiffre capturé en entier
         print("[Insérer][CHIFFRE ROMAIN]")
-        return int_to_roman(int(match_chiffre.group(1)))
+        return int_to_roman(int(match_chiffre.group(1))), True
 
     # Expression régulière pour capturer les nombres en lettres
     pattern_lettres = r"chiffre[s]? roma[i]?n[t]?[s]?\s*(\w+)"
@@ -69,12 +72,12 @@ def detecter_chiffre_roman(text: str) -> str | None:
         # Vérifier si le mot correspond à un nombre dans le dictionnaire
         if nombre_en_lettres in nombres_en_lettres:
             print("[Insérer][CHIFFRE ROMAIN]")
-            return int_to_roman(nombres_en_lettres[nombre_en_lettres])
+            return int_to_roman(nombres_en_lettres[nombre_en_lettres]), True
 
-    return None  # Retourner None si aucun chiffre n'est trouvé
+    return None, False  # Retourner None si aucun chiffre n'est trouvé
 
 
-def remplacement_special(text: str) -> str | None:
+def remplacement_special(text: str):
     """
     Traite les commandes spéciales comme "date" ou "chiffre romain".
 
@@ -87,9 +90,9 @@ def remplacement_special(text: str) -> str | None:
     retour = None
     if text.lower() == "date":
         print("[Insérer][DATE]")
-        return datetime.now().strftime("%d/%m/%Y")
-    retour = detecter_chiffre_roman(text)
-    return retour
+        return datetime.now().strftime("%d/%m/%Y"), True
+    retour, _insertion = detecter_chiffre_roman(text)
+    return retour, _insertion
 
 
 def remplacer_avec_dictionnaire(texte: str, pattern: str, dico_insertion: dict[str, str]) -> str:
@@ -116,12 +119,13 @@ def remplacer_avec_dictionnaire(texte: str, pattern: str, dico_insertion: dict[s
 
         Returns:
             str: Le texte remplacé ou original si rien ne correspond.
+            insertion: bool True si une insertion a eu lieu
         """
         nonlocal insertion  # Permet de modifier la variable `insertion` dans la fonction englobante
         # Capture le texte après "insérer" (ce qui inclut plusieurs mots possibles)
         texte_suivant = match.group(2).strip()
         print(f"[Insérer] [{texte_suivant}]", end="")
-        retour = remplacement_special(texte_suivant)
+        retour, insertion = remplacement_special(texte_suivant)
         if retour is not None:
             insertion = True
             return retour
@@ -136,7 +140,7 @@ def remplacer_avec_dictionnaire(texte: str, pattern: str, dico_insertion: dict[s
         print(" -> non trouvé")
         return match.group(0)
     # Utilise re.sub pour remplacer les occurrences du pattern
-    return re.sub(pattern, remplacement, texte, flags=re.IGNORECASE)
+    return re.sub(pattern, remplacement, texte, flags=re.IGNORECASE), insertion
 
 
 def insertion(phrase: str, dico_insertion: dict[str, str]) -> str:
@@ -149,13 +153,14 @@ def insertion(phrase: str, dico_insertion: dict[str, str]) -> str:
 
     Returns:
         str: La phrase modifiée après traitement.
+        _insertion: bool True si une insertion a eu lieu.
     """
     pattern = r"\bins[éèêe]r(é|ez|er|ée|ées|és)[,. ]+([\w\s]+)"
 
     # match = re.search(pattern, phrase)
-    nouveau_texte = remplacer_avec_dictionnaire(phrase, pattern, dico_insertion)
+    nouveau_texte, _insertion = remplacer_avec_dictionnaire(phrase, pattern, dico_insertion)
     # print(f"nouvelle phrase = {nouveau_texte}")
-    return nouveau_texte
+    return nouveau_texte, _insertion
 
 
 def proteger_points_speciaux(phrases: str) -> str:
@@ -280,7 +285,7 @@ def corrige_ponctuation(phrases: str) -> str:
     return phrases_finale
 
 
-def intercept(phrases: str, dico_insertion: dict[str, str]) -> str:
+def intercept(phrases: str, dico_insertion: dict[str, str]):
     """
     Intercepte des expressions vocales spécifiques dans une phrase et applique les conversions définies,
     notamment les insertions et les unités.
@@ -295,8 +300,56 @@ def intercept(phrases: str, dico_insertion: dict[str, str]) -> str:
 
     '''
     doit intercepter des mots clefs dans une liste de phrase
-    renvoi la phrase corrigée et un flag ending indiquand si on doit terminé la transcription
+        retrenvoi la phrase corrigée et un flag  indiquand si on doit terminé la transcription
+        insertion: bool True si une insertion a eu lieu
     '''
-    phrase_interceptee = insertion(phrases, dico_insertion)
+    _insertion = False
+    phrase_interceptee, _insertion = insertion(phrases, dico_insertion)
     resultat = convertir_unites(phrase_interceptee)
-    return resultat
+    if _insertion:
+        print("****/*/*/*/*/ INSERTION /*/*/*****")
+    return resultat, _insertion
+
+
+def corriger_texte(texte: str) -> str:
+    """
+    Corrige automatiquement les mots mal orthographiés si une seule suggestion est trouvée.
+
+    Args:
+        texte (str): Texte à corriger.
+
+    Returns:
+        str: Texte corrigé.
+    """
+
+    dico = enchant.Dict("fr_FR")
+    # Séparer le contenu en mots
+    mots = re.findall(r'\b[\w-]+\b', texte)  # Prend en compte les mots composés avec des traits d'union
+
+    texte_corrige = texte  # Crée une copie du texte original pour les corrections
+    offset = 0  # Utilisé pour ajuster les indices après chaque correction
+
+    for mot in mots:
+        # Nettoyer le mot de la ponctuation en début et fin, sans modifier l'original
+        mot_nettoye = mot.strip(string.punctuation)
+
+        # Vérifier chaque mot
+        if mot_nettoye and not dico.check(mot_nettoye):
+            # Obtenir les suggestions
+            suggestions = dico.suggest(mot_nettoye)
+
+            # Si une seule suggestion est disponible et l'option auto est activée, remplacer automatiquement le mot
+            if len(suggestions) == 1:
+                correct_mot = suggestions[0]
+
+                # Calculer les positions dans le texte corrigé en utilisant l'offset
+                start_idx = texte_corrige.find(mot, offset)
+                end_idx = start_idx + len(mot)
+
+                # Remplacer le mot incorrect par le mot correct
+                texte_corrige = texte_corrige[:start_idx] + correct_mot + texte_corrige[end_idx:]
+
+                # Ajuster l'offset pour prendre en compte la différence de longueur
+                offset += len(correct_mot) - len(mot)
+
+    return texte_corrige

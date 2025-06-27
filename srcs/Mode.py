@@ -4,10 +4,11 @@ import time
 import enchant
 import tkinter as tk
 
-from info import DIRECT, REDUIT, VERSION
+from info import REDUIT, VERSION
 from Transcription import Transcription
 from insertions import FenetreGestion
 from utils_socket import check_server_status
+from RecoVocaleClientEngine import RecoVocaleClientEngine
 from loger import envoyer_log
 
 
@@ -52,6 +53,11 @@ class Mode:
         self.dico = enchant.Dict("fr_FR")
         self.mots_personnels = set()
         self.model = ""
+        self.engine = RecoVocaleClientEngine(ip=self.app.config.server_ip,
+                                             port=int(self.app.config.port),
+                                             ip_client=self.app.ip_client)
+        self.thread = None
+        self.running_thread = False
         self.enter()
 
     def enter(self) -> None:
@@ -72,23 +78,23 @@ class Mode:
     def get_selected_text(self):
         return self.transcription.get()
 
-    def valid_transcriptions(self) -> None:
-        """
-        Valide les transcriptions (raccourci pour `stop_client()`).
-        """
+    # def valid_transcriptions(self) -> None:
+    #     """
+    #     Valide les transcriptions (raccourci pour `stop_client()`).
+    #     """
 
-        self.stop_client()
+    #     self.stop_client()
 
-    def stop_client(self) -> None:
-        """
-        Valide la transcription en cours et arrête le client associé.
-        """
+    # def stop_client(self) -> None:
+    #     """
+    #     Valide la transcription en cours et arrête le client associé.
+    #     """
 
-        self.transcription.validation()
-        if self.client_manager:
-            self.client_manager.stop_client()
-        self.app.recording = False
-        self.update()
+    #     self.transcription.validation()
+    #     if self.client_manager:
+    #         self.client_manager.stop_client()
+    #     self.app.recording = False
+    #     self.update()
 
     def copy_to_clipboard(self) -> None:
         """
@@ -101,44 +107,20 @@ class Mode:
         time.sleep(0.5)
         self._update_barre_status()
 
-    def pause(self) -> None:
-        """
-        Met en pause la transcription et met à jour le statut serveur.
-        """
+    # def pause(self) -> None:
+    #     """
+    #     Met en pause la transcription et met à jour le statut serveur.
+    #     """
 
-        self.client_manager.pause()
-        self.app.recording = False
-        self.app.status_server = check_server_status(self.app.config.server_ip,
-                                                     self.app.config.port,
-                                                     self.app.ip_client)
-        self.update()
+    #     self.client_manager.pause()
+    #     self.app.recording = False
+    #     self.app.status_server = check_server_status(self.app.config.server_ip,
+    #                                                  self.app.config.port,
+    #                                                  self.app.ip_client)
+    #     self.update()
 
-    def unpause(self, file_path=None) -> None:
-        """
-        Relance la transcription ou initialise un client si besoin.
-
-        Args:
-            file_path (str | None): Chemin vers un fichier audio à transcrire, sinon None pour micro.
-        """
-
-        self.file_source = file_path
-        if self.mode == DIRECT:
-            self.transcription_interrompue = False
-        if self.app.status_server is True:
-            if not self.app.recording:
-                if self.client_manager.client:
-                    self.client_manager.client.set_pause(False)
-                else:
-                    self.client_manager.start_client(self.app.loop,
-                                                     self.app.config.port,
-                                                     file_path,
-                                                     self.app.config.play_audio)
-                self.app.recording = True
-        else:
-            self.app.status_server = check_server_status(self.app.config.server_ip,
-                                                         self.app.config.port,
-                                                         self.app.ip_client)
-        self.update()
+    # def unpause(self, file_path=None) -> None:
+    #     pass
 
     def exit_app(self) -> None:
         """
@@ -224,6 +206,9 @@ class Mode:
         if self.app.config.debug:
             self.app.info()
 
+    def update_transcriptions(self, message: str, ending: bool) -> None:
+        pass
+
     def name(self) -> str:
         """
         Retourne le nom du mode actif.
@@ -234,17 +219,21 @@ class Mode:
 
         return self.mode.name
 
-    def select_text_box(self, dir="left"):
-        pass
+    # def select_text_box(self, dir="left"):
+    #     pass
 
     def undo(self, event=None):
         if event and event.keysym in ("Shift_L", "Shift_R", "Control_L", "Control_R", "Alt_L", "Alt_R"):
             return
         if self.pile:
             dernier_etat = self.pile.pop()
+            self.text_box.config(state=tk.NORMAL)
             self.text_box.delete('1.0', tk.END)
             self.text_box.insert('1.0', dernier_etat)
             self.transcription.set(dernier_etat)
+            if self.engine:
+                self.engine.set(dernier_etat)
+
         if not self.pile:
             self.pile = ['']
             self.edit_menu.entryconfig(0, state='disabled')
@@ -344,9 +333,9 @@ class Mode:
         self.trash_button.config(state=tk.NORMAL)
         nouveau_text = self.text_box.get("1.0", tk.END)
         # self.save_text_box()
-        self.transcription.set(nouveau_text)
-        self.transcription.text_box_en_cours = nouveau_text
-        self.transcription.pos_cur = self.get_pos_curseur()
+        if self.engine:
+            self.engine.set(nouveau_text)
+
         self.verification_dico()
 
     def verification_dico(self, auto: bool = False) -> None:
