@@ -151,9 +151,7 @@ class App:
         if self.config.debug:
             print(f"switch_mode({mode.name})")
         if self.current_mode:
-            last_model = None
-            if self.current_mode.client_manager and self.current_mode.client_manager is not None:
-                last_model = self.current_mode.client_manager.model
+            # last_model = self.current_mode.engine.model
             if self.current_mode.mode != mode:
                 self.current_mode.stop()
                 log_en_cours = self.console_debug.get_log_message()
@@ -182,8 +180,7 @@ class App:
                 if self.mic:
                     self.mic.change_mode(self.current_mode)
 
-                if self.current_mode.client_manager and self.current_mode.client_manager is not None:
-                    self.current_mode.client_manager.model = last_model
+                # self.current_mode.engine.model = last_model  # A REVOIR
                 # touches de Raccourcis
                 keyboard.clear_all_hotkeys()
                 if self.shortcut_manager.keyboard_shortcut:
@@ -213,12 +210,13 @@ class App:
             self.console_debug.delete_status()
             self.console_debug.append_status_with_format("Version : ", font_style="italic")
             self.console_debug.append_status_with_format(f"v{VERSION}\n", color="green")
+            self.console_debug.append_status_with_format("Version DLL : ", font_style="italic")
+            self.console_debug.append_status_with_format(f"{self.current_mode.engine.version_dll}\n", color="green")
+            self.console_debug.append_status_with_format("backend : ", font_style="italic")
+            self.console_debug.append_status_with_format(f"{self.current_mode.engine.backend}\n", color="green")
             self.console_debug.append_status_with_format("Modèle : ", font_style="italic")
-            if self.current_mode.client_manager:
-                self.console_debug.append_status_with_format(
-                    f"{self.current_mode.client_manager.model}\n", color="green")
-            else:
-                self.console_debug.append_status_with_format("None\n", color="blue")
+            self.console_debug.append_status_with_format(f"{self.current_mode.engine.model}\n", color="green")
+
             self.console_debug.append_status_with_format("Serveur : ", font_style="italic")
             if check_server_status(self.config.server_ip, self.config.port, self.ip_client):
                 self.console_debug.append_status_with_format(

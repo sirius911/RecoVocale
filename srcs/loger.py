@@ -1,8 +1,13 @@
 import requests
 import socket
 import getpass
-
+import re
 from datetime import datetime, timezone
+
+
+def compter_mots(phrase: str) -> int:
+    mots = re.findall(r"\b\w+(?:'\w+)?\b", phrase)
+    return len(mots)
 
 
 def envoyer_log(event="start", texte: str = "", mode: str = "Inconnu", model: str = "Inconnu") -> None:
@@ -31,6 +36,7 @@ def envoyer_log(event="start", texte: str = "", mode: str = "Inconnu", model: st
             "mode": mode,
             "model": model,
             "texte": texte,
+            "nb_mots": compter_mots(texte),
         }
         requests.post("http://10.1.147.12:5000/log", json=log_data, timeout=2)
     except Exception as e:

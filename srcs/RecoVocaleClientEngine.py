@@ -1,6 +1,7 @@
 import ctypes
 import os
 import json
+import sys
 import time
 from ctypes import c_char_p, c_uint, c_bool
 import uuid
@@ -9,6 +10,17 @@ from Correcteur import intercept, corrige_ponctuation, corriger_texte
 
 
 PATH_LIB = "C:/Users/lorcyr/recovocale_engine/target/release/recovocale_engine.dll"
+
+
+def get_dll_path():
+    if getattr(sys, 'frozen', False):
+        # Exécutable compilé (PyInstaller)
+        base_path = os.path.dirname(sys.executable)
+        dll_path = os.path.join(base_path, 'bin', 'recovocale_engine.dll')
+    else:
+        # En mode développement (exécution Python)
+        dll_path = PATH_LIB
+    return dll_path
 
 
 class RecoVocaleClientEngine:
@@ -39,11 +51,15 @@ class RecoVocaleClientEngine:
             options['uid'] = str(uuid.uuid4())
             options['ip_client'] = ip_client
 
-        self.dll_path = os.path.abspath(PATH_LIB)
+        self.dll_path = get_dll_path()
         self.ip = ip
         self.port = port
+        self.backend = None
+        self.model = None
         self.json_config = json.dumps(options).encode("utf-8")
 
+        if not os.path.exists(self.dll_path):
+            raise FileNotFoundError(f"DLL manquante : {self.dll_path}")
         self.lib = ctypes.CDLL(self.dll_path)
 
         # Signatures des fonctions
@@ -55,11 +71,14 @@ class RecoVocaleClientEngine:
         self.lib.get_last_partial_segment.restype = ctypes.POINTER(ctypes.c_char)
         self.lib.get_all_completed_segments.restype = ctypes.POINTER(ctypes.c_char)
         self.lib.get_all_completed_segments_with_number.restype = ctypes.POINTER(ctypes.c_char)
+        self.lib.get_backend.restype = ctypes.POINTER(ctypes.c_char)
+        self.lib.get_model.restype = ctypes.POINTER(ctypes.c_char)
         self.lib.is_task_completed.argtypes = []
         self.lib.is_task_completed.restype = c_bool
         self.lib.clear_completed_segments.argtypes = []
         self.lib.clear_completed_segments.restype = None
-        self.lib.start_capture.argtypes = []
+        self.lib.start_capture.argtypes = [c_char_p]
+        self.lib.start_capture.restype = None
         self.lib.stop_capture.argtypes = []
         self.lib.start_receiving_segments.argtypes = []
         self.lib.stop_receiving_segments.argtypes = []
@@ -68,15 +87,20 @@ class RecoVocaleClientEngine:
         self.lib.destroy.argtypes = []
         self.lib.free_cstring.argtypes = [c_char_p]
         self.lib.free_cstring.restype = None
+        self.lib.get_version.restype = ctypes.c_char_p
 
         self.transcription_totale = {}
         self.transcription_en_cours = ""
         self.texte_merge = ""
+        self.version_dll = self.lib.get_version().decode()
+        print(f"Chargement dll version {self.version_dll}")
 
     def connect(self):
         self.lib.init(self.ip.encode(), self.port, self.json_config)
         for _ in range(10):
             if self.lib.is_connected():
+                self.backend = self.get_backend()
+                self.model = self.get_model()
                 self.lib.start_receiving_segments()
                 return True
             time.sleep(0.5)
@@ -88,9 +112,12 @@ class RecoVocaleClientEngine:
     def is_capturing(self) -> bool:
         return self.lib.is_capturing()
 
-    def start(self):
+    def start(self, file=None):
+        if file is not None:
+            print(f"enregistre dans {file}")
+            file = file.encode('utf-8')
         if self.is_connected():
-            self.lib.start_capture()
+            self.lib.start_capture(file)
 
     def wait_transcription_en_cours(self, timer=1.0):
         start = time.time()
@@ -136,6 +163,20 @@ class RecoVocaleClientEngine:
             return chaine
         else:
             return ""
+
+    def get_backend(self) -> str:
+        chaine = self.get_string_and_free(self.lib.get_backend)
+        if chaine is not None:
+            return chaine
+        else:
+            return "None"
+
+    def get_model(self) -> str:
+        chaine = self.get_string_and_free(self.lib.get_model)
+        if chaine is not None:
+            return chaine
+        else:
+            return "None"
 
     def send_end_of_audio(self):
         self.lib.send_end_of_audio()

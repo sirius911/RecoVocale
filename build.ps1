@@ -1,4 +1,4 @@
-# Lecture de la version depuis le fichier
+﻿# Lecture de la version depuis le fichier
 $versionFile = ".\version.txt"
 $version = Get-Content $versionFile | Select-Object -First 1
 $version = $version.Trim()
@@ -18,13 +18,26 @@ $issFile = ".\RecoVocale.iss"
     Set-Content $issFile
 Write-Host "Mise à jour de la version dans RecoVocale.iss"
 
+# Copie de la DLL Rust dans srcs/bin/ pour l'inclusion par PyInstaller
+$dllSource = "C:\Users\lorcyr\recovocale_engine\target\release\recovocale_engine.dll"
+$dllTarget = ".\srcs\bin\recovocale_engine.dll"
+
+if (-not (Test-Path ".\srcs\bin")) {
+    New-Item -ItemType Directory -Path ".\srcs\bin" | Out-Null
+}
+if (Test-Path $dllSource) {
+    Copy-Item -Path $dllSource -Destination $dllTarget -Force
+    Write-Host "DLL Rust copiée dans srcs/bin/ (sera incluse dans le build)"
+} else {
+    Write-Host "❌ DLL Rust non trouvée à $dllSource"
+}
 
 # Compilation avec PyInstaller en utilisant le fichier .spec
 $specFile = ".\RecoVocale.spec"
-Write-Host "Compilation avec PyInstaller..."
+Write-Host "📦 Compilation avec PyInstaller..."
 pyinstaller $specFile
 
-# Copie de ffmpeg.exe dans le bon dossier de distribution
+# Copie de ffmpeg.exe dans dist/bin (non géré par .spec)
 $ffmpegSource = ".\srcs\bin\ffmpeg.exe"
 $ffmpegTargetDir = ".\dist\bin"
 $ffmpegTarget = Join-Path $ffmpegTargetDir "ffmpeg.exe"
@@ -32,12 +45,11 @@ $ffmpegTarget = Join-Path $ffmpegTargetDir "ffmpeg.exe"
 if (-not (Test-Path $ffmpegTargetDir)) {
     New-Item -ItemType Directory -Path $ffmpegTargetDir | Out-Null
 }
-
 if (Test-Path $ffmpegSource) {
     Copy-Item -Path $ffmpegSource -Destination $ffmpegTarget -Force
     Write-Host "ffmpeg.exe copié dans $ffmpegTarget"
 } else {
-    Write-Host "ffmpeg.exe non trouvé dans $ffmpegSource"
+    Write-Host "⚠️ ffmpeg.exe non trouvé dans $ffmpegSource"
 }
 
-Write-Host "Build terminé pour la version $version"
+Write-Host "✅ Build terminé pour la version $version"

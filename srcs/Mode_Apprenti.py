@@ -8,7 +8,7 @@ import tkinter as tk
 from Mode import Mode
 from utils_window import create_menus, create_buttons
 from info import APPRENTI
-from ClientManager import ClientManager
+# from ClientManager import ClientManager
 from sftp_upload import upload_files_to_sftp
 
 
@@ -37,22 +37,22 @@ class Mode_Apprenti(Mode):
         self.temp_dir = tempfile.gettempdir()  # Utiliser le répertoire temporaire du système
         self.temp_wav_file = os.path.join(self.temp_dir, "temp.wav")
         self.temp_txt_file = os.path.join(self.temp_dir, "temp.txt")
-        # ----------------- Lien Client Whisper -----------------------
-        self.client_manager = ClientManager(
-            host=self.app.config.server_ip,
-            port=self.app.config.port,
-            lang="fr",
-            translate=False,
-            use_vad=True,
-            save_output_recording=True,
-            output_recording_filename=self.temp_wav_file,
-            update_callback=self.update_transcriptions,  # Pass the callback to ClientManager
-            insertions=self.app.insertions,
-            fenetre_gestion_insertions=self.is_ouverte,
-            mode=self,
-            nb_repeat=self.app.config.nb_repeat,
-            ip_client=self.app.ip_client,
-        )
+        # # ----------------- Lien Client Whisper -----------------------
+        # self.client_manager = ClientManager(
+        #     host=self.app.config.server_ip,
+        #     port=self.app.config.port,
+        #     lang="fr",
+        #     translate=False,
+        #     use_vad=True,
+        #     save_output_recording=True,
+        #     output_recording_filename=self.temp_wav_file,
+        #     update_callback=self.update_transcriptions,  # Pass the callback to ClientManager
+        #     insertions=self.app.insertions,
+        #     fenetre_gestion_insertions=self.is_ouverte,
+        #     mode=self,
+        #     nb_repeat=self.app.config.nb_repeat,
+        #     ip_client=self.app.ip_client,
+        # )
         super().enter()
         self.pile = ['']
 
@@ -133,15 +133,15 @@ class Mode_Apprenti(Mode):
             pygame.mixer.quit()
             print("Pygame mixer fermé proprement.")
 
-    def pause(self) -> None:
-        """
-        Met le client en pause avec un léger délai pour éviter les conflits.
-        """
+    # def pause(self) -> None:
+    #     """
+    #     Met le client en pause avec un léger délai pour éviter les conflits.
+    #     """
 
-        time.sleep(0.1)
-        if self.app.config.debug:
-            print("Pausing client in Mode Direct")
-        super().pause()
+    #     time.sleep(0.1)
+    #     if self.app.config.debug:
+    #         print("Pausing client in Mode Direct")
+    #     super().pause()
 
     def unpause(self, audio_file=None) -> None:
         """
@@ -151,9 +151,9 @@ class Mode_Apprenti(Mode):
             audio_file (str | None): Fichier audio à transcrire.
         """
 
-        time.sleep(0.1)
-        if self.app.config.debug:
-            print("UnPausing client in Mode Direct")
+        # time.sleep(0.1)
+        # if self.app.config.debug:
+        #     print("UnPausing client in Mode Direct")
         if not self.ready_to_learn:
             super().unpause(audio_file)
 
@@ -162,8 +162,8 @@ class Mode_Apprenti(Mode):
         Arrête le client et interrompt la lecture audio si nécessaire.
         """
 
-        if self.app.config.debug:
-            print("Stop client in Mode Direct")
+        # if self.app.config.debug:
+        #     print("Stop client in Mode Direct")
         if self.audio_playing:
             pygame.mixer.music.stop()
         super().stop_client()
@@ -173,22 +173,22 @@ class Mode_Apprenti(Mode):
         Stoppe la transcription, réactive les boutons, valide le texte
         et relance la vérification orthographique.
         """
-
+        print("Stop() dans Mode Apprentissage", flush=True)
         self.stop_client()
         self.text_box.config(state=tk.NORMAL)
         self.trash_button.config(state=tk.NORMAL)
         self.rec_button.config(state=tk.NORMAL)
         self.transcription_en_cours = False
-        self.transcription.validation()
+        # self.transcription.validation()
         self.set_pos_curseur(self.transcription.fin_insertion)
         self.status_bar.config(text="Transcription ...interrompue", bg='lightblue', fg='darkblue', anchor=tk.W)
         self.verification_dico(True)
 
-    def valid_transcriptions(self) -> None:
-        """
-        Valide la transcription actuelle (alias de `stop_client`).
-        """
-        self.stop_client()
+    # def valid_transcriptions(self) -> None:
+    #     """
+    #     Valide la transcription actuelle (alias de `stop_client`).
+    #     """
+    #     self.stop_client()
 
     def copy_to_clipboard(self) -> None:
         """
@@ -217,10 +217,10 @@ class Mode_Apprenti(Mode):
                 return selected_text, False
             else:
                 # si aucune selection on envoi la transcription complète
-                return self.transcription.get(), True
+                return self.engine.texte_merge, True
         except tk.TclError:
             # Gestion d'erreur si aucune sélection n'est faite
-            return self.transcription.get(), True
+            return self.engine.texte_merge, True
 
     def get_pos_select(self) -> tuple[int, int]:
         """
@@ -254,7 +254,7 @@ class Mode_Apprenti(Mode):
 
         time.sleep(0.5)
         self.save_text_box()
-        self.transcription.clear()
+        self.engine.clear()
         self.text_box.config(state=tk.NORMAL)
         self.text_box.delete('1.0', tk.END)
         self.rec_button.config(state=tk.NORMAL)
@@ -309,48 +309,89 @@ class Mode_Apprenti(Mode):
         # S'assurer que le curseur est visible
         self.text_box.see("insert")
 
-    def update_transcriptions(self, message: str, ending: bool) -> None:
-        """
-        Met à jour le contenu de la transcription affiché à l’écran.
+    # def update_transcriptions(self, message: str, ending: bool) -> None:
+    #     """
+    #     Met à jour le contenu de la transcription affiché à l’écran.
 
-        Args:
-            message (str): Nouveau texte à insérer.
-            ending (bool): True si la phrase est terminée.
-        """
+    #     Args:
+    #         message (str): Nouveau texte à insérer.
+    #         ending (bool): True si la phrase est terminée.
+    #     """
 
-        if not hasattr(self, "text_box") or not self.text_box.winfo_exists():
-            return  # Le widget a été détruit
-        if message is not None:
-            if not self.transcription_en_cours:
+    #     if not hasattr(self, "text_box") or not self.text_box.winfo_exists():
+    #         return  # Le widget a été détruit
+    #     if message is not None:
+    #         if not self.transcription_en_cours:
+    #             self.trash_button.config(state=tk.DISABLED)
+    #             self.transcription_en_cours = True
+    #             self.transcription.pos_cur = self.get_pos_curseur()
+    #             self.transcription.cur_selec = self.get_pos_select()
+    #             self.save_text_box()
+
+    #         self.transcription.update(message)
+    #         self.text_box.config(state=tk.NORMAL)
+    #         self.text_box.delete('1.0', tk.END)
+    #         self.text_box.insert(tk.END, self.transcription.text_box_en_cours)
+    #     if ending:
+    #         self.text_box.config(state=tk.NORMAL)
+    #         self.transcription_en_cours = False
+    #         self.transcription.validation()
+    #         self.set_pos_curseur(self.transcription.fin_insertion)
+    #         self.ready_to_learn = True
+
+    #         self.verification_dico(True)
+    #         if not self.app.recording:
+    #             self.rec_button.config(state=tk.DISABLED)
+    #             self.learning_button.config(state=tk.NORMAL)
+    #             self.play_button.config(state=tk.NORMAL)
+    #             self.trash_button.config(state=tk.NORMAL)
+    #             self.status_bar.config(text="Transcription ...Terminée", bg='lightblue', fg='darkblue', anchor=tk.W)
+    #             self.log(text=self.transcription.text_box_en_cours)
+    #             self.pause()
+    #     else:
+    #         self.text_box.config(state=tk.DISABLED)
+    #         self.set_pos_curseur(self.transcription.pos_cur)
+
+    def update_text_box(self):
+        self.text_box.config(state=tk.NORMAL)
+        texte = self.engine.get(insertions=self.app.insertions,
+                                dico=self.app.config.dictionnaire)
+        self.text_box.delete('1.0', tk.END)
+        self.text_box.insert(tk.END, texte)
+        self.text_box.config(state=tk.DISABLED)
+
+    def start_transcription_loop(self):
+        """
+        Thread de transcription qui affiche les segments partiels et colle les segments complets.
+        """
+        self.running_thread = True
+        # pos_cur = self.get_pos_curseur()
+        # pos_selct = self.get_pos_select()
+        self.save_text_box()
+        # while self.running_thread and self.engine.is_connected():
+        while True:
+            if not hasattr(self, "text_box") or not self.text_box.winfo_exists():
+                return  # Le widget a été détruit
+            try:
                 self.trash_button.config(state=tk.DISABLED)
-                self.transcription_en_cours = True
-                self.transcription.pos_cur = self.get_pos_curseur()
-                self.transcription.cur_selec = self.get_pos_select()
-                self.save_text_box()
+                self.update_text_box()
+                if (self.engine.is_transcription_terminee() and not self.app.recording) or not self.running_thread:
+                    break
 
-            self.transcription.update(message)
-            self.text_box.config(state=tk.NORMAL)
-            self.text_box.delete('1.0', tk.END)
-            self.text_box.insert(tk.END, self.transcription.text_box_en_cours)
-        if ending:
-            self.text_box.config(state=tk.NORMAL)
-            self.transcription_en_cours = False
-            self.transcription.validation()
-            self.set_pos_curseur(self.transcription.fin_insertion)
-            self.ready_to_learn = True
+            except KeyboardInterrupt:
+                break
+            except Exception as e:
+                print(f"[Mode_Direct] Erreur dans le thread : {e}")
 
-            self.verification_dico(True)
-            if not self.app.recording:
-                self.rec_button.config(state=tk.DISABLED)
-                self.learning_button.config(state=tk.NORMAL)
-                self.play_button.config(state=tk.NORMAL)
-                self.trash_button.config(state=tk.NORMAL)
-                self.status_bar.config(text="Transcription ...Terminée", bg='lightblue', fg='darkblue', anchor=tk.W)
-                self.log(text=self.transcription.text_box_en_cours)
-                self.pause()
-        else:
-            self.text_box.config(state=tk.DISABLED)
-            self.set_pos_curseur(self.transcription.pos_cur)
+            # time.sleep(0.1)
+        print("Fin du Thread")
+        self.running_thread = False
+        self.update_text_box()
+        self.text_box.config(state=tk.NORMAL)
+        self.rec_button.config(state=tk.DISABLED)
+        self.learning_button.config(state=tk.NORMAL)
+        self.play_button.config(state=tk.NORMAL)
+        self.trash_button.config(state=tk.NORMAL)
 
     def learning(self) -> None:
         """

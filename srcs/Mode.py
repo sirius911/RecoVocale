@@ -1,5 +1,6 @@
 import re
 import string
+import threading
 import time
 import enchant
 import tkinter as tk
@@ -85,16 +86,16 @@ class Mode:
 
     #     self.stop_client()
 
-    # def stop_client(self) -> None:
-    #     """
-    #     Valide la transcription en cours et arrête le client associé.
-    #     """
-
-    #     self.transcription.validation()
-    #     if self.client_manager:
-    #         self.client_manager.stop_client()
-    #     self.app.recording = False
-    #     self.update()
+    def stop_client(self) -> None:
+        """
+        Arrête le client de transcription.
+        """
+        self.app.recording = False
+        self.running_thread = False
+        if self.thread and self.thread.is_alive():
+            self.thread.join(timeout=0.5)
+        self.engine.stop()
+        self.update()
 
     def copy_to_clipboard(self) -> None:
         """
@@ -107,20 +108,31 @@ class Mode:
         time.sleep(0.5)
         self._update_barre_status()
 
-    # def pause(self) -> None:
-    #     """
-    #     Met en pause la transcription et met à jour le statut serveur.
-    #     """
+    def pause(self) -> None:
+        """
+        Met en pause la transcription et met à jour.
+        """
+        if self.app.recording:
+            self.engine.stop()
+            self.app.recording = False
+            self.update()
 
-    #     self.client_manager.pause()
-    #     self.app.recording = False
-    #     self.app.status_server = check_server_status(self.app.config.server_ip,
-    #                                                  self.app.config.port,
-    #                                                  self.app.ip_client)
-    #     self.update()
+    def unpause(self, audio_file=None):
+        if not self.app.recording:
+            # self.engine.start()
+            if not self.engine.is_connected():
+                if not self.engine.connect():
+                    print("❌ Impossible de se connecter au serveur WhisperLive via DLL.")
+                    self.status_bar.config(text='Impossible de se connecter au serveur WhisperLive via DLL.',
+                                           bg='lightblue', fg='darkblue', anchor=tk.W)
+                    return
+            if not self.running_thread:
+                self.engine.start()
+                self.thread = threading.Thread(target=self.start_transcription_loop, daemon=True)
+                self.thread.start()
 
-    # def unpause(self, file_path=None) -> None:
-    #     pass
+            self.app.recording = True
+        self.update()
 
     def exit_app(self) -> None:
         """
@@ -523,9 +535,8 @@ class Mode:
             text (str): Texte de la transcription à inclure dans le log.
         """
 
-        model = ""
-        if self.client_manager:
-            model = self.client_manager.model
+        model = self.engine.model
+
         if self.file_source is not None:
             mode = f"[{self.mode.name}] - fichier: {self.file_source}"
         else:
@@ -533,4 +544,4 @@ class Mode:
         envoyer_log(event="transcription",
                     texte=text,
                     mode=mode,
-                    model=model)
+                    model=model,)
