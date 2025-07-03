@@ -122,6 +122,15 @@ class RecoVocaleClientEngine:
     def wait_transcription_en_cours(self, timer=1.0):
         start = time.time()
         while not self.is_transcription_terminee():
+            self._update()
+            if (time.time()-start) > timer:
+                return False
+            time.sleep(0.2)
+        return True
+
+    def wait_connected(self, timer=5.0):
+        start = time.time()
+        while not self.lib.is_connected():
             if (time.time()-start) > timer:
                 return False
             time.sleep(0.2)
@@ -234,8 +243,9 @@ class RecoVocaleClientEngine:
             print("partial vide")
 
     def merge(self):
-        self.transcription_totale.clear()
+        self.transcription_totale = {}
         print(f"Je dois merger [{self.texte_merge}]", flush=True)
+        print(f"transcription_en_cours = {self.transcription_en_cours}")
         self._add(self.texte_merge)
 
     def clear(self) -> None:

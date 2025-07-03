@@ -19,25 +19,24 @@ class Mode_Reduit(Mode):
 
     Hérite de la classe `Mode`.
     """
+    def __init__(self, app, mode=REDUIT):
+        super().__init__(app, mode)
+        self.enter()
 
     def enter(self) -> None:
         """
         Initialise l'interface et configure le client de transcription pour le mode Réduit.
         """
-
-        self.mode = REDUIT
-        self.mod_var.set(REDUIT)
-        self.ui()
-        self.client_manager = None
-
         super().enter()
+        # self.mode = REDUIT
+        # self.mod_var.set(REDUIT)
+        self.ui()
+        # self.client_manager = None
         self.pile = ['']
         self.a_ecrit = False  # permet de ne pas écrire deux fois si le client stop avant la fin
-        self.repetition = 0
-        self.texte_memoire = ""
-        self.running_thread = False
+        # self.repetition = 0
+        # self.texte_memoire = ""
         self.shown_segments = set()
-        self.thread = None
 
     def ui(self) -> None:
         """
@@ -201,14 +200,14 @@ class Mode_Reduit(Mode):
         super().exit()
         return ""
 
-    def handle_dropped_file(self, file_path: str) -> None:
-        """
-        Gère un fichier audio glissé-déposé. Non implémenté dans ce mode.
+    # def handle_dropped_file(self, file_path: str) -> None:
+    #     """
+    #     Gère un fichier audio glissé-déposé. Non implémenté dans ce mode.
 
-        Args:
-            file_path (str): Chemin vers le fichier audio.
-        """
+    #     Args:
+    #         file_path (str): Chemin vers le fichier audio.
+    #     """
 
-        self.status_bar.config(text='Non implémenté', bg='lightblue', fg='darkblue', anchor=tk.W)
-        # print(f"[Mode_Direct] Traitement du fichier : {file_path}")
-        # self.unpause(file_path)
+    #     self.status_bar.config(text='Non implémenté', bg='lightblue', fg='darkblue', anchor=tk.W)
+    #     # print(f"[Mode_Direct] Traitement du fichier : {file_path}")
+    #     # self.unpause(file_path)

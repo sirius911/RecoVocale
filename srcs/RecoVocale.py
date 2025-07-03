@@ -155,16 +155,14 @@ class App:
             if self.current_mode.mode != mode:
                 self.current_mode.stop()
                 log_en_cours = self.console_debug.get_log_message()
-                text_en_cours = self.current_mode.exit()
                 self.current_mode = None
                 if mode == DIRECT:
                     self.current_mode = Mode_Direct(self)
-                    self.current_mode.update_transcriptions(message=text_en_cours, ending=True)
+                    time.sleep(0.5)
                 elif mode == APPRENTI:
                     self.current_mode = Mode_Apprenti(self)
                 elif mode == REDUIT:
                     self.current_mode = Mode_Reduit(self)
-                    self.current_mode.update_transcriptions(message=text_en_cours, ending=True)
                 else:
                     self.console_debug.log_message("Erreur de Mode dans App")
                     self.on_closing()

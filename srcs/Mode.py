@@ -33,7 +33,7 @@ class Mode:
         model: Nom du modèle utilisé pour la transcription.
     """
 
-    def __init__(self, app):
+    def __init__(self, app, mode):
         """
         Initialise le mode avec la fenêtre principale, le dictionnaire,
         et configure les propriétés visuelles.
@@ -44,7 +44,9 @@ class Mode:
 
         self.app = app
         self.root = app.root
+        self.mode = mode
         self.mod_var = tk.StringVar()
+        self.mod_var.set(mode)
         self.transcription = Transcription()
         self.fenetre_gestion_ouverte = False  # Attribut pour savoir si la fenêtre est ouverte
         self.simulator_keyboard = None
@@ -59,7 +61,7 @@ class Mode:
                                              ip_client=self.app.ip_client)
         self.thread = None
         self.running_thread = False
-        self.enter()
+        # self.enter()
 
     def enter(self) -> None:
         """
@@ -218,8 +220,17 @@ class Mode:
         if self.app.config.debug:
             self.app.info()
 
-    def update_transcriptions(self, message: str, ending: bool) -> None:
-        pass
+    # def update_transcriptions(self, message: str) -> None:
+    #     self.status_bar.config(text='Connexion ... en cours',
+    #                            bg='lightblue', fg='darkblue', anchor=tk.W)
+    #     if self.engine.wait_connected():
+    #         self.status_bar.config(text='Connexion ... Ok',
+    #                                bg='lightblue', fg='darkblue', anchor=tk.W)
+    #         self.engine.set(message)
+    #         self.write_text_box(self.engine.texte_merge)
+    #     else:
+    #         self.status_bar.config(text='Connexion ... echouée',
+    #                                bg='white', fg='red', anchor=tk.W)
 
     def name(self) -> str:
         """
@@ -286,10 +297,8 @@ class Mode:
         """
         Détruit tous les widgets enfants de la fenêtre principale.
         """
-
         for widget in self.root.winfo_children():
             widget.destroy()
-        # return self.transcription.get() # on retourne la transcription en cours
 
     def ouvrir_gestion_insertions(self) -> None:
         """
@@ -535,7 +544,7 @@ class Mode:
             text (str): Texte de la transcription à inclure dans le log.
         """
 
-        model = self.engine.model
+        model = self.engine.get_model()
 
         if self.file_source is not None:
             mode = f"[{self.mode.name}] - fichier: {self.file_source}"

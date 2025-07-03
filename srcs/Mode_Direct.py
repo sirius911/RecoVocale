@@ -20,19 +20,21 @@ class Mode_Direct(Mode):
 
     Hérite de la classe `Mode` pour les fonctionnalités communes.
     """
+    def __init__(self, app, mode=DIRECT):
+        super().__init__(app, mode)
+        self.enter()
 
     def enter(self) -> None:
         """
         Initialise l’interface utilisateur pour le mode direct, configure le client,
         et prépare l’état de l’application.
         """
-
-        self.mode = DIRECT
-        self.mod_var.set(DIRECT)
-        self.ui()
-        self.client_manager = None
-
         super().enter()
+        # self.mode = DIRECT
+        # self.mod_var.set(DIRECT)
+        self.ui()
+        # self.client_manager = None
+
         self.pile = ['']
         self.transcription_interrompue = False
 
@@ -289,13 +291,19 @@ class Mode_Direct(Mode):
     #         self.text_box.config(state=tk.DISABLED)
     #         self.set_pos_curseur(self.transcription.pos_cur)
 
+    def write_text_box(self, texte):
+        if self.text_box:
+            self.text_box.config(state=tk.NORMAL)
+            self.text_box.delete('1.0', tk.END)
+            self.text_box.insert(tk.END, texte)
+            self.text_box.config(state=tk.DISABLED)
+        else:
+            print("Pas de TextBox")
+
     def update_text_box(self):
-        self.text_box.config(state=tk.NORMAL)
         texte = self.engine.get(insertions=self.app.insertions,
                                 dico=self.app.config.dictionnaire)
-        self.text_box.delete('1.0', tk.END)
-        self.text_box.insert(tk.END, texte)
-        self.text_box.config(state=tk.DISABLED)
+        self.write_text_box(texte)
 
     def start_transcription_loop(self):
         """
@@ -320,14 +328,18 @@ class Mode_Direct(Mode):
                 print(f"[Mode_Direct] Erreur dans le thread : {e}")
 
             # time.sleep(0.1)
-        print("Fin du Thread")
+        print("Fin du Thread Mode Direct avec is_transcription_terminée() =", self.engine.is_transcription_terminee())
+        # essais si la transcription n'est pas terminéee on attend
+        while not self.engine.is_transcription_terminee():
+            self.update_text_box()
+            # il faudra mettre un garde fou pour qu'au dela de 5 secondes on sorte de la boucle
         self.running_thread = False
         self.trash_button.config(state=tk.NORMAL)
         self.rec_button.config(state=tk.NORMAL)
         # self.engine.print_all_segments()
-        self.update_text_box()
+        # self.update_text_box()
         self.text_box.config(state=tk.NORMAL)
-        self.log(text=self.engine.get_completed())
+        self.log(text=self.engine.texte_merge)
 
     def copy_to_clipboard(self) -> None:
         """
@@ -347,19 +359,18 @@ class Mode_Direct(Mode):
         Returns:
             str: Texte actuellement dans la zone de transcription.
         """
-
-        retour = self.text_box.get("1.0", tk.END)  # on retourne la transcription en cours
+        retour = self.text_box.get("1.0", tk.END).rstrip("\n")  # on retourne la transcription en cours
         super().exit()
         return retour
 
-    def handle_dropped_file(self, file_path: str) -> None:
-        """
-        Gère un fichier glissé-déposé. (Ici, la fonctionnalité n’est pas encore implémentée.)
+    # def handle_dropped_file(self, file_path: str) -> None:
+    #     """
+    #     Gère un fichier glissé-déposé. (Ici, la fonctionnalité n’est pas encore implémentée.)
 
-        Args:
-            file_path (str): Chemin vers le fichier audio.
-        """
+    #     Args:
+    #         file_path (str): Chemin vers le fichier audio.
+    #     """
 
-        self.status_bar.config(text='Non implémenté', bg='lightblue', fg='darkblue', anchor=tk.W)
-        # print(f"[Mode_Direct] Traitement du fichier : {file_path}")
-        # self.unpause(file_path)
+    #     self.status_bar.config(text='Non implémenté', bg='lightblue', fg='darkblue', anchor=tk.W)
+    #     # print(f"[Mode_Direct] Traitement du fichier : {file_path}")
+    #     # self.unpause(file_path)
