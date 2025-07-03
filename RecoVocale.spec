@@ -1,14 +1,10 @@
 # -*- mode: python ; coding: utf-8 -*-
 
-binaries = [
-    ('srcs/bin/recovocale_engine.dll', 'bin'),
-    ('srcs/bin/ffmpeg.exe', 'bin'),
-]
-
+print(">>> USING CUSTOM SPEC FILE <<<")
 a = Analysis(
     ['srcs\\RecoVocale.py'],
     pathex=[],
-    binaries=binaries,
+    binaries=[],
     datas=[('srcs/Icons', 'Icons'), ('srcs/config', 'config')],
     hiddenimports=['scipy.io'],
     hookspath=[],

@@ -5,6 +5,7 @@
 OutputDir=install
 OutputBaseFilename=install_1.32
 SetupIconFile=reco.ico
+
 ; Nom de l'application
 AppName=RecoVocale
 ; Version de l'application
@@ -13,6 +14,7 @@ AppVersion=1.32
 DefaultDirName={pf}\RecoVocale
 ; Répertoire par défaut dans le menu démarrer
 DefaultGroupName=RecoVocale
+
 ; Fichier de licence (optionnel)
 LicenseFile="C:\\Users\\lorcyr\\RecoVocale\\LICENSE.txt"
 

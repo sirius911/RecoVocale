@@ -27,29 +27,36 @@ if (-not (Test-Path ".\srcs\bin")) {
 }
 if (Test-Path $dllSource) {
     Copy-Item -Path $dllSource -Destination $dllTarget -Force
-    Write-Host "DLL Rust copiée dans srcs/bin/ (sera incluse dans le build)"
+    Write-Host "✅ DLL Rust copiée dans srcs/bin/"
 } else {
     Write-Host "❌ DLL Rust non trouvée à $dllSource"
 }
 
-# Compilation avec PyInstaller en utilisant le fichier .spec
+# 🧹 Supprimer les anciens dossiers de build et dist pour forcer une recompilation propre
+if (Test-Path ".\build") {
+    Remove-Item -Recurse -Force ".\build"
+}
+if (Test-Path ".\dist") {
+    Remove-Item -Recurse -Force ".\dist"
+}
+Write-Host "🧹 Dossiers build/ et dist/ supprimés"
+
+# 📦 Compilation avec PyInstaller
 $specFile = ".\RecoVocale.spec"
 Write-Host "📦 Compilation avec PyInstaller..."
 pyinstaller $specFile
 
-# Copie de ffmpeg.exe dans dist/bin (non géré par .spec)
-$ffmpegSource = ".\srcs\bin\ffmpeg.exe"
-$ffmpegTargetDir = ".\dist\bin"
-$ffmpegTarget = Join-Path $ffmpegTargetDir "ffmpeg.exe"
+# 🔁 Recrée manuellement le dossier bin dans dist si nécessaire
+$distBin = ".\dist\bin"
 
-if (-not (Test-Path $ffmpegTargetDir)) {
-    New-Item -ItemType Directory -Path $ffmpegTargetDir | Out-Null
+if (-not (Test-Path $distBin)) {
+    New-Item -ItemType Directory -Path $distBin | Out-Null
 }
-if (Test-Path $ffmpegSource) {
-    Copy-Item -Path $ffmpegSource -Destination $ffmpegTarget -Force
-    Write-Host "ffmpeg.exe copié dans $ffmpegTarget"
-} else {
-    Write-Host "⚠️ ffmpeg.exe non trouvé dans $ffmpegSource"
-}
+
+# 🔁 Copie ffmpeg.exe et la DLL Rust manuellement
+Copy-Item -Path ".\srcs\bin\ffmpeg.exe" -Destination "$distBin\" -Force
+Copy-Item -Path ".\srcs\bin\recovocale_engine.dll" -Destination "$distBin\" -Force
+Write-Host "✅ Copie manuelle de ffmpeg.exe et de la DLL dans dist/bin/"
+
 
 Write-Host "✅ Build terminé pour la version $version"
