@@ -1,3 +1,4 @@
+import time
 import tkinter as tk
 from pynput.keyboard import Key
 
@@ -28,14 +29,9 @@ class Mode_Reduit(Mode):
         Initialise l'interface et configure le client de transcription pour le mode Réduit.
         """
         super().enter()
-        # self.mode = REDUIT
-        # self.mod_var.set(REDUIT)
         self.ui()
-        # self.client_manager = None
         self.pile = ['']
-        self.a_ecrit = False  # permet de ne pas écrire deux fois si le client stop avant la fin
-        # self.repetition = 0
-        # self.texte_memoire = ""
+        self.a_ecrit = False
         self.shown_segments = set()
 
     def ui(self) -> None:
@@ -53,66 +49,6 @@ class Mode_Reduit(Mode):
         # Create the status bar at the bottom of the window
         self.status_bar = tk.Label(self.root, text=f"RecoVocale {VERSION}", bd=1, relief=tk.SUNKEN, anchor=tk.W)
         self.status_bar.grid(row=2, column=0, sticky="ew")
-
-    # def _update_barre_status(self) -> None:
-    #     """
-    #     Met à jour le message affiché dans la barre de statut selon l'état de l'application.
-    #     """
-    #     message = f"RecoVocale {VERSION}"
-
-    #     if not self.engine.is_connected():
-    #         self.status_bar.config(text=message, fg='red', bg='lightblue', anchor=tk.W)
-    #     elif self.engine.is_capturing():
-    #         if self.file_source is not None:
-    #             message = f"Transcription de [{self.file_source}] ... en cours"
-    #         else:
-    #             message = "Transcription en cours..."
-    #         self.status_bar.config(text=message, fg='black', bg='red', anchor=tk.CENTER)
-    #     elif not self.engine.is_transcription_terminee():
-    #         self.status_bar.config(text="Transcription ...en cours", bg='lightblue', fg='darkblue', anchor=tk.W)
-    #     else:
-    #         self.status_bar.config(text=message, bg='lightblue', fg='darkblue', anchor=tk.W)
-
-    # def pause(self) -> None:
-    #     if self.app.recording:
-    #         print("Pause() in Mode Réduit")
-    #         self.engine.stop()
-    #         # self.running_thread = False
-    #         self.app.recording = False
-    #         self.update()
-
-    # def unpause(self, audio_file=None) -> None:
-    #     if not self.app.recording:
-    #         print("UnPausing client in Mode Réduit")
-    #         self.engine.start()
-    #         if not self.engine.is_connected():
-    #             if not self.engine.connect():
-    #                 print("❌ Impossible de se connecter au serveur WhisperLive via DLL.")
-    #                 return
-    #         if not self.running_thread:
-    #             self.engine.start()
-    #             self.thread = threading.Thread(target=self.start_transcription_loop, daemon=True)
-    #             self.thread.start()
-    #         else:
-    #             print(f"non démarrage du threading car running_thread = True, recording = {self.app.recording}")
-
-    #         self.app.recording = True
-    #     self.update()
-    #     print("sortie de unpause()")
-
-    # def stop_client(self) -> None:
-    #     """
-    #     Arrête le client de transcription.
-    #     """
-
-    #     print("Stop client in Mode Réduit")
-    #     self.app.recording = False
-    #     self.running_thread = False
-    #     if self.thread and self.thread.is_alive():
-    #         self.thread.join(timeout=0.5)
-    #     self.engine.stop()
-    #     self.update()
-    #     # super().stop_client()
 
     def stop(self) -> None:
         """
@@ -161,22 +97,51 @@ class Mode_Reduit(Mode):
         Thread de transcription qui affiche les segments partiels et colle les segments complets.
         """
         self.running_thread = True
+        temps_attente_debut = None
 
         while True:
             try:
                 self.update_reduit()
-                if (self.engine.is_transcription_terminee() and self.a_ecrit
-                        and not self.app.recording) or not self.running_thread:
-                    break
 
+                pas_enregistrement = not self.app.recording
+                pret_a_sortir = pas_enregistrement or not self.running_thread
+
+                if pret_a_sortir:
+                    if not self.running_thread:
+                        break
+                    else:
+                        if temps_attente_debut is None:
+                            temps_attente_debut = time.time()
+                        elif time.time() - temps_attente_debut > 3:
+                            print("[Mode_Reduit] Plus de 3 secondes sans activité, arrêt du thread.")
+                            break
+                else:
+                    # on réinitialise le timer si on n’est plus dans l’état "quasi-fin"
+                    temps_attente_debut = None
             except Exception as e:
                 print(f"[Mode_Reduit] Erreur dans le thread : {e}")
-            # time.sleep(0.1)
 
-        print(f"Sortie du thread avec self.app.recording = {self.app.recording}")
-        # self.engine.print_transcriptions_lignes()
+        print(f"Sortie du thread avec self.app.recording = {self.app.recording}\n"
+              f"et is_transcription_terminée = {self.engine.is_transcription_terminee()}\n"
+              f"a_ecrit = {self.a_ecrit}\n")
+        start = time.time()
+        while not self.engine.is_transcription_terminee():
+
+            self.status_bar.config(text='transcription...',
+                                   bg='lightblue', fg='darkblue', anchor=tk.CENTER)
+            self.engine._update()
+            if (time.time()-start) > 1.5:
+                print("Timeout dans le thread de transcription, on sort")
+                break
+        text_bulle = remove_bubble()
+        if not self.a_ecrit and text_bulle:
+            self.root.clipboard_append(text_bulle)
+            Simulator([Key.ctrl, 'v'])
+            self.a_ecrit = True
+            self.log(text=text_bulle)
+
         self.running_thread = False
-        # self.update_reduit()
+        self.engine.clear()
 
     def clear_text_box(self) -> None:
         """

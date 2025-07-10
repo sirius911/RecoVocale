@@ -283,21 +283,42 @@ def show_bubble_message(parent: tk.Tk, message: str, background: str = "yellow")
         bubble.geometry(f"+{x}+{y}")
 
 
+def get_text_bubble() -> str:
+    """
+    Retourne le texte actuellement affiché dans la bulle de message.
+
+    Returns:
+        str: Texte de la bulle, ou une chaîne vide si aucune bulle n'est active.
+    """
+
+    global label_in_bubble
+    try:
+        if label_in_bubble is not None:
+            return label_in_bubble.cget("text")
+        return ""
+    except tk.TclError:
+        return ""
+
+
 def remove_bubble() -> None:
     """
     Ferme la bulle de message si elle existe.
     """
 
     global bubble, label_in_bubble
+    text = ""
     try:
         if bubble is not None:
+            text = get_text_bubble()
             bubble.destroy()
+        else:
+            print("[utils_window] Aucune bulle à détruire.")
     except tk.TclError as e:
         print(f"[utils_window] Erreur lors de la destruction de la bulle : {e}")
     finally:
         bubble = None
         label_in_bubble = None
-
+        return text
 
 def update_bubble_background(color: str) -> None:
     """

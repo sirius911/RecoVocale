@@ -137,10 +137,9 @@ class Mode_Direct(Mode):
 
         print("Stop() dans Mode Direct", flush=True)
         self.stop_client()
-        self.engine.wait_transcription_en_cours(1.0)
+        self.engine.wait_transcription_en_cours(2.0)
         self.engine.clear_transcriptions()
         self.engine.merge()
-        # self.engine.clear_transcriptions()
         self.running_thread = False
         self.text_box.config(state=tk.NORMAL)
         self.trash_button.config(state=tk.NORMAL)
@@ -151,10 +150,6 @@ class Mode_Direct(Mode):
         self.status_bar.config(text="Transcription ...interrompue", bg='lightblue', fg='darkblue', anchor=tk.W)
         self.transcription_interrompue = True
         self.verification_dico(True)
-
-    # def valid_transcriptions(self):
-    #     pass
-    #     # self.stop_client()
 
     def get_selected_text(self) -> tuple[str, bool]:
         """
@@ -250,47 +245,6 @@ class Mode_Direct(Mode):
         # S'assurer que le curseur est visible
         self.text_box.see("insert")
 
-    # def update_transcriptions(self, message: str, ending: bool) -> None:
-    #     """
-    #     Met à jour le contenu de la transcription dans la zone de texte.
-
-    #     Args:
-    #         message (str): Segment de texte reçu.
-    #         ending (bool): True si la phrase est terminée.
-    #     """
-
-    #     if not hasattr(self, "text_box") or not self.text_box.winfo_exists():
-    #         return  # Le widget a été détruit
-    #     if message is not None and not self.transcription_interrompue:
-    #         if not self.transcription_en_cours:
-    #             self.transcription_en_cours = True
-    #             self.trash_button.config(state=tk.DISABLED)
-    #             self.transcription.pos_cur = self.get_pos_curseur()
-    #             self.transcription.cur_selec = self.get_pos_select()
-    #             self.save_text_box()
-
-    #         self.transcription.update(message)
-    #         self.text_box.config(state=tk.NORMAL)
-    #         self.text_box.delete('1.0', tk.END)
-    #         self.text_box.insert(tk.END, self.transcription.text_box_en_cours)
-
-    #     if ending:
-    #         self.text_box.config(state=tk.NORMAL)
-    #         self.trash_button.config(state=tk.NORMAL)
-    #         self.rec_button.config(state=tk.NORMAL)
-    #         self.transcription_en_cours = False
-    #         self.transcription.validation()
-    #         self.set_pos_curseur(self.transcription.fin_insertion)
-    #         self.log(self.transcription.text_en_cours)
-    #         self.verification_dico(True)
-
-    #         # ✅ on ne stoppe plus l'enregistrement
-    #         self.status_bar.config(text="Segment validé", bg='lightblue', fg='darkblue', anchor=tk.W)
-
-    #     else:
-    #         self.text_box.config(state=tk.DISABLED)
-    #         self.set_pos_curseur(self.transcription.pos_cur)
-
     def write_text_box(self, texte):
         if self.text_box:
             self.text_box.config(state=tk.NORMAL)
@@ -330,16 +284,22 @@ class Mode_Direct(Mode):
             # time.sleep(0.1)
         print("Fin du Thread Mode Direct avec is_transcription_terminée() =", self.engine.is_transcription_terminee())
         # essais si la transcription n'est pas terminéee on attend
+        start = time.time()
         while not self.engine.is_transcription_terminee():
+
+            self.status_bar.config(text='Attente fin de transcription...',
+                                   bg='lightblue', fg='darkblue', anchor=tk.CENTER)
             self.update_text_box()
-            # il faudra mettre un garde fou pour qu'au dela de 5 secondes on sorte de la boucle
+            if (time.time()-start) > 1.5:
+                print("Timeout dans le thread de transcription, on sort")
+                break
         self.running_thread = False
         self.trash_button.config(state=tk.NORMAL)
         self.rec_button.config(state=tk.NORMAL)
         # self.engine.print_all_segments()
         # self.update_text_box()
         self.text_box.config(state=tk.NORMAL)
-        self.log(text=self.engine.texte_merge)
+        self.log(nb_mots=self.engine.get_nb_mots_trancripts())
 
     def copy_to_clipboard(self) -> None:
         """

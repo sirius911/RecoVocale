@@ -7,6 +7,7 @@ from ctypes import c_char_p, c_uint, c_bool
 import uuid
 
 from Correcteur import intercept, corrige_ponctuation, corriger_texte
+from loger import compter_mots
 
 
 PATH_LIB = "C:/Users/lorcyr/recovocale_engine/target/release/recovocale_engine.dll"
@@ -93,6 +94,8 @@ class RecoVocaleClientEngine:
         self.transcription_en_cours = ""
         self.texte_merge = ""
         self.version_dll = self.lib.get_version().decode()
+
+        self.nb_mots_trancripts = 0
         print(f"Chargement dll version {self.version_dll}")
 
     def connect(self):
@@ -138,8 +141,9 @@ class RecoVocaleClientEngine:
 
     def stop(self):
         if self.is_connected():
-            self.wait_transcription_en_cours(1.0)
             self.lib.stop_capture()
+            self.send_end_of_audio()
+            self.wait_transcription_en_cours(3.0)
 
     def get_string_and_free(self, getter_func):
         ptr = getter_func()
@@ -228,13 +232,14 @@ class RecoVocaleClientEngine:
             text_to_copy = text_apres_ponctuation
         self.texte_merge = text_to_copy
         if insertion:
-            self.wait_transcription_en_cours(1.0)
+            # self.wait_transcription_en_cours(1.0)
             self.clear_transcriptions()
             self.merge()
 
         return text_to_copy
 
     def print_transcriptions_lignes(self):
+        # pour debug
         for i, phrase in enumerate(self.transcription_totale.keys()):
             print(f"{i} -> {phrase}")
         if self.transcription_en_cours:
@@ -244,8 +249,8 @@ class RecoVocaleClientEngine:
 
     def merge(self):
         self.transcription_totale = {}
-        print(f"Je dois merger [{self.texte_merge}]", flush=True)
-        print(f"transcription_en_cours = {self.transcription_en_cours}")
+        # print(f"Je dois merger [{self.texte_merge}]", flush=True)
+        # print(f"transcription_en_cours = {self.transcription_en_cours}")
         self._add(self.texte_merge)
 
     def clear(self) -> None:
@@ -254,7 +259,13 @@ class RecoVocaleClientEngine:
         self.transcription_totale = {}
         self.transcription_en_cours = ""
         self.texte_merge = ""
+        self.nb_mots_trancripts = 0
 
     def set(self, texte) -> None:
         self.texte_merge = texte
         self.merge()
+
+    def get_nb_mots_trancripts(self) -> int:
+        nb_mots = compter_mots(phrase=self.texte_merge) - self.nb_mots_trancripts
+        self.nb_mots_trancripts += nb_mots
+        return nb_mots

@@ -306,8 +306,6 @@ def intercept(phrases: str, dico_insertion: dict[str, str]):
     _insertion = False
     phrase_interceptee, _insertion = insertion(phrases, dico_insertion)
     resultat = convertir_unites(phrase_interceptee)
-    if _insertion:
-        print("****/*/*/*/*/ INSERTION /*/*/*****")
     return resultat, _insertion
 
 

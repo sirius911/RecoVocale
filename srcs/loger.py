@@ -8,11 +8,12 @@ from datetime import datetime, timezone
 def compter_mots(phrase: str) -> int:
     # mots = re.findall(r"\b\w+(?:'\w+)?\b", phrase)
     mots = phrase.strip().split()
-    print(f"[LOG] Nombre de mots comptés : {len(mots)} dans la phrase : '{phrase}'")
+    # print(f"[LOG] Nombre de mots comptés : {len(mots)} dans la phrase : '{phrase}'")
     return len(mots)
 
 
-def envoyer_log(event="start", texte: str = "", mode: str = "Inconnu", model: str = "Inconnu") -> None:
+def envoyer_log(event="start", texte: str = "", nb_mots: int = 0,
+                mode: str = "Inconnu", model: str = "Inconnu") -> None:
     """
     Envoie un événement de log au serveur distant pour journalisation.
 
@@ -28,7 +29,8 @@ def envoyer_log(event="start", texte: str = "", mode: str = "Inconnu", model: st
     Returns:
         None
     """
-
+    if event == "transcription" and nb_mots == 0:
+        nb_mots = compter_mots(texte)
     try:
         log_data = {
             "event": event,
@@ -37,9 +39,9 @@ def envoyer_log(event="start", texte: str = "", mode: str = "Inconnu", model: st
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "mode": mode,
             "model": model,
-            "nb_mots": compter_mots(texte),
+            "nb_mots": nb_mots,
         }
-        print(f"[LOG] Envoi du log : {log_data}")
+        # print(f"[LOG] Envoi du log : {log_data}")
         requests.post("http://10.1.147.12:5000/log", json=log_data, timeout=2)
     except Exception as e:
         print(f"[LOG] Échec d'envoi du log : {e}")

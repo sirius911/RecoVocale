@@ -153,8 +153,10 @@ class App:
         if self.current_mode:
             # last_model = self.current_mode.engine.model
             if self.current_mode.mode != mode:
-                self.current_mode.stop()
                 log_en_cours = self.console_debug.get_log_message()
+                self.current_mode.stop()
+                self.current_mode.exit()
+                # log_en_cours = self.console_debug.get_log_message()
                 self.current_mode = None
                 if mode == DIRECT:
                     self.current_mode = Mode_Direct(self)
@@ -168,17 +170,16 @@ class App:
                     self.on_closing()
 
                 # Utiliser after_idle pour s'assurer que geometry est bien appliqué
-                geometry_str = (
-                    f"{self.current_mode.mode.window_width}"
-                    f"x{self.current_mode.mode.window_height}"
-                    f"+{self.config.x_window}"
-                    f"+{self.config.y_window}"
-                )
-                self.root.after_idle(lambda: self.root.geometry(geometry_str))
+                # geometry_str = (
+                #     f"{self.current_mode.mode.window_width}"
+                #     f"x{self.current_mode.mode.window_height}"
+                #     f"+{self.config.x_window}"
+                #     f"+{self.config.y_window}"
+                # )
+                # self.root.after_idle(lambda: self.root.geometry(geometry_str))
                 if self.mic:
                     self.mic.change_mode(self.current_mode)
 
-                # self.current_mode.engine.model = last_model  # A REVOIR
                 # touches de Raccourcis
                 keyboard.clear_all_hotkeys()
                 if self.shortcut_manager.keyboard_shortcut:
@@ -222,6 +223,19 @@ class App:
             else:
                 self.console_debug.append_status_with_format(
                     f"NOT Connected @{self.config.server_ip}:{self.config.port}\n", color="red")
+
+            self.console_debug.append_status_with_format("running_thread : ", font_style="italic")
+            self.console_debug.append_status_with_format(f"{self.current_mode.running_thread}\n",
+                                                         color=f"{"green" if self.current_mode.running_thread else "red"}")
+
+            self.console_debug.append_status_with_format("recording : ", font_style="italic")
+            self.console_debug.append_status_with_format(f"{self.recording}\n",
+                                                         color=f"{"green" if self.recording else "red"}")
+
+            self.console_debug.append_status_with_format("engine.is_transcription_terminee() : ", font_style="italic")
+            self.console_debug.append_status_with_format(f"{self.current_mode.engine.is_transcription_terminee()}\n",
+                                                         color=f"{"green" if self.current_mode.engine.is_transcription_terminee() else "red"}")
+
             self.console_debug.append_status_with_format("Service : ", font_style="italic")
             self.console_debug.append_status_with_format(f"{self.config.service}\n", color="green")
             self.console_debug.append_status_with_format("IP client : ", font_style="italic")

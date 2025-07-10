@@ -61,7 +61,7 @@ class Mode:
                                              ip_client=self.app.ip_client)
         self.thread = None
         self.running_thread = False
-        # self.enter()
+        self.transcription_interrompue = False
 
     def enter(self) -> None:
         """
@@ -80,13 +80,6 @@ class Mode:
 
     def get_selected_text(self):
         return self.transcription.get()
-
-    # def valid_transcriptions(self) -> None:
-    #     """
-    #     Valide les transcriptions (raccourci pour `stop_client()`).
-    #     """
-
-    #     self.stop_client()
 
     def stop_client(self) -> None:
         """
@@ -114,14 +107,16 @@ class Mode:
         """
         Met en pause la transcription et met à jour.
         """
+        print(f"Pause() dans {self.mode.name}")
         if self.app.recording:
             self.engine.stop()
             self.app.recording = False
+            self.running_thread = False
             self.update()
 
     def unpause(self, audio_file=None):
         if not self.app.recording:
-            # self.engine.start()
+            self.transcription_interrompue = False
             if not self.engine.is_connected():
                 if not self.engine.connect():
                     print("❌ Impossible de se connecter au serveur WhisperLive via DLL.")
@@ -220,18 +215,6 @@ class Mode:
         if self.app.config.debug:
             self.app.info()
 
-    # def update_transcriptions(self, message: str) -> None:
-    #     self.status_bar.config(text='Connexion ... en cours',
-    #                            bg='lightblue', fg='darkblue', anchor=tk.W)
-    #     if self.engine.wait_connected():
-    #         self.status_bar.config(text='Connexion ... Ok',
-    #                                bg='lightblue', fg='darkblue', anchor=tk.W)
-    #         self.engine.set(message)
-    #         self.write_text_box(self.engine.texte_merge)
-    #     else:
-    #         self.status_bar.config(text='Connexion ... echouée',
-    #                                bg='white', fg='red', anchor=tk.W)
-
     def name(self) -> str:
         """
         Retourne le nom du mode actif.
@@ -241,9 +224,6 @@ class Mode:
         """
 
         return self.mode.name
-
-    # def select_text_box(self, dir="left"):
-    #     pass
 
     def undo(self, event=None):
         if event and event.keysym in ("Shift_L", "Shift_R", "Control_L", "Control_R", "Alt_L", "Alt_R"):
@@ -536,7 +516,7 @@ class Mode:
         self.file_source = file_path
         print(f"[Mode] Fichier reçu (non traité) : {file_path}")
 
-    def log(self, text: str = "") -> None:
+    def log(self, text: str = "", nb_mots: int = 0) -> None:
         """
         Envoie un log de type 'transcription' au serveur distant.
 
@@ -552,5 +532,6 @@ class Mode:
             mode = f"{self.mode.name}"
         envoyer_log(event="transcription",
                     texte=text,
+                    nb_mots=nb_mots,
                     mode=mode,
                     model=model,)

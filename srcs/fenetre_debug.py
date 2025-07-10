@@ -57,9 +57,12 @@ class DebugWindow:
         self.log_area.see(tk.END)  # Faire défiler automatiquement vers le bas
 
     def get_log_message(self):
-        if self.log_area:
-            return self.log_area.get('1.0', tk.END)
-        return ""
+        try:
+            if self.log_area:
+                return self.log_area.get('1.0', tk.END)
+            return ""
+        except tk.TclError:
+            return "[log perdu : log_area détruit]"
 
     def update_status(self, status):
         """Met à jour les statuts dans la zone de statut."""
