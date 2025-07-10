@@ -320,6 +320,7 @@ def remove_bubble() -> None:
         label_in_bubble = None
         return text
 
+
 def update_bubble_background(color: str) -> None:
     """
     Modifie la couleur de fond de la bulle de message active.

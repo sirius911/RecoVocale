@@ -269,7 +269,7 @@ class Mode_Direct(Mode):
             if not hasattr(self, "text_box") or not self.text_box.winfo_exists():
                 return  # Le widget a été détruit
             try:
-                
+
                 self.update_text_box()
                 if (self.engine.is_transcription_terminee() and not self.app.recording) or not self.running_thread:
                     break

@@ -33,6 +33,8 @@ class UserConfig:
         print(f"init avec {self.config_file}")
         # Valeurs par défaut
         self.server_ip = "10.1.147.251"
+        self.tensorRT_ip = "10.1.147.252"
+        self.faster_ip = "10.1.147.251"
         self._port = "30000"
         self._service = "Tous"
         self._shortcut = "F3"
@@ -51,6 +53,7 @@ class UserConfig:
             "Radiologie": "30002",
             "Cardiologie": "30003",
             "Oncologie": "30004",
+            "Model RT": "30000"
         }
 
         # Lire la configuration si le fichier existe, sinon la créer
@@ -69,6 +72,7 @@ class UserConfig:
         config.read(self.config_file)
 
         self.server_ip = config.get('SETTINGS', 'SERVEUR_IP', fallback=self.server_ip)
+        self.tensorRT_ip = config.get('SETTINGS', 'TENSORRT_IP', fallback=self.tensorRT_ip)
         self._port = config.get('SETTINGS', 'PORT', fallback=self._port)
         self._service = config.get('SETTINGS', 'SERVICE', fallback=self._service)
         self._shortcut = config.get('SETTINGS', 'SHORTCUT', fallback=self._shortcut)
@@ -100,6 +104,7 @@ class UserConfig:
         config = configparser.ConfigParser()
         config['SETTINGS'] = {
             'SERVEUR_IP': self.server_ip,
+            'TENSORRT_IP': self.tensorRT_ip,
             'PORT': self._port,
             'SERVICE': self._service,
             'SHORTCUT': self._shortcut,
@@ -157,7 +162,11 @@ class UserConfig:
         self._service = value
         if value in self._service_port_map:
             self._port = self._service_port_map[value]
-            print(f"changement de Port : {self._port}")
+            if value == "Model RT":
+                self.server_ip = self.tensorRT_ip
+            else:
+                self.server_ip = self.faster_ip
+            print(f"{self.server_ip} : changement de Port : {self._port}")
 
     @property
     def play_audio(self) -> bool:
