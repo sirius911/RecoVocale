@@ -30,10 +30,7 @@ class Mode_Direct(Mode):
         et prépare l’état de l’application.
         """
         super().enter()
-        # self.mode = DIRECT
-        # self.mod_var.set(DIRECT)
         self.ui()
-        # self.client_manager = None
 
         self.pile = ['']
         self.transcription_interrompue = False
@@ -264,6 +261,7 @@ class Mode_Direct(Mode):
         Thread de transcription qui affiche les segments partiels et colle les segments complets.
         """
         self.running_thread = True
+        self.trash_button.config(state=tk.DISABLED)
         # pos_cur = self.get_pos_curseur()
         # pos_selct = self.get_pos_select()
         self.save_text_box()
@@ -271,7 +269,7 @@ class Mode_Direct(Mode):
             if not hasattr(self, "text_box") or not self.text_box.winfo_exists():
                 return  # Le widget a été détruit
             try:
-                self.trash_button.config(state=tk.DISABLED)
+                
                 self.update_text_box()
                 if (self.engine.is_transcription_terminee() and not self.app.recording) or not self.running_thread:
                     break

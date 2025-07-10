@@ -5,7 +5,7 @@ import time
 import enchant
 import tkinter as tk
 
-from info import REDUIT, VERSION
+from info import REDUIT, VERSION, APPRENTI
 from Transcription import Transcription
 from insertions import FenetreGestion
 from utils_socket import check_server_status
@@ -124,7 +124,10 @@ class Mode:
                                            bg='lightblue', fg='darkblue', anchor=tk.W)
                     return
             if not self.running_thread:
-                self.engine.start()
+                if self.mode == APPRENTI:
+                    self.engine.start(self.temp_wav_file)
+                else:
+                    self.engine.start()
                 self.thread = threading.Thread(target=self.start_transcription_loop, daemon=True)
                 self.thread.start()
 

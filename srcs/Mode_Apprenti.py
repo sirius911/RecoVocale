@@ -25,40 +25,19 @@ class Mode_Apprenti(Mode_Direct):
     """
     def __init__(self, app):
         super().__init__(app, APPRENTI)
-        # self.enter()
+        self.enter()
 
     def enter(self) -> None:
         """
         Initialise l'interface et le client Whisper, prépare les chemins
         de fichiers temporaires et configure les éléments nécessaires à l'apprentissage.
         """
-        # self.mode = APPRENTI
-        # self.mod_var.set(APPRENTI)
-        # super().enter()
         self.ui()
         # Répertoire temporaire pour les fichiers
         self.temp_dir = tempfile.gettempdir()  # Utiliser le répertoire temporaire du système
         self.temp_wav_file = os.path.join(self.temp_dir, "temp.wav")
         self.temp_txt_file = os.path.join(self.temp_dir, "temp.txt")
-        # # ----------------- Lien Client Whisper -----------------------
-        # self.client_manager = ClientManager(
-        #     host=self.app.config.server_ip,
-        #     port=self.app.config.port,
-        #     lang="fr",
-        #     translate=False,
-        #     use_vad=True,
-        #     save_output_recording=True,
-        #     output_recording_filename=self.temp_wav_file,
-        #     update_callback=self.update_transcriptions,  # Pass the callback to ClientManager
-        #     insertions=self.app.insertions,
-        #     fenetre_gestion_insertions=self.is_ouverte,
-        #     mode=self,
-        #     nb_repeat=self.app.config.nb_repeat,
-        #     ip_client=self.app.ip_client,
-        # )
-
         self.pile = ['']
-
         self.ready_to_learn = False
         self.audio_playing = False
 
@@ -135,16 +114,6 @@ class Mode_Apprenti(Mode_Direct):
             pygame.mixer.quit()
             print("Pygame mixer fermé proprement.")
 
-    # def pause(self) -> None:
-    #     """
-    #     Met le client en pause avec un léger délai pour éviter les conflits.
-    #     """
-
-    #     time.sleep(0.1)
-    #     if self.app.config.debug:
-    #         print("Pausing client in Mode Direct")
-    #     super().pause()
-
     def unpause(self, audio_file=None) -> None:
         """
         Relance le client si l'utilisateur est prêt à apprendre.
@@ -152,10 +121,6 @@ class Mode_Apprenti(Mode_Direct):
         Args:
             audio_file (str | None): Fichier audio à transcrire.
         """
-
-        # time.sleep(0.1)
-        # if self.app.config.debug:
-        #     print("UnPausing client in Mode Direct")
         if not self.ready_to_learn:
             super().unpause(audio_file)
 
@@ -164,27 +129,25 @@ class Mode_Apprenti(Mode_Direct):
         Arrête le client et interrompt la lecture audio si nécessaire.
         """
 
-        # if self.app.config.debug:
-        #     print("Stop client in Mode Direct")
         if self.audio_playing:
             pygame.mixer.music.stop()
         super().stop_client()
 
-    def stop(self) -> None:
-        """
-        Stoppe la transcription, réactive les boutons, valide le texte
-        et relance la vérification orthographique.
-        """
-        print("Stop() dans Mode Apprentissage", flush=True)
-        self.stop_client()
-        self.text_box.config(state=tk.NORMAL)
-        self.trash_button.config(state=tk.NORMAL)
-        self.rec_button.config(state=tk.NORMAL)
-        self.transcription_en_cours = False
-        # self.transcription.validation()
-        self.set_pos_curseur(self.transcription.fin_insertion)
-        self.status_bar.config(text="Transcription ...interrompue", bg='lightblue', fg='darkblue', anchor=tk.W)
-        self.verification_dico(True)
+    # def stop(self) -> None:
+    #     """
+    #     Stoppe la transcription, réactive les boutons, valide le texte
+    #     et relance la vérification orthographique.
+    #     """
+    #     print("Stop() dans Mode Apprentissage", flush=True)
+    #     self.stop_client()
+    #     self.text_box.config(state=tk.NORMAL)
+    #     self.trash_button.config(state=tk.NORMAL)
+    #     self.rec_button.config(state=tk.NORMAL)
+    #     self.transcription_en_cours = False
+    #     # self.transcription.validation()
+    #     self.set_pos_curseur(self.transcription.fin_insertion)
+    #     self.status_bar.config(text="Transcription ...interrompue", bg='lightblue', fg='darkblue', anchor=tk.W)
+    #     self.verification_dico(True)
 
     # def valid_transcriptions(self) -> None:
     #     """
@@ -366,29 +329,8 @@ class Mode_Apprenti(Mode_Direct):
         """
         Thread de transcription qui affiche les segments partiels et colle les segments complets.
         """
-        self.running_thread = True
-        # pos_cur = self.get_pos_curseur()
-        # pos_selct = self.get_pos_select()
-        self.save_text_box()
-        while True:
-            if not hasattr(self, "text_box") or not self.text_box.winfo_exists():
-                return  # Le widget a été détruit
-            try:
-                self.trash_button.config(state=tk.DISABLED)
-                self.update_text_box()
-                if (self.engine.is_transcription_terminee() and not self.app.recording) or not self.running_thread:
-                    break
-
-            except KeyboardInterrupt:
-                break
-            except Exception as e:
-                print(f"[Mode Apprenti] Erreur dans le thread : {e}")
-
-            # time.sleep(0.1)
-        print("Fin du Thread Mode Apprenti")
-        self.running_thread = False
+        super().start_transcription_loop()
         self.ready_to_learn = True
-        # self.update_text_box()
         self.text_box.config(state=tk.NORMAL)
         self.rec_button.config(state=tk.DISABLED)
         self.learning_button.config(state=tk.NORMAL)

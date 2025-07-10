@@ -115,12 +115,12 @@ class RecoVocaleClientEngine:
     def is_capturing(self) -> bool:
         return self.lib.is_capturing()
 
-    def start(self, file=None):
-        if file is not None:
-            print(f"enregistre dans {file}")
-            file = file.encode('utf-8')
+    def start(self, file_temp=None):
+        if file_temp is not None:
+            print(f"enregistre dans {file_temp}")
+            file_temp = file_temp.encode('utf-8')
         if self.is_connected():
-            self.lib.start_capture(file)
+            self.lib.start_capture(file_temp)
 
     def wait_transcription_en_cours(self, timer=1.0):
         start = time.time()
