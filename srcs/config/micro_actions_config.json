@@ -83,19 +83,19 @@
         "firmware": "0x0303",
         "actions": {
             "16": {
-                "class": "Unpause"
+                "class": "StopAction"
             },
             "0": {
                 "class": "Pause"
             },
             "4": {
-                "class": "NoAction"
+                "class": "Unpause"
             },
             "2": {
-                "class": "NoAction"
+                "class": "Keyboard", "arg":["\u0001","\u0009"]
             },
             "8": {
-                "class": "NoAction"
+                "class": "Keyboard", "arg":["\u0009"]
             }
         },
         "hash": "0x02",

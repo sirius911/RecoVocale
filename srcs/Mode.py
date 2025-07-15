@@ -27,7 +27,6 @@ class Mode:
         transcription: Objet de gestion de la transcription.
         dico: Dictionnaire orthographique enchant.
         fenetre_gestion_ouverte: Indique si la fenêtre des insertions est affichée.
-        simulator_keyboard: Référence à l’outil de simulation clavier.
         transcription_en_cours: Booléen indiquant si une transcription est en cours.
         file_source: Fichier audio en cours de transcription (si applicable).
         model: Nom du modèle utilisé pour la transcription.
@@ -49,7 +48,6 @@ class Mode:
         self.mod_var.set(mode)
         self.transcription = Transcription()
         self.fenetre_gestion_ouverte = False  # Attribut pour savoir si la fenêtre est ouverte
-        self.simulator_keyboard = None
         self.transcription_en_cours = False
         self.file_source = None  # peut etre un fichier audio
         # # Définir le chemin du répertoire de configuration dans %APPDATA%\RecoVocale

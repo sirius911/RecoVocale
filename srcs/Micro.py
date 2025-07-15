@@ -209,14 +209,15 @@ class BaseMic:
 
             action_info = self.actions[hascode]
             action_class = action_info["class"]
-
             # Instancier dynamiquement la classe d'action
             ActionClass = globals().get(action_class)
             if ActionClass:
                 action = ActionClass(self.app)
-                # Vérifier si l'action a un argument
                 # print(f"Execution de {action.__name__}")
-                if "arg" in action_info:
+                if action.__name__ == 'NoAction':
+                    action.execute(hascode)
+                # Vérifier si l'action a un argument
+                elif "arg" in action_info:
                     action.execute(action_info["arg"])
                 else:
                     action.execute()

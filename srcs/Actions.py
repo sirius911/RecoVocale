@@ -33,8 +33,8 @@ class Action(ABC):
 
 
 class NoAction(Action):
-    def execute(self) -> None:
-        print("No Action")
+    def execute(self, hascode) -> None:
+        print(f"No Action for hascode : {hascode}")
 
 
 class Pause(Action):

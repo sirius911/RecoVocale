@@ -248,9 +248,7 @@ class App:
 
             self.console_debug.append_status_with_format("Mode : ", font_style="italic")
             self.console_debug.append_status_with_format(self.current_mode.name(), color="green")
-            self.console_debug.append_status_with_format(" - Simul Clavier : ", font_style="italic")
-            self.console_debug.append_status_with_format(
-                f" {'Oui' if self.current_mode.simulator_keyboard else 'Non'}\n", color="green")
+
             self.console_debug.append_status_with_format("Raccourci rec/pause : ", font_style="italic")
             self.console_debug.append_status_with_format(f"{self.shortcut_manager.keyboard_shortcut}\n", color="green")
 
