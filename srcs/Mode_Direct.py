@@ -4,10 +4,8 @@ import tkinter.font as tkFont
 from Mode import Mode
 from utils_window import create_menus, create_buttons
 from info import DIRECT
-# from ClientManager import ClientManager
 from utils_keyboard import Simulator
 from pynput.keyboard import Key
-# from Correcteur import intercept, corrige_ponctuation, corriger_texte
 
 
 class Mode_Direct(Mode):
@@ -22,18 +20,8 @@ class Mode_Direct(Mode):
     """
     def __init__(self, app, mode=DIRECT):
         super().__init__(app, mode)
-        self.enter()
-
-    def enter(self) -> None:
-        """
-        Initialise l’interface utilisateur pour le mode direct, configure le client,
-        et prépare l’état de l’application.
-        """
-        super().enter()
-        self.ui()
-
-        self.pile = ['']
         self.transcription_interrompue = False
+        self.enter()
 
     def ui(self) -> None:
         """
@@ -83,48 +71,6 @@ class Mode_Direct(Mode):
         # Create the status bar at the bottom of the window
         self.status_bar = tk.Label(self.root, text="Bienvenue dans l'application", bd=1, relief=tk.SUNKEN, anchor=tk.W)
         self.status_bar.grid(row=2, column=0, sticky="ew")
-
-    # def pause(self) -> None:
-    #     if self.app.recording:
-    #         print("Pause() in Mode Direct", flush=True)
-    #         self.engine.stop()
-    #         # self.running_thread = False
-    #         self.app.recording = False
-    #         self.update()
-    #         # print("A la fin de pause()", flush=True)
-    #         # self.engine.print_all_segments(flush=True)
-    #         # print("--------------------------")
-
-    # def unpause(self, audio_file=None):
-    #     # self.transcription_interrompue = False
-    #     # super().unpause(audio_file)
-    #     if not self.app.recording:
-    #         print("UnPausing() client in Mode Direct", flush=True)
-    #         self.engine.start()
-    #         if not self.engine.is_connected():
-    #             if not self.engine.connect():
-    #                 print("❌ Impossible de se connecter au serveur WhisperLive via DLL.")
-    #                 return
-    #         if not self.running_thread:
-    #             self.engine.start()
-    #             self.thread = threading.Thread(target=self.start_transcription_loop, daemon=True)
-    #             self.thread.start()
-
-    #         self.app.recording = True
-    #     self.update()
-
-    # def stop_client(self):
-
-    #     print("Stop_client() in Mode Direct", flush=True)
-    #     self.app.recording = False
-    #     self.running_thread = False
-    #     if self.thread and self.thread.is_alive():
-    #         self.thread.join(timeout=0.5)
-    #     self.engine.stop()
-    #     self.update()
-    #     # print("A la fin de stop_client()", flush=True)
-    #     # self.engine.print_all_segments(flush=True)
-    #     # print("--------------------------", flush=True)
 
     def stop(self) -> None:
         """
@@ -266,6 +212,7 @@ class Mode_Direct(Mode):
         # pos_selct = self.get_pos_select()
         self.save_text_box()
         while True:
+            self.app.recording = self.engine.is_capturing()
             if not hasattr(self, "text_box") or not self.text_box.winfo_exists():
                 return  # Le widget a été détruit
             try:
@@ -280,7 +227,7 @@ class Mode_Direct(Mode):
                 print(f"[Mode_Direct] Erreur dans le thread : {e}")
 
             # time.sleep(0.1)
-        # print("Fin du Thread Mode Direct avec is_transcription_terminée() =", self.engine.is_transcription_terminee())
+        print("Fin du Thread Mode Direct avec is_transcription_terminée() =", self.engine.is_transcription_terminee())
         # essais si la transcription n'est pas terminéee on attend
         start = time.time()
         while not self.engine.is_transcription_terminee():
@@ -320,15 +267,3 @@ class Mode_Direct(Mode):
         retour = self.text_box.get("1.0", tk.END).rstrip("\n")  # on retourne la transcription en cours
         super().exit()
         return retour
-
-    # def handle_dropped_file(self, file_path: str) -> None:
-    #     """
-    #     Gère un fichier glissé-déposé. (Ici, la fonctionnalité n’est pas encore implémentée.)
-
-    #     Args:
-    #         file_path (str): Chemin vers le fichier audio.
-    #     """
-
-    #     self.status_bar.config(text='Non implémenté', bg='lightblue', fg='darkblue', anchor=tk.W)
-    #     # print(f"[Mode_Direct] Traitement du fichier : {file_path}")
-    #     # self.unpause(file_path)

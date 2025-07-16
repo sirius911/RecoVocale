@@ -1,7 +1,7 @@
 from types import SimpleNamespace
 
-VERSION = '1.32'
-VERSION_DLL = '0.1.3'
+VERSION = '1.33'
+VERSION_DLL = '0.1.4'
 
 # ------------------------ M O D E S ----------------------
 DIRECT = SimpleNamespace()
@@ -35,3 +35,11 @@ APPRENTI.topmost = True
 APPRENTI.window_width = 940
 APPRENTI.window_height = 709
 APPRENTI.button_width = 30
+
+FICHIER = SimpleNamespace()
+FICHIER.name = "FICHIER"
+FICHIER.resizable = True
+FICHIER.topmost = False
+FICHIER.window_width = 940
+FICHIER.window_height = 709
+FICHIER.button_width = 30

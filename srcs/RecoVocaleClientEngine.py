@@ -88,6 +88,8 @@ class RecoVocaleClientEngine:
         self.lib.clear_completed_segments.restype = None
         self.lib.start_capture.argtypes = [c_char_p]
         self.lib.start_capture.restype = None
+        self.lib.start_capture_audio_file.argtypes = [c_char_p, c_bool]
+        self.lib.start_capture_audio_file.restype = None
         self.lib.stop_capture.argtypes = []
         self.lib.start_receiving_segments.argtypes = []
         self.lib.stop_receiving_segments.argtypes = []
@@ -121,12 +123,16 @@ class RecoVocaleClientEngine:
     def is_capturing(self) -> bool:
         return self.lib.is_capturing()
 
-    def start(self, file_temp=None):
+    def start(self, file_temp=None, file_to_capture=None, listen=True):
         if file_temp is not None:
             print(f"enregistre dans {file_temp}")
             file_temp = file_temp.encode('utf-8')
         if self.is_connected():
-            self.lib.start_capture(file_temp)
+            if file_to_capture is None:
+                self.lib.start_capture(file_temp)
+            else:
+                # TODO Verifier la présence du fichier
+                self.start_audio_file(audio_path=file_to_capture, listen=listen)
 
     def wait_transcription_en_cours(self, timer=1.0):
         start = time.time()
@@ -241,7 +247,6 @@ class RecoVocaleClientEngine:
             # self.wait_transcription_en_cours(1.0)
             self.clear_transcriptions()
             self.merge()
-
         return text_to_copy
 
     def print_transcriptions_lignes(self):
@@ -275,3 +280,13 @@ class RecoVocaleClientEngine:
         nb_mots = compter_mots(phrase=self.texte_merge) - self.nb_mots_trancripts
         self.nb_mots_trancripts += nb_mots
         return nb_mots
+
+    def start_audio_file(self, audio_path: str, listen: bool = True):
+        """
+        Lance la transcription à partir d'un fichier audio local (WAV/FLAC/…).
+        """
+        if not self.is_connected():
+            raise RuntimeError("Client non connecté ; appelez connect() d'abord")
+
+        # encodage UTF-8 + terminaison \0 prise en charge par ctypes
+        self.lib.start_capture_audio_file(audio_path.encode("utf-8"), listen)

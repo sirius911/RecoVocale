@@ -169,14 +169,6 @@ class App:
                     self.console_debug.log_message("Erreur de Mode dans App")
                     self.on_closing()
 
-                # Utiliser after_idle pour s'assurer que geometry est bien appliqué
-                # geometry_str = (
-                #     f"{self.current_mode.mode.window_width}"
-                #     f"x{self.current_mode.mode.window_height}"
-                #     f"+{self.config.x_window}"
-                #     f"+{self.config.y_window}"
-                # )
-                # self.root.after_idle(lambda: self.root.geometry(geometry_str))
                 if self.mic:
                     self.mic.change_mode(self.current_mode)
 

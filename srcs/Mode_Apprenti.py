@@ -8,7 +8,6 @@ import tkinter as tk
 from Mode_Direct import Mode_Direct
 from utils_window import create_menus, create_buttons
 from info import APPRENTI
-# from ClientManager import ClientManager
 from sftp_upload import upload_files_to_sftp
 
 
@@ -26,18 +25,11 @@ class Mode_Apprenti(Mode_Direct):
     def __init__(self, app):
         super().__init__(app, APPRENTI)
         self.enter()
-
-    def enter(self) -> None:
-        """
-        Initialise l'interface et le client Whisper, prépare les chemins
-        de fichiers temporaires et configure les éléments nécessaires à l'apprentissage.
-        """
-        self.ui()
         # Répertoire temporaire pour les fichiers
         self.temp_dir = tempfile.gettempdir()  # Utiliser le répertoire temporaire du système
         self.temp_wav_file = os.path.join(self.temp_dir, "temp.wav")
         self.temp_txt_file = os.path.join(self.temp_dir, "temp.txt")
-        self.pile = ['']
+        # self.pile = ['']
         self.ready_to_learn = False
         self.audio_playing = False
 
@@ -133,84 +125,6 @@ class Mode_Apprenti(Mode_Direct):
             pygame.mixer.music.stop()
         super().stop_client()
 
-    # def stop(self) -> None:
-    #     """
-    #     Stoppe la transcription, réactive les boutons, valide le texte
-    #     et relance la vérification orthographique.
-    #     """
-    #     print("Stop() dans Mode Apprentissage", flush=True)
-    #     self.stop_client()
-    #     self.text_box.config(state=tk.NORMAL)
-    #     self.trash_button.config(state=tk.NORMAL)
-    #     self.rec_button.config(state=tk.NORMAL)
-    #     self.transcription_en_cours = False
-    #     # self.transcription.validation()
-    #     self.set_pos_curseur(self.transcription.fin_insertion)
-    #     self.status_bar.config(text="Transcription ...interrompue", bg='lightblue', fg='darkblue', anchor=tk.W)
-    #     self.verification_dico(True)
-
-    # def valid_transcriptions(self) -> None:
-    #     """
-    #     Valide la transcription actuelle (alias de `stop_client`).
-    #     """
-    #     self.stop_client()
-
-    # def copy_to_clipboard(self) -> None:
-    #     """
-    #     Copie le texte sélectionné (ou entier) dans le presse-papier.
-    #     """
-
-    #     self.status_bar.config(text='- Copie -', bg='lightblue', fg='darkblue', anchor=tk.CENTER)
-    #     self.root.clipboard_clear()
-    #     self.root.clipboard_append(self.get_selected_text()[0])
-    #     time.sleep(0.5)
-    #     self._update_barre_status()
-
-    # def get_selected_text(self) -> tuple[str, bool]:
-    #     """
-    #     Récupère le texte sélectionné dans la zone de texte.
-
-    #     Returns:
-    #         tuple[str, bool]: Le texte et un booléen indiquant si tout le texte est retourné.
-    #     """
-
-    #     try:
-    #         # Vérifie s'il y a une sélection
-    #         if self.text_box.tag_ranges("sel"):
-    #             # Récupère le texte sélectionné
-    #             selected_text = self.text_box.get(tk.SEL_FIRST, tk.SEL_LAST)
-    #             return selected_text, False
-    #         else:
-    #             # si aucune selection on envoi la transcription complète
-    #             return self.engine.texte_merge, True
-    #     except tk.TclError:
-    #         # Gestion d'erreur si aucune sélection n'est faite
-    #         return self.engine.texte_merge, True
-
-    # def get_pos_select(self) -> tuple[int, int]:
-    #     """
-    #     Récupère les positions globales de la sélection texte.
-
-    #     Returns:
-    #         tuple[int, int]: (start, end) ou (0, 0) si rien sélectionné.
-    #     """
-
-    #     try:
-    #         if self.text_box.tag_ranges("sel"):
-    #             # Obtenir les positions 'ligne.colonne' de la sélection
-    #             start = self.text_box.index(tk.SEL_FIRST)
-    #             end = self.text_box.index(tk.SEL_LAST)
-
-    #             # Convertir ces positions en indices globaux
-    #             start_index = self.text_box.count("1.0", start)[0]  # Distance depuis le début du texte
-    #             end_index = self.text_box.count("1.0", end)[0]      # Distance jusqu'à la fin du texte sélectionné
-
-    #             return (start_index, end_index)
-    #         else:
-    #             return (0, 0)
-    #     except tk.TclError:
-    #         return (0, 0)
-
     def clear_text_box(self) -> None:
         """
         Vide la zone de texte, supprime les fichiers temporaires,
@@ -242,88 +156,6 @@ class Mode_Apprenti(Mode_Direct):
                 print(f"{fichier} non trouvé")
 
         self.root.update()
-
-    # def get_pos_curseur(self) -> int:
-    #     """
-    #     Donne la position actuelle du curseur dans la zone de texte.
-
-    #     Returns:
-    #         int: Position globale en caractères.
-    #     """
-
-    #     # Utiliser "1.0" comme point de départ et obtenir le nombre total de caractères jusqu'au curseur
-    #     position_globale = self.text_box.count("1.0", "insert", "chars")
-    #     if position_globale:
-    #         return position_globale[0]
-    #     return 0
-
-    # def set_pos_curseur(self, position_globale: int) -> None:
-    #     """
-    #     Replace le curseur à une position donnée.
-
-    #     Args:
-    #         position_globale (int): Position en caractères depuis le début.
-    #     """
-
-    #     # Utiliser "1.0" comme point de départ et déplacer le curseur à la position globale
-    #     index_ligne_colonne = self.text_box.index(f"1.0 + {position_globale}c")
-
-    #     # Repositionner le curseur à l'index ligne.colonne calculé
-    #     self.text_box.mark_set("insert", index_ligne_colonne)
-
-    #     # S'assurer que le curseur est visible
-    #     self.text_box.see("insert")
-
-    # def update_transcriptions(self, message: str, ending: bool) -> None:
-    #     """
-    #     Met à jour le contenu de la transcription affiché à l’écran.
-
-    #     Args:
-    #         message (str): Nouveau texte à insérer.
-    #         ending (bool): True si la phrase est terminée.
-    #     """
-
-    #     if not hasattr(self, "text_box") or not self.text_box.winfo_exists():
-    #         return  # Le widget a été détruit
-    #     if message is not None:
-    #         if not self.transcription_en_cours:
-    #             self.trash_button.config(state=tk.DISABLED)
-    #             self.transcription_en_cours = True
-    #             self.transcription.pos_cur = self.get_pos_curseur()
-    #             self.transcription.cur_selec = self.get_pos_select()
-    #             self.save_text_box()
-
-    #         self.transcription.update(message)
-    #         self.text_box.config(state=tk.NORMAL)
-    #         self.text_box.delete('1.0', tk.END)
-    #         self.text_box.insert(tk.END, self.transcription.text_box_en_cours)
-    #     if ending:
-    #         self.text_box.config(state=tk.NORMAL)
-    #         self.transcription_en_cours = False
-    #         self.transcription.validation()
-    #         self.set_pos_curseur(self.transcription.fin_insertion)
-    #         self.ready_to_learn = True
-
-    #         self.verification_dico(True)
-    #         if not self.app.recording:
-    #             self.rec_button.config(state=tk.DISABLED)
-    #             self.learning_button.config(state=tk.NORMAL)
-    #             self.play_button.config(state=tk.NORMAL)
-    #             self.trash_button.config(state=tk.NORMAL)
-    #             self.status_bar.config(text="Transcription ...Terminée", bg='lightblue', fg='darkblue', anchor=tk.W)
-    #             self.log(text=self.transcription.text_box_en_cours)
-    #             self.pause()
-    #     else:
-    #         self.text_box.config(state=tk.DISABLED)
-    #         self.set_pos_curseur(self.transcription.pos_cur)
-
-    # def update_text_box(self):
-    #     self.text_box.config(state=tk.NORMAL)
-    #     texte = self.engine.get(insertions=self.app.insertions,
-    #                             dico=self.app.config.dictionnaire)
-    #     self.text_box.delete('1.0', tk.END)
-    #     self.text_box.insert(tk.END, texte)
-    #     self.text_box.config(state=tk.DISABLED)
 
     def start_transcription_loop(self):
         """
@@ -432,27 +264,3 @@ class Mode_Apprenti(Mode_Direct):
                 self.play_button.config(image=self.play_image)
                 self.status_bar.config(text="Lecture arrêtée.")
                 self.audio_playing = False
-
-    # def exit(self) -> str:
-    #     """
-    #     Ferme le mode Apprenti et retourne le texte transcrit en cours.
-
-    #     Returns:
-    #         str: Texte affiché dans la zone de transcription.
-    #     """
-
-    #     retour = self.text_box.get("1.0", tk.END)  # on retourne la transcription en cours
-    #     super().exit()
-    #     return retour
-
-    # def handle_dropped_file(self, file_path: str) -> None:
-    #     """
-    #     Gère un fichier glissé-déposé (non implémenté dans ce mode).
-
-    #     Args:
-    #         file_path (str): Chemin vers le fichier audio.
-    #     """
-
-    #     self.status_bar.config(text='Non implémenté', bg='lightblue', fg='darkblue', anchor=tk.W)
-    #     # print(f"[Mode_Direct] Traitement du fichier : {file_path}")
-    #     # self.unpause(file_path)

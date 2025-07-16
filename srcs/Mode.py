@@ -57,6 +57,7 @@ class Mode:
         self.engine = RecoVocaleClientEngine(ip=self.app.config.server_ip,
                                              port=int(self.app.config.port),
                                              ip_client=self.app.ip_client)
+        self.pile = ['']
         self.thread = None
         self.running_thread = False
         self.transcription_interrompue = False
@@ -75,6 +76,8 @@ class Mode:
         else:
             self.root.title(f"RecoVocale [{self.app.config.server_ip}:{self.app.config.port}] " +
                             f"(v{VERSION}) {"" if self.app.status_server else "not"} connected")
+
+        self.ui()
 
     def get_selected_text(self):
         return self.transcription.get()
@@ -123,9 +126,13 @@ class Mode:
                     return
             if not self.running_thread:
                 if self.mode == APPRENTI:
-                    self.engine.start(self.temp_wav_file)
+                    self.engine.start(file_temp=self.temp_wav_file)
                 else:
-                    self.engine.start()
+                    self.engine.start(file_to_capture=audio_file, listen=self.app.config.play_audio)
+                for _ in range(20):
+                    if self.engine.is_capturing():
+                        break
+                    time.sleep(0.05)
                 self.thread = threading.Thread(target=self.start_transcription_loop, daemon=True)
                 self.thread.start()
 
@@ -508,14 +515,14 @@ class Mode:
 
     def handle_dropped_file(self, file_path: str) -> None:
         """
-        Gère le fichier audio glissé-déposé dans l'application.
+        Gère un fichier glissé-déposé. (Ici, la fonctionnalité n’est pas encore implémentée.)
 
         Args:
             file_path (str): Chemin vers le fichier audio.
         """
 
-        self.file_source = file_path
-        print(f"[Mode] Fichier reçu (non traité) : {file_path}")
+        self.status_bar.config(text=f'Traitement du fichier : {file_path}', bg='lightblue', fg='darkblue', anchor=tk.W)
+        self.unpause(file_path)
 
     def log(self, text: str = "", nb_mots: int = 0) -> None:
         """

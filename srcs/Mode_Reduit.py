@@ -23,14 +23,6 @@ class Mode_Reduit(Mode):
     def __init__(self, app, mode=REDUIT):
         super().__init__(app, mode)
         self.enter()
-
-    def enter(self) -> None:
-        """
-        Initialise l'interface et configure le client de transcription pour le mode Réduit.
-        """
-        super().enter()
-        self.ui()
-        self.pile = ['']
         self.a_ecrit = False
         self.shown_segments = set()
 
@@ -101,6 +93,7 @@ class Mode_Reduit(Mode):
 
         while True:
             try:
+                self.app.recording = self.engine.is_capturing()
                 self.update_reduit()
 
                 pas_enregistrement = not self.app.recording
@@ -165,14 +158,3 @@ class Mode_Reduit(Mode):
         super().exit()
         return ""
 
-    # def handle_dropped_file(self, file_path: str) -> None:
-    #     """
-    #     Gère un fichier audio glissé-déposé. Non implémenté dans ce mode.
-
-    #     Args:
-    #         file_path (str): Chemin vers le fichier audio.
-    #     """
-
-    #     self.status_bar.config(text='Non implémenté', bg='lightblue', fg='darkblue', anchor=tk.W)
-    #     # print(f"[Mode_Direct] Traitement du fichier : {file_path}")
-    #     # self.unpause(file_path)
