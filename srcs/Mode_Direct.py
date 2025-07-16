@@ -280,7 +280,7 @@ class Mode_Direct(Mode):
                 print(f"[Mode_Direct] Erreur dans le thread : {e}")
 
             # time.sleep(0.1)
-        print("Fin du Thread Mode Direct avec is_transcription_terminée() =", self.engine.is_transcription_terminee())
+        # print("Fin du Thread Mode Direct avec is_transcription_terminée() =", self.engine.is_transcription_terminee())
         # essais si la transcription n'est pas terminéee on attend
         start = time.time()
         while not self.engine.is_transcription_terminee():

@@ -5,7 +5,7 @@ import sys
 import time
 from ctypes import c_char_p, c_uint, c_bool
 import uuid
-
+from info import VERSION_DLL
 from Correcteur import intercept, corrige_ponctuation, corriger_texte
 from loger import compter_mots
 
@@ -61,9 +61,17 @@ class RecoVocaleClientEngine:
 
         if not os.path.exists(self.dll_path):
             raise FileNotFoundError(f"DLL manquante : {self.dll_path}")
+        
         self.lib = ctypes.CDLL(self.dll_path)
 
         # Signatures des fonctions
+        self.lib.get_version.restype = ctypes.c_char_p
+        self.version_dll = self.lib.get_version().decode()
+        if self.version_dll != VERSION_DLL:
+            raise RuntimeError(
+                f"Mauvaise version du DLL : {self.version_dll}. "
+                f"Requise : {VERSION_DLL}"
+            ) 
         self.lib.init.argtypes = [c_char_p, c_uint, c_char_p]
         self.lib.init.restype = None
         self.lib.is_connected.restype = c_bool
@@ -88,12 +96,10 @@ class RecoVocaleClientEngine:
         self.lib.destroy.argtypes = []
         self.lib.free_cstring.argtypes = [c_char_p]
         self.lib.free_cstring.restype = None
-        self.lib.get_version.restype = ctypes.c_char_p
 
         self.transcription_totale = {}
         self.transcription_en_cours = ""
         self.texte_merge = ""
-        self.version_dll = self.lib.get_version().decode()
 
         self.nb_mots_trancripts = 0
         print(f"Chargement dll version {self.version_dll}")

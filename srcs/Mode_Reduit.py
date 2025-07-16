@@ -121,9 +121,9 @@ class Mode_Reduit(Mode):
             except Exception as e:
                 print(f"[Mode_Reduit] Erreur dans le thread : {e}")
 
-        print(f"Sortie du thread avec self.app.recording = {self.app.recording}\n"
-              f"et is_transcription_terminée = {self.engine.is_transcription_terminee()}\n"
-              f"a_ecrit = {self.a_ecrit}\n")
+        # print(f"Sortie du thread avec self.app.recording = {self.app.recording}\n"
+        #       f"et is_transcription_terminée = {self.engine.is_transcription_terminee()}\n"
+        #       f"a_ecrit = {self.a_ecrit}\n")
         start = time.time()
         while not self.engine.is_transcription_terminee():
 
