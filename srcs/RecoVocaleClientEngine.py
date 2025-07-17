@@ -61,7 +61,7 @@ class RecoVocaleClientEngine:
 
         if not os.path.exists(self.dll_path):
             raise FileNotFoundError(f"DLL manquante : {self.dll_path}")
-        
+
         self.lib = ctypes.CDLL(self.dll_path)
 
         # Signatures des fonctions
@@ -71,11 +71,17 @@ class RecoVocaleClientEngine:
             raise RuntimeError(
                 f"Mauvaise version du DLL : {self.version_dll}. "
                 f"Requise : {VERSION_DLL}"
-            ) 
+            )
         self.lib.init.argtypes = [c_char_p, c_uint, c_char_p]
         self.lib.init.restype = None
+
+        self.lib.is_connected.argtypes = []
+        self.lib.is_capturing.argtypes = []
+        self.lib.is_task_in_progress.argtypes = []
         self.lib.is_connected.restype = c_bool
         self.lib.is_capturing.restype = c_bool
+        self.lib.is_task_in_progress.restype = c_bool
+
         self.lib.get_last_completed_segment.restype = ctypes.POINTER(ctypes.c_char)
         self.lib.get_last_partial_segment.restype = ctypes.POINTER(ctypes.c_char)
         self.lib.get_all_completed_segments.restype = ctypes.POINTER(ctypes.c_char)
@@ -91,6 +97,7 @@ class RecoVocaleClientEngine:
         self.lib.start_capture_audio_file.argtypes = [c_char_p, c_bool]
         self.lib.start_capture_audio_file.restype = None
         self.lib.stop_capture.argtypes = []
+        self.lib.stop_capture_audio_file.argtypes = []
         self.lib.start_receiving_segments.argtypes = []
         self.lib.stop_receiving_segments.argtypes = []
         self.lib.send_end_of_audio.argtypes = []
@@ -117,11 +124,40 @@ class RecoVocaleClientEngine:
             time.sleep(0.5)
         return False
 
+    def restart_connection(self, ip: str, port: int) -> bool:
+        """
+        Coupe proprement la capture (si nécessaire), se déconnecte
+        et se reconnecte au serveur WhisperLive avec la nouvelle IP/Port.
+
+        Args:
+            ip (str): Adresse IP du nouveau serveur.
+            port (int): Port du nouveau serveur.
+
+        Returns:
+            bool: True si la reconnexion a réussi, False sinon.
+        """
+        # 1) Arrêter toute capture en cours
+        if self.is_capturing():
+            self.stop()
+
+        # 2) Se déconnecter du serveur courant
+        if self.is_connected():
+            self.disconnect()
+
+        # 3) Mettre à jour les paramètres réseau
+        self.ip = ip
+        self.port = port
+
+        # 4) Recréer la connexion et démarrer la réception des segments
+        return self.connect()
+
     def is_connected(self) -> bool:
         return self.lib.is_connected()
 
     def is_capturing(self) -> bool:
-        return self.lib.is_capturing()
+        ret: bool = self.lib.is_capturing()
+        # print(f"is_capturing = {ret}")
+        return ret
 
     def start(self, file_temp=None, file_to_capture=None, listen=True):
         if file_temp is not None:
@@ -151,10 +187,13 @@ class RecoVocaleClientEngine:
             time.sleep(0.2)
         return True
 
-    def stop(self):
+    def stop(self, audio_file=None):
         if self.is_connected():
-            self.lib.stop_capture()
-            self.send_end_of_audio()
+            if audio_file is None:
+                self.lib.stop_capture()
+                self.send_end_of_audio()
+            else:
+                self.lib.stop_capture_audio_file()
             self.wait_transcription_en_cours(3.0)
 
     def get_string_and_free(self, getter_func):
@@ -213,7 +252,7 @@ class RecoVocaleClientEngine:
         self.lib.destroy()
 
     def is_transcription_terminee(self) -> bool:
-        return self.lib.is_task_completed()
+        return self.lib.is_task_completed() and not self.lib.is_task_in_progress()
 
     def clear_transcriptions(self) -> None:
         self.lib.clear_completed_segments()
@@ -231,6 +270,16 @@ class RecoVocaleClientEngine:
         self._add(self.get_completed())
         self.transcription_en_cours = self.get_partial()
 
+    def get_reduit(self):
+        # On renvoi text , flag completed
+        self._update()
+        if self.transcription_en_cours:
+            return self.transcription_en_cours, False
+        ret = ""
+        if self.transcription_totale:
+            ret = list(self.transcription_totale.keys())[-1]
+        return ret, True
+
     def get(self, insertions, dico=False) -> str:
         self._update()
         chaine = " ".join(self.transcription_totale.keys())
@@ -246,7 +295,7 @@ class RecoVocaleClientEngine:
         if insertion:
             # self.wait_transcription_en_cours(1.0)
             self.clear_transcriptions()
-            self.merge()
+            return f"{self.merge()} {self.transcription_en_cours}"
         return text_to_copy
 
     def print_transcriptions_lignes(self):
@@ -259,10 +308,11 @@ class RecoVocaleClientEngine:
             print("partial vide")
 
     def merge(self):
+        print(f"Je dois merger [{" ".join(self.transcription_totale.keys())}]", flush=True)
         self.transcription_totale = {}
-        # print(f"Je dois merger [{self.texte_merge}]", flush=True)
-        # print(f"transcription_en_cours = {self.transcription_en_cours}")
+        print(f"transcription_en_cours = {self.transcription_en_cours}")
         self._add(self.texte_merge)
+        return self.texte_merge
 
     def clear(self) -> None:
         self.wait_transcription_en_cours()

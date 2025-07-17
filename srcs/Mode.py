@@ -61,6 +61,7 @@ class Mode:
         self.thread = None
         self.running_thread = False
         self.transcription_interrompue = False
+        self.audio_file = None
 
     def enter(self) -> None:
         """
@@ -110,12 +111,15 @@ class Mode:
         """
         print(f"Pause() dans {self.mode.name}")
         if self.app.recording:
-            self.engine.stop()
+            self.engine.stop(self.audio_file)
             self.app.recording = False
             self.running_thread = False
+            self.audio_file = None
             self.update()
 
     def unpause(self, audio_file=None):
+        if audio_file is not None:
+            self.audio_file = audio_file
         if not self.app.recording:
             self.transcription_interrompue = False
             if not self.engine.is_connected():
@@ -211,6 +215,45 @@ class Mode:
                 f"[{self.app.config.service}]"
             )
 
+    def start_transcription_loop(self):
+        """
+        Thread de transcription qui affiche les segments partiels et colle les segments complets.
+        """
+        self.running_thread = True
+        self.save_text_box()
+        while True:
+            self.app.recording = self.engine.is_capturing()
+            try:
+
+                self.update_sortie()
+                if (self.engine.is_transcription_terminee() and not self.app.recording) or not self.running_thread:
+                    break
+
+            except KeyboardInterrupt:
+                break
+            except Exception as e:
+                print(f"[Mode_Direct] Erreur dans le thread : {e}")
+
+        self.update_sortie()
+        start = time.time()
+        while not self.engine.is_transcription_terminee():
+            self.status_bar.config(text='Attente fin de transcription...',
+                                   bg='lightblue', fg='darkblue', anchor=tk.W)
+            self.update_sortie()
+            if (time.time()-start) > 2.0:
+                break
+        if self.engine.is_transcription_terminee():
+            texte_info = "Transcription terminée"
+        else:
+            texte_info = "Transcription interrompue, on sort"
+        self.status_bar.config(text=texte_info,
+                               bg='lightblue', fg='darkblue', anchor=tk.W)
+
+        print(texte_info)
+        print(f"{self.engine.lib.is_task_completed()} and not {self.engine.lib.is_task_in_progress()} => "
+              f"{self.engine.lib.is_task_completed() and not self.engine.lib.is_task_in_progress()}")
+        self.running_thread = False
+
     def update(self) -> None:
         """
         Met à jour tous les composants de l'interface (statut, bouton, cercle, titre...).
@@ -278,7 +321,7 @@ class Mode:
 
         # maj de la variable config
         self.app.config.dictionnaire = self.dico_var.get()
-        if self.text_box:
+        if hasattr(self, "text_box") and self.text_box.winfo_exists():
             self.verification_dico()
 
     def exit(self) -> None:
@@ -308,44 +351,34 @@ class Mode:
         self.fenetre_gestion_ouverte = False
 
     def save_text_box(self) -> None:
-        """
-        Sauvegarde le contenu actuel du champ texte dans la pile d'annulation.
-        """
+        pass
 
-        if self.text_box:
-            # Sauvegarder uniquement si le texte a changé
-            text_box = self.text_box.get("1.0", tk.END).rstrip('\n')
-            if not self.pile or text_box != self.pile[-1]:
-                self.pile.append(text_box)
-                self.edit_menu.entryconfig(0, state='normal')
-                # print("État sauvegardé:", self.pile)
+    # def on_text_change(self, event) -> None:
+    #     """
+    #     Gère les changements dans le champ texte. Ignore certaines touches de contrôle.
 
-    def on_text_change(self, event) -> None:
-        """
-        Gère les changements dans le champ texte. Ignore certaines touches de contrôle.
+    #     Args:
+    #         event: Événement clavier de Tkinter.
+    #     """
 
-        Args:
-            event: Événement clavier de Tkinter.
-        """
+    #     if event and (event.keysym in ("Shift_L", "Shift_R", "Control_L", "Control_R", "Alt_L", "Alt_R") or
+    #                   (event.state & 0x4 and event.keysym == "z")):
+    #         return
+    #     self.save_text_box()
+    #     self.root.after_idle(self.text_change)  # pour attendre que tkinter est bien écrit les modifications
 
-        if event and (event.keysym in ("Shift_L", "Shift_R", "Control_L", "Control_R", "Alt_L", "Alt_R") or
-                      (event.state & 0x4 and event.keysym == "z")):
-            return
-        self.save_text_box()
-        self.root.after_idle(self.text_change)  # pour attendre que tkinter est bien écrit les modifications
+    # def text_change(self) -> None:
+    #     """
+    #     Applique les changements de texte et met à jour la transcription et le curseur.
+    #     """
 
-    def text_change(self) -> None:
-        """
-        Applique les changements de texte et met à jour la transcription et le curseur.
-        """
+    #     self.trash_button.config(state=tk.NORMAL)
+    #     nouveau_text = self.text_box.get("1.0", tk.END)
+    #     # self.save_text_box()
+    #     if self.engine:
+    #         self.engine.set(nouveau_text)
 
-        self.trash_button.config(state=tk.NORMAL)
-        nouveau_text = self.text_box.get("1.0", tk.END)
-        # self.save_text_box()
-        if self.engine:
-            self.engine.set(nouveau_text)
-
-        self.verification_dico()
+    #     self.verification_dico()
 
     def verification_dico(self, auto: bool = False) -> None:
         """
@@ -496,14 +529,23 @@ class Mode:
 
     def set_service(self, service: str) -> None:
         """
-        Modifie le nom du service affiché dans l'application.
-
-        Args:
-            service (str): Nom du service à afficher.
+        Modifie le service (et donc l'IP/Port du serveur) puis force la reconnexion.
         """
-
+        # 1) Mémoriser le service sélectionné
         self.app.config.service = service
+
+        # 2) Mettre à jour l’UI immédiatement
         self._update_title_window()
+        self._update_barre_status()
+
+        # 3) Tenter la reconnexion vers le nouveau serveur
+        success = self.engine.restart_connection(
+            ip=self.app.config.server_ip,
+            port=int(self.app.config.port)
+        )
+
+        # 4) Afficher le résultat
+        self.app.status_server = success
         self._update_barre_status()
 
     def toggle_play_audio(self) -> None:

@@ -1,8 +1,6 @@
-import time
+
 import tkinter as tk
 from pynput.keyboard import Key
-
-# import time
 from Mode import Mode
 from utils_window import create_menus, create_buttons, show_bubble_message, remove_bubble
 from info import REDUIT, VERSION
@@ -54,78 +52,32 @@ class Mode_Reduit(Mode):
         self.engine.clear()
         self.running_thread = False
 
-    def update_reduit(self):
-        self.engine._update()
-        partial = self.engine.transcription_en_cours
-        if self.engine.transcription_totale:
-            complete = list(self.engine.transcription_totale.keys())[-1]
-        else:
-            complete = ""
-
-        if partial:
-            show_bubble_message(self.root, partial)
+    def update_sortie(self):
+        texte, completed = self.engine.get_reduit()
+        if not completed:
+            show_bubble_message(self.root, texte)
             self.status_bar.config(text="* Transcription ... *",
                                    bg='lightblue', fg='darkblue', anchor=tk.CENTER)
             self.a_ecrit = False
-
-        if complete and complete not in self.shown_segments:
-            self.shown_segments.add(complete)
-            remove_bubble()
-            self.root.clipboard_clear()
-            text_apres_intercept, _ = intercept(complete, self.app.insertions.get())
-            text_apres_ponctuation = corrige_ponctuation(f" {text_apres_intercept}")
-            if self.app.config.dictionnaire:
-                text_to_copy = corriger_texte(text_apres_ponctuation)
-            else:
-                text_to_copy = text_apres_ponctuation
-            self.root.clipboard_append(text_to_copy)
-            if not self.a_ecrit:
-                Simulator([Key.ctrl, 'v'])
-                self.a_ecrit = True
-                self.log(text=text_to_copy)
+        else:
+            if texte and texte not in self.shown_segments:
+                self.shown_segments.add(texte)
+                remove_bubble()
+                self.root.clipboard_clear()
+                text_apres_intercept, _ = intercept(texte, self.app.insertions.get())
+                text_apres_ponctuation = corrige_ponctuation(text_apres_intercept)
+                if self.app.config.dictionnaire:
+                    text_to_copy = corriger_texte(text_apres_ponctuation)
+                else:
+                    text_to_copy = text_apres_ponctuation
+                self.root.clipboard_append(text_to_copy)
+                if not self.a_ecrit:
+                    Simulator([Key.ctrl, 'v'])
+                    self.a_ecrit = True
+                    self.log(text=text_to_copy)
 
     def start_transcription_loop(self):
-        """
-        Thread de transcription qui affiche les segments partiels et colle les segments complets.
-        """
-        self.running_thread = True
-        temps_attente_debut = None
-
-        while True:
-            try:
-                self.app.recording = self.engine.is_capturing()
-                self.update_reduit()
-
-                pas_enregistrement = not self.app.recording
-                pret_a_sortir = pas_enregistrement or not self.running_thread
-
-                if pret_a_sortir:
-                    if not self.running_thread:
-                        break
-                    else:
-                        if temps_attente_debut is None:
-                            temps_attente_debut = time.time()
-                        elif time.time() - temps_attente_debut > 3:
-                            print("[Mode_Reduit] Plus de 3 secondes sans activité, arrêt du thread.")
-                            break
-                else:
-                    # on réinitialise le timer si on n’est plus dans l’état "quasi-fin"
-                    temps_attente_debut = None
-            except Exception as e:
-                print(f"[Mode_Reduit] Erreur dans le thread : {e}")
-
-        # print(f"Sortie du thread avec self.app.recording = {self.app.recording}\n"
-        #       f"et is_transcription_terminée = {self.engine.is_transcription_terminee()}\n"
-        #       f"a_ecrit = {self.a_ecrit}\n")
-        start = time.time()
-        while not self.engine.is_transcription_terminee():
-
-            self.status_bar.config(text='transcription...',
-                                   bg='lightblue', fg='darkblue', anchor=tk.CENTER)
-            self.engine._update()
-            if (time.time()-start) > 1.5:
-                print("Timeout dans le thread de transcription, on sort")
-                break
+        super().start_transcription_loop()
         text_bulle = remove_bubble()
         if not self.a_ecrit and text_bulle:
             self.root.clipboard_append(text_bulle)
@@ -157,4 +109,3 @@ class Mode_Reduit(Mode):
             self.engine.disconnect()
         super().exit()
         return ""
-

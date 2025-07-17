@@ -216,18 +216,6 @@ class App:
                 self.console_debug.append_status_with_format(
                     f"NOT Connected @{self.config.server_ip}:{self.config.port}\n", color="red")
 
-            self.console_debug.append_status_with_format("running_thread : ", font_style="italic")
-            self.console_debug.append_status_with_format(f"{self.current_mode.running_thread}\n",
-                                                         color=f"{"green" if self.current_mode.running_thread else "red"}")
-
-            self.console_debug.append_status_with_format("recording : ", font_style="italic")
-            self.console_debug.append_status_with_format(f"{self.recording}\n",
-                                                         color=f"{"green" if self.recording else "red"}")
-
-            self.console_debug.append_status_with_format("engine.is_transcription_terminee() : ", font_style="italic")
-            self.console_debug.append_status_with_format(f"{self.current_mode.engine.is_transcription_terminee()}\n",
-                                                         color=f"{"green" if self.current_mode.engine.is_transcription_terminee() else "red"}")
-
             self.console_debug.append_status_with_format("Service : ", font_style="italic")
             self.console_debug.append_status_with_format(f"{self.config.service}\n", color="green")
             self.console_debug.append_status_with_format("IP client : ", font_style="italic")

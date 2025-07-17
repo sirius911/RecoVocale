@@ -264,3 +264,14 @@ class Mode_Apprenti(Mode_Direct):
                 self.play_button.config(image=self.play_image)
                 self.status_bar.config(text="Lecture arrêtée.")
                 self.audio_playing = False
+
+    def handle_dropped_file(self, file_path: str) -> None:
+        """
+        Gère un fichier glissé-déposé. (Ici, la fonctionnalité n’est pas encore implémentée.)
+
+        Args:
+            file_path (str): Chemin vers le fichier audio.
+        """
+
+        self.status_bar.config(text=f'Traitement du fichier : {file_path} IMPOSSIBLE en Mode Apprentissage',
+                               bg='red', fg='white', anchor=tk.W)

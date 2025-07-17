@@ -94,6 +94,19 @@ class Mode_Direct(Mode):
         self.transcription_interrompue = True
         self.verification_dico(True)
 
+    def save_text_box(self) -> None:
+        """
+        Sauvegarde le contenu actuel du champ texte dans la pile d'annulation.
+        """
+
+        if self.text_box:
+            # Sauvegarder uniquement si le texte a changé
+            text_box = self.text_box.get("1.0", tk.END).rstrip('\n')
+            if not self.pile or text_box != self.pile[-1]:
+                self.pile.append(text_box)
+                self.edit_menu.entryconfig(0, state='normal')
+                # print("État sauvegardé:", self.pile)
+
     def get_selected_text(self) -> tuple[str, bool]:
         """
         Récupère le texte sélectionné dans la zone de texte.
@@ -189,6 +202,9 @@ class Mode_Direct(Mode):
         self.text_box.see("insert")
 
     def write_text_box(self, texte):
+        if not hasattr(self, "text_box") or not self.text_box.winfo_exists():
+            return  # Le widget a été détruit
+
         if self.text_box:
             self.text_box.config(state=tk.NORMAL)
             self.text_box.delete('1.0', tk.END)
@@ -197,48 +213,14 @@ class Mode_Direct(Mode):
         else:
             print("Pas de TextBox")
 
-    def update_text_box(self):
+    def update_sortie(self):
         texte = self.engine.get(insertions=self.app.insertions,
                                 dico=self.app.config.dictionnaire)
         self.write_text_box(texte)
 
     def start_transcription_loop(self):
-        """
-        Thread de transcription qui affiche les segments partiels et colle les segments complets.
-        """
-        self.running_thread = True
         self.trash_button.config(state=tk.DISABLED)
-        # pos_cur = self.get_pos_curseur()
-        # pos_selct = self.get_pos_select()
-        self.save_text_box()
-        while True:
-            self.app.recording = self.engine.is_capturing()
-            if not hasattr(self, "text_box") or not self.text_box.winfo_exists():
-                return  # Le widget a été détruit
-            try:
-
-                self.update_text_box()
-                if (self.engine.is_transcription_terminee() and not self.app.recording) or not self.running_thread:
-                    break
-
-            except KeyboardInterrupt:
-                break
-            except Exception as e:
-                print(f"[Mode_Direct] Erreur dans le thread : {e}")
-
-            # time.sleep(0.1)
-        print("Fin du Thread Mode Direct avec is_transcription_terminée() =", self.engine.is_transcription_terminee())
-        # essais si la transcription n'est pas terminéee on attend
-        start = time.time()
-        while not self.engine.is_transcription_terminee():
-
-            self.status_bar.config(text='Attente fin de transcription...',
-                                   bg='lightblue', fg='darkblue', anchor=tk.CENTER)
-            self.update_text_box()
-            if (time.time()-start) > 1.5:
-                print("Timeout dans le thread de transcription, on sort")
-                break
-        self.running_thread = False
+        super().start_transcription_loop()
         self.trash_button.config(state=tk.NORMAL)
         self.rec_button.config(state=tk.NORMAL)
         # self.engine.print_all_segments()
@@ -256,6 +238,33 @@ class Mode_Direct(Mode):
         self.root.clipboard_append(self.get_selected_text()[0])
         time.sleep(0.5)
         self._update_barre_status()
+
+    def on_text_change(self, event) -> None:
+        """
+        Gère les changements dans le champ texte. Ignore certaines touches de contrôle.
+
+        Args:
+            event: Événement clavier de Tkinter.
+        """
+
+        if event and (event.keysym in ("Shift_L", "Shift_R", "Control_L", "Control_R", "Alt_L", "Alt_R") or
+                      (event.state & 0x4 and event.keysym == "z")):
+            return
+        self.save_text_box()
+        self.root.after_idle(self.text_change)  # pour attendre que tkinter est bien écrit les modifications
+
+    def text_change(self) -> None:
+        """
+        Applique les changements de texte et met à jour la transcription et le curseur.
+        """
+
+        self.trash_button.config(state=tk.NORMAL)
+        nouveau_text = self.text_box.get("1.0", tk.END)
+        # self.save_text_box()
+        if self.engine:
+            self.engine.set(nouveau_text)
+
+        self.verification_dico()
 
     def exit(self) -> str:
         """
