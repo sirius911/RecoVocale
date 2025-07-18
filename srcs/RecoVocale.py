@@ -18,10 +18,11 @@ from UserConfig import UserConfig
 from Mode_Direct import Mode_Direct
 from Mode_Apprenti import Mode_Apprenti
 from Mode_Reduit import Mode_Reduit
+from Mode_Fichier import Mode_Fichier
 from utils_socket import check_server_status, get_windows_session
 from utils_keyboard import Simulator
 from Micro import Micro
-from info import VERSION, DIRECT, REDUIT, APPRENTI
+from info import VERSION, DIRECT, REDUIT, APPRENTI, FICHIER
 from fenetre_debug import DebugWindow
 from insertions import GestionnaireInsertion
 from utils_window import get_config_path
@@ -165,6 +166,8 @@ class App:
                     self.current_mode = Mode_Apprenti(self)
                 elif mode == REDUIT:
                     self.current_mode = Mode_Reduit(self)
+                elif mode == FICHIER:
+                    self.current_mode = Mode_Fichier(self)
                 else:
                     self.console_debug.log_message("Erreur de Mode dans App")
                     self.on_closing()

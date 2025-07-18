@@ -5,8 +5,12 @@ from screeninfo import get_monitors
 from tkinter import BooleanVar
 from PIL import Image, ImageTk
 
-from info import DIRECT, REDUIT, APPRENTI
+from info import DIRECT, REDUIT, APPRENTI, FICHIER
 from ToolTip import ToolTip
+
+
+bubble = None
+label_in_bubble = None
 
 
 def get_config_path(file: str) -> str:
@@ -128,47 +132,31 @@ def change_toolTip(button: tk.Widget, texte: str) -> None:
 
 def create_menus(self) -> None:
     """
-    Crée la barre de menus principale, incluant :
-    - les modes d’utilisation,
-    - les paramètres,
-    - le menu d’édition (copier, coller, undo...),
-    - les options comme debug, dictionnaire, service.
+    Crée la barre de menus principale.
+
+    - Paramètres (raccourcis, service, etc.)
+    - Mode  (Direct, Réduit, Apprentissage, Transcription…)
+    - Édition (copier, coller, undo…)
     """
 
+    # Barre de menus principale
     self.menu_bar = tk.Menu(self.root)
     self.root.config(menu=self.menu_bar)
 
-    # Menu Paramètres
+    # =========================
+    # 1. Paramètres
+    # =========================
     self.settings_menu = tk.Menu(self.menu_bar, tearoff=0)
     self.menu_bar.add_cascade(label="Paramètres", menu=self.settings_menu)
 
-    # Raccourci Clavier
-    self.settings_menu.add_command(label="Raccourci Clavier", command=self.app.change_shortcut)
+    # — Raccourci clavier
+    self.settings_menu.add_command(label="Raccourci Clavier",
+                                   command=self.app.change_shortcut)
 
-    # Mode
-    self.mode_menu = tk.Menu(self.settings_menu, tearoff=0)
-
-    self.settings_menu.add_cascade(label="Mode", menu=self.mode_menu)
-    self.mode_menu.add_radiobutton(label='Direct',
-                                   variable=self.mod_var,
-                                   value=DIRECT,
-                                   command=lambda: self.app.switch_mode(DIRECT))
-
-    self.mode_menu.add_radiobutton(label='Réduit',
-                                   variable=self.mod_var,
-                                   value=REDUIT,
-                                   command=lambda: self.app.switch_mode(REDUIT))
-
-    self.mode_menu.add_radiobutton(label='Apprentissage',
-                                   variable=self.mod_var,
-                                   value=APPRENTI,
-                                   command=lambda: self.app.switch_mode(APPRENTI))
-
-    # Menu Service
+    # — Service
     self.service_var = tk.StringVar(value=self.app.config.service)
     self.service_menu = tk.Menu(self.settings_menu, tearoff=0)
-
-    self.settings_menu.add_cascade(label="Service", menu=self.service_menu, state=tk.NORMAL)
+    self.settings_menu.add_cascade(label="Service", menu=self.service_menu)
 
     for service in self.app.config.get_services():
         self.service_menu.add_radiobutton(label=service,
@@ -176,14 +164,16 @@ def create_menus(self) -> None:
                                           value=service,
                                           command=lambda s=service: self.set_service(s))
 
+    # — Divers
     self.settings_menu.add_separator()
     self.play_audio_var = BooleanVar(value=self.app.config.play_audio)
-    self.settings_menu.add_checkbutton(label="Lecture audio locale", variable=self.play_audio_var,
+    self.settings_menu.add_checkbutton(label="Lecture audio locale",
+                                       variable=self.play_audio_var,
                                        command=self.toggle_play_audio)
 
-    # Autres options du menu Paramètres
     self.settings_menu.add_separator()
-    self.settings_menu.add_command(label="Gestion des Insertions", command=self.ouvrir_gestion_insertions)
+    self.settings_menu.add_command(label="Gestion des Insertions",
+                                   command=self.ouvrir_gestion_insertions)
     self.settings_menu.add_separator()
 
     self.debug_var = BooleanVar(value=self.app.config.debug)
@@ -196,23 +186,53 @@ def create_menus(self) -> None:
     self.settings_menu.add_separator()
     self.settings_menu.add_command(label="Quitter", command=self.exit_app)
 
-    # Nouveau menu Édition
+    # =========================
+    # 2. Édition
+    # =========================
     self.edit_menu = tk.Menu(self.menu_bar, tearoff=False)
     self.menu_bar.add_cascade(label="Édition", menu=self.edit_menu)
 
-    # Options du menu Édition
-    self.undo_menu = self.edit_menu.add_command(label="Undo (Ctrl+Z)", command=self.undo)
+    # — Undo
+    self.undo_menu = self.edit_menu.add_command(label="Undo (Ctrl+Z)",
+                                                command=self.undo)
     self.root.bind_all("<Control-z>", self.undo)
     self.edit_menu.entryconfig(0, state='disabled')
+
+    # — Copier / Coller
     self.edit_menu.add_separator()
-    self.edit_menu.add_command(label="Copier (Ctrl+C)", command=self.copy_to_clipboard)
-    self.edit_menu.add_command(label="Coller (Ctrl+V)", command=self.app.paste_from_clipboard)
+    self.edit_menu.add_command(label="Copier (Ctrl+C)",
+                               command=self.copy_to_clipboard)
+    self.edit_menu.add_command(label="Coller (Ctrl+V)",
+                               command=self.app.paste_from_clipboard)
+
+    # — Effacer (seulement en mode Direct)
     if self.mode == DIRECT:
-        self.edit_menu.add_command(label="Effacer", command=self.clear_text_box)
+        self.edit_menu.add_command(label="Effacer",
+                                   command=self.clear_text_box)
 
+    # =========================
+    # 3. Mode  (NOUVEAU menu racine)
+    # =========================
+    self.mod_var = tk.StringVar(value=self.mode)          # assurez-vous qu’il existe
+    self.mode_menu = tk.Menu(self.menu_bar, tearoff=0)    # ← nouveau
+    self.menu_bar.add_cascade(label="Mode", menu=self.mode_menu)  # ← nouveau
 
-bubble = None
-label_in_bubble = None
+    self.mode_menu.add_radiobutton(label='Direct',
+                                   variable=self.mod_var,
+                                   value=DIRECT,
+                                   command=lambda: self.app.switch_mode(DIRECT))
+    self.mode_menu.add_radiobutton(label='Réduit',
+                                   variable=self.mod_var,
+                                   value=REDUIT,
+                                   command=lambda: self.app.switch_mode(REDUIT))
+    self.mode_menu.add_radiobutton(label='Apprentissage',
+                                   variable=self.mod_var,
+                                   value=APPRENTI,
+                                   command=lambda: self.app.switch_mode(APPRENTI))
+    self.mode_menu.add_radiobutton(label='Transcription Fichiers Audios',
+                                   variable=self.mod_var,
+                                   value=FICHIER,
+                                   command=lambda: self.app.switch_mode(FICHIER))
 
 
 def show_bubble_message(parent: tk.Tk, message: str, background: str = "yellow") -> None:
