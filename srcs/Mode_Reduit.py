@@ -70,7 +70,7 @@ class Mode_Reduit(Mode):
                     text_to_copy = corriger_texte(text_apres_ponctuation)
                 else:
                     text_to_copy = text_apres_ponctuation
-                self.root.clipboard_append(text_to_copy)
+                self.root.clipboard_append(f"{text_to_copy} ")
                 if not self.a_ecrit:
                     Simulator([Key.ctrl, 'v'])
                     self.a_ecrit = True

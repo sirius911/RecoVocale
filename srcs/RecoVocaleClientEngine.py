@@ -308,7 +308,8 @@ class RecoVocaleClientEngine:
             print("partial vide")
 
     def merge(self):
-        print(f"Je dois merger [{" ".join(self.transcription_totale.keys())}]", flush=True)
+        #  consiste à effacer transcription_totale et à utiliser texte merge
+        print(f"Je dois merger [{self.texte_merge}]", flush=True)
         self.transcription_totale = {}
         print(f"transcription_en_cours = {self.transcription_en_cours}")
         self._add(self.texte_merge)
@@ -323,6 +324,7 @@ class RecoVocaleClientEngine:
         self.nb_mots_trancripts = 0
 
     def set(self, texte) -> None:
+        self.clear_transcriptions()
         self.texte_merge = texte
         self.merge()
 

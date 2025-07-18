@@ -313,8 +313,9 @@ def remove_bubble() -> None:
             bubble.destroy()
         else:
             print("[utils_window] Aucune bulle à détruire.")
-    except tk.TclError as e:
-        print(f"[utils_window] Erreur lors de la destruction de la bulle : {e}")
+    except tk.TclError:
+        # print(f"[utils_window] Erreur lors de la destruction de la bulle : {e}")
+        pass
     finally:
         bubble = None
         label_in_bubble = None
