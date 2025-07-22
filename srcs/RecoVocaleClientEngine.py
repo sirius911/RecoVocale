@@ -8,6 +8,7 @@ import uuid
 from info import VERSION_DLL
 from Correcteur import intercept, corrige_ponctuation, corriger_texte
 from loger import compter_mots
+from vlc_perso import VLC
 
 
 PATH_LIB = "C:/Users/lorcyr/recovocale_engine/target/release/recovocale_engine.dll"
@@ -105,6 +106,12 @@ class RecoVocaleClientEngine:
         self.lib.destroy.argtypes = []
         self.lib.free_cstring.argtypes = [c_char_p]
         self.lib.free_cstring.restype = None
+        self.lib.start_capture_pipe.argtypes = [c_char_p, c_bool]
+        self.lib.start_capture_pipe.restype = None
+
+        self.lib.stop_capture_pipe.argtypes = []
+        self.lib.stop_capture_pipe.restype = None
+        self.pipe = False
 
         self.transcription_totale = {}
         self.transcription_en_cours = ""
@@ -189,11 +196,14 @@ class RecoVocaleClientEngine:
 
     def stop(self, audio_file=None):
         if self.is_connected():
-            if audio_file is None:
+            if audio_file is not None:
+                self.lib.stop_capture_audio_file()
+            elif self.pipe:
+                self.stop_audio_pipe()
+            else:
                 self.lib.stop_capture()
                 self.send_end_of_audio()
-            else:
-                self.lib.stop_capture_audio_file()
+
             self.wait_transcription_en_cours(3.0)
 
     def get_string_and_free(self, getter_func):
@@ -337,8 +347,24 @@ class RecoVocaleClientEngine:
         """
         Lance la transcription à partir d'un fichier audio local (WAV/FLAC/…).
         """
+        if self.pipe:
+            self.start_audio_pipe()
         if not self.is_connected():
             raise RuntimeError("Client non connecté ; appelez connect() d'abord")
 
         # encodage UTF-8 + terminaison \0 prise en charge par ctypes
         self.lib.start_capture_audio_file(audio_path.encode("utf-8"), listen)
+
+    def start_audio_pipe(self):
+        """Démarre la capture depuis un Named-Pipe Windows."""
+        # pipe_name: str = "recovocale_pipe"
+        if self.is_connected():
+            if not self.pipe:
+                self.lib.start_capture_pipe(VLC.PIPE.encode("utf-8"), False)
+                self.pipe = True
+        else:
+            print("Client Non connecté")
+
+    def stop_audio_pipe(self):
+        self.lib.stop_capture_pipe()
+        self.pipe = False

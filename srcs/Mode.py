@@ -11,6 +11,8 @@ from insertions import FenetreGestion
 from utils_socket import check_server_status
 from RecoVocaleClientEngine import RecoVocaleClientEngine
 from loger import envoyer_log
+from vlc_perso import VLC
+# from vlcPlayer import VLC
 
 
 class Mode:
@@ -61,7 +63,9 @@ class Mode:
         self.thread = None
         self.running_thread = False
         self.transcription_interrompue = False
-        self.audio_file = None
+        # self.audio_file = None # redondant
+        self.use_vlc = False
+        self.vlc = None
 
     def enter(self) -> None:
         """
@@ -111,15 +115,22 @@ class Mode:
         """
         print(f"Pause() dans {self.mode.name}")
         if self.app.recording:
-            self.engine.stop(self.audio_file)
-            self.app.recording = False
-            self.running_thread = False
-            self.audio_file = None
+            if self.use_vlc:
+                # self.vlc.play_pause()
+                self.app.recording = False
+                self.running_thread = False
+            else:
+                self.engine.stop(self.file_source)
+                self.file_source = None  # On ne charge qu'une seule fois
+                self.app.recording = False
+                self.running_thread = False
+            # self.audio_file = None
             self.update()
 
     def unpause(self, audio_file=None):
         if audio_file is not None:
-            self.audio_file = audio_file
+            self.file_source = audio_file
+            # self.audio_file = audio_file
         if not self.app.recording:
             self.transcription_interrompue = False
             if not self.engine.is_connected():
@@ -128,19 +139,31 @@ class Mode:
                     self.status_bar.config(text='Impossible de se connecter au serveur WhisperLive via DLL.',
                                            bg='lightblue', fg='darkblue', anchor=tk.W)
                     return
+
             if not self.running_thread:
                 if self.mode == APPRENTI:
                     self.engine.start(file_temp=self.temp_wav_file)
                 else:
-                    self.engine.start(file_to_capture=audio_file, listen=self.app.config.play_audio)
+                    if self.use_vlc:
+                        print("Utilisation de vlc")
+                        self.status_bar.config(text='Utilisez VLC', bg='lightblue', fg='darkblue', anchor=tk.CENTER)
+                        # Lancement du capture pipe:
+                        self.engine.start_audio_pipe()
+                        # lancement de vlc avec audio_file
+                        if self.vlc is None:
+                            self.vlc = VLC()
+                        self.vlc.open(source=audio_file)
+                    else:
+                        self.vlc = None
+                        self.engine.start(file_to_capture=audio_file, listen=self.app.config.play_audio)
                 for _ in range(20):
                     if self.engine.is_capturing():
                         break
                     time.sleep(0.05)
                 self.thread = threading.Thread(target=self.start_transcription_loop, daemon=True)
                 self.thread.start()
-
             self.app.recording = True
+
         self.update()
 
     def exit_app(self) -> None:
@@ -324,10 +347,23 @@ class Mode:
         if hasattr(self, "text_box") and self.text_box.winfo_exists():
             self.verification_dico()
 
+    def toggle_vlc(self, *_):
+        """Active ou désactive l’utilisation de VLC."""
+        self.use_vlc = self.vlc_var.get()
+        if not self.use_vlc and self.vlc is not None:
+            self.vlc.close()
+            if self.engine:
+                self.engine.stop_audio_pipe()
+
     def exit(self) -> None:
         """
         Détruit tous les widgets enfants de la fenêtre principale.
         """
+        print(f"ici use_vlc = {self.use_vlc}")
+        if self.use_vlc:
+            print("fermeture de vlc")
+            if self.vlc is not None:
+                self.vlc.close()
         for widget in self.root.winfo_children():
             widget.destroy()
 

@@ -213,7 +213,7 @@ def create_menus(self) -> None:
     # =========================
     # 3. Mode  (NOUVEAU menu racine)
     # =========================
-    self.mod_var = tk.StringVar(value=self.mode)          # assurez-vous qu’il existe
+    self.mod_var = tk.StringVar(value=self.mode)
     self.mode_menu = tk.Menu(self.menu_bar, tearoff=0)    # ← nouveau
     self.menu_bar.add_cascade(label="Mode", menu=self.mode_menu)  # ← nouveau
 
@@ -233,6 +233,26 @@ def create_menus(self) -> None:
                                    variable=self.mod_var,
                                    value=FICHIER,
                                    command=lambda: self.app.switch_mode(FICHIER))
+    self.mode_menu.entryconfig(3, state='disabled')
+
+    # =========================
+    # 4. VLC
+    # =========================
+    # État « Utiliser VLC » – vrai ou faux
+    self.vlc_var = tk.BooleanVar(value=getattr(self.app.config, "use_vlc", False))
+
+    # Menu racine « VLC »
+    self.vlc_menu = tk.Menu(self.menu_bar, tearoff=0)
+    self.menu_bar.add_cascade(label="VLC", menu=self.vlc_menu)
+
+    # Case à cocher « Utiliser VLC »
+    self.vlc_menu.add_checkbutton(
+        label="Utiliser VLC",
+        variable=self.vlc_var,
+        onvalue=True,
+        offvalue=False,
+        command=self.toggle_vlc      # ⇐ fonction décrite ci-dessous
+    )
 
 
 def show_bubble_message(parent: tk.Tk, message: str, background: str = "yellow") -> None:

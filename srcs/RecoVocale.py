@@ -130,6 +130,7 @@ class App:
     def on_closing(self) -> None:
         """Gère la fermeture de l'application en sauvegardant la configuration."""
         self.current_mode.stop()
+        self.current_mode.exit()
         if self.mic:
             self.mic.disconnect()
         # sauvegarde userConfig
