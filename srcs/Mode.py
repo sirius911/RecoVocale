@@ -2,6 +2,7 @@ import re
 import string
 import threading
 import time
+from tkinter import filedialog
 import enchant
 import tkinter as tk
 
@@ -12,7 +13,8 @@ from utils_socket import check_server_status
 from RecoVocaleClientEngine import RecoVocaleClientEngine
 from loger import envoyer_log
 from vlc_perso import VLC
-# from vlcPlayer import VLC
+from queue_manager import UI_QUEUE
+from utils_window import update_status_bar, show_messagebox
 
 
 class Mode:
@@ -42,9 +44,8 @@ class Mode:
         Args:
             app: Instance de l'application principale.
         """
-
-        self.app = app
         self.root = app.root
+        self.app = app
         self.mode = mode
         self.mod_var = tk.StringVar()
         self.mod_var.set(mode)
@@ -66,6 +67,8 @@ class Mode:
         # self.audio_file = None # redondant
         self.use_vlc = False
         self.vlc = None
+
+        self.pending_tasks = set()  # a supprimer apres les debug
 
     def enter(self) -> None:
         """
@@ -102,12 +105,12 @@ class Mode:
         """
         Copie le contenu de la transcription dans le presse-papier système.
         """
-
-        self.status_bar.config(text='- Copie -', bg='lightblue', fg='darkblue', anchor=tk.CENTER)
-        self.root.clipboard_clear()
-        self.root.clipboard_append(self.transcription.get())
-        time.sleep(0.5)
-        self._update_barre_status()
+        def copy():
+            self.root.clipboard_clear()
+            self.root.clipboard_append(self.transcription.get())
+            update_status_bar(self.status_bar,
+                              text='- Copie -', bg='lightblue', fg='darkblue', anchor=tk.CENTER)
+        self.add_to_ui_queue(copy)
 
     def pause(self) -> None:
         """
@@ -116,7 +119,7 @@ class Mode:
         print(f"Pause() dans {self.mode.name}")
         if self.app.recording:
             if self.use_vlc:
-                # self.vlc.play_pause()
+                self.vlc.play_pause()
                 self.app.recording = False
                 self.running_thread = False
             else:
@@ -127,42 +130,117 @@ class Mode:
             # self.audio_file = None
             self.update()
 
-    def unpause(self, audio_file=None):
-        if audio_file is not None:
-            self.file_source = audio_file
-            # self.audio_file = audio_file
-        if not self.app.recording:
-            self.transcription_interrompue = False
-            if not self.engine.is_connected():
-                if not self.engine.connect():
-                    print("❌ Impossible de se connecter au serveur WhisperLive via DLL.")
-                    self.status_bar.config(text='Impossible de se connecter au serveur WhisperLive via DLL.',
-                                           bg='lightblue', fg='darkblue', anchor=tk.W)
-                    return
+    def unpause(self, audio_file: str | None = None):
+        """Relance (ou démarre) la boucle de transcription.
 
-            if not self.running_thread:
-                if self.mode == APPRENTI:
-                    self.engine.start(file_temp=self.temp_wav_file)
-                else:
-                    if self.use_vlc:
-                        print("Utilisation de vlc")
-                        self.status_bar.config(text='Utilisez VLC', bg='lightblue', fg='darkblue', anchor=tk.CENTER)
-                        # Lancement du capture pipe:
-                        self.engine.start_audio_pipe()
-                        # lancement de vlc avec audio_file
-                        if self.vlc is None:
-                            self.vlc = VLC()
-                        self.vlc.open(source=audio_file)
-                    else:
-                        self.vlc = None
-                        self.engine.start(file_to_capture=audio_file, listen=self.app.config.play_audio)
-                for _ in range(20):
-                    if self.engine.is_capturing():
-                        break
-                    time.sleep(0.05)
-                self.thread = threading.Thread(target=self.start_transcription_loop, daemon=True)
-                self.thread.start()
-            self.app.recording = True
+        ‣ Si `self.use_vlc` est vrai, on part du principe que `lancer_vlc()`
+        a déjà …
+            • démarré le serveur pipe (`start_audio_pipe()`),  
+            • lancé VLC avec le média choisi et la sortie `--sout` correcte.
+        `unpause()` ne fait donc qu’assurer que tout tourne
+        et basculer VLC en lecture si besoin.
+
+        ‣ Si l’on n’utilise pas VLC, on garde le comportement précédent :
+        `audio_file` désigne alors le fichier à capturer directement.
+        """
+
+        # ------------------------------------------------------------
+        # 1)  Ne rien faire si l’enregistrement est déjà actif
+        # ------------------------------------------------------------
+        if self.app.recording:           # déjà en capture
+            return
+
+        self.transcription_interrompue = False
+
+        # ------------------------------------------------------------
+        # 2)  Connexion à la DLL WhisperLive
+        # ------------------------------------------------------------
+        if not self.engine.is_connected() and not self.engine.connect():
+            update_status_bar(self.status_bar,
+                              text="Impossible de se connecter au serveur WhisperLive via DLL.",
+                              bg="lightblue", fg="darkblue", anchor=tk.W,
+                              )
+            print("❌ Impossible de se connecter au serveur WhisperLive via DLL.")
+            return
+
+        # ------------------------------------------------------------
+        # 3)  Branche « APPRENTI »
+        # ------------------------------------------------------------
+        if self.mode == APPRENTI:
+            self.engine.start(file_temp=self.temp_wav_file)
+
+        # ------------------------------------------------------------
+        # 4)  Branche lecture via VLC
+        # ------------------------------------------------------------
+        elif self.use_vlc:
+            update_status_bar(self.status_bar, text="Lecture via VLC", bg="lightblue",
+                              fg="darkblue", anchor=tk.CENTER)
+
+            # 4-a  S’assurer que le serveur pipe tourne
+            if not self.engine.pipe:
+                self.engine.start_audio_pipe()
+
+            # 4-b  Vérifier que VLC est lancé par « Lancer VLC »
+            if self.vlc is None:
+                if audio_file is None:
+                    show_messagebox(
+                        message_type="warning",
+                        title="VLC non lancé pour lire",
+                        message="Utilisez d’abord le menu « Lancer VLC » pour choisir un fichier."
+                    )
+                    return
+                # else:
+                # try:
+                #     while not self.engine.is_capturing():
+                #         update_status_bar(self.status_bar,
+                #                           text="Attente du Pipe et Capture()",
+                #                           bg="lightblue", fg="darkblue", anchor=tk.W,
+                #                           )
+                #         time.sleep(0.05)
+                # except KeyboardInterrupt:
+                #     update_status_bar(self.status_bar,
+                #                       text="Attente Interrompue (Ctrl+C)",
+                #                       bg="lightblue", fg="darkblue", anchor=tk.W,
+                #                       )
+                #     return
+
+            #     else:
+            #         # fichier demandé
+            #         update_status_bar(self.status_bar, text=f"Chargement via VLC [{audio_file}] ... en cours",
+            #                           bg='lightblue', fg='darkblue', anchor=tk.W)
+            #         self.vlc = VLC()
+            #         self.vlc.open(audio_file)
+            #         self.file_source = audio_file
+            #         time.sleep(0.5)
+
+            # 4-c  Remet VLC en lecture seulement s’il est en pause
+            if self.vlc is not None and not self.vlc.is_playing():
+                self.vlc.play_pause()      # toggle pause→play
+
+        # ------------------------------------------------------------
+        # 5)  Capture directe sans VLC
+        # ------------------------------------------------------------
+        else:
+            self.vlc = None
+            self.engine.start(file_to_capture=audio_file,
+                              listen=self.app.config.play_audio)
+
+        # ------------------------------------------------------------
+        # 6)  Attendre le début de la capture audio
+        # ------------------------------------------------------------
+        for _ in range(20):                # ~1 s max
+            if self.engine.is_capturing():
+                break
+            time.sleep(0.05)
+
+        # ------------------------------------------------------------
+        # 7)  Lancer le thread de transcription
+        # ------------------------------------------------------------
+        self.app.recording = True
+        self.thread = threading.Thread(
+            target=self.start_transcription_loop, daemon=True
+        )
+        self.thread.start()
 
         self.update()
 
@@ -201,7 +279,6 @@ class Mode:
         """
         Met à jour le message affiché dans la barre de statut selon l'état de l'application.
         """
-
         if self.mode == REDUIT:
             message = f"RecoVocale {VERSION}"
         else:
@@ -212,17 +289,19 @@ class Mode:
             )
 
         if self.app.status_server is False:
-            self.status_bar.config(text=message, fg='red', bg='lightblue', anchor=tk.W)
+            update_status_bar(self.status_bar, message, 'red', 'lightblue', tk.W)
         elif self.app.recording:
             if self.file_source is not None:
-                message = f"Transcription de [{self.file_source}] ... en cours"
+                message = f"{'Transcription via VLC' if self.use_vlc else 'Transcription de'} "
+                f"[{self.file_source}] ... en cours"
             else:
-                message = "Transcription en cours..."
-            self.status_bar.config(text=message, fg='black', bg='red', anchor=tk.CENTER)
+                message = "Transcription Entrée audio en cours..."
+            update_status_bar(self.status_bar, text=message, fg='black', bg='red', anchor=tk.CENTER)
         elif self.transcription_en_cours:
-            self.status_bar.config(text="Transcription ...en cours", bg='lightblue', fg='darkblue', anchor=tk.W)
+            update_status_bar(self.status_bar, text="Transcription ...en cours",
+                              bg='lightblue', fg='darkblue', anchor=tk.W)
         else:
-            self.status_bar.config(text=message, bg='lightblue', fg='darkblue', anchor=tk.W)
+            update_status_bar(self.status_bar, text=message, bg='lightblue', fg='darkblue', anchor=tk.W)
 
     def _update_title_window(self) -> None:
         """
@@ -242,6 +321,7 @@ class Mode:
         """
         Thread de transcription qui affiche les segments partiels et colle les segments complets.
         """
+        print("start_transcription loop au niveau de Mode Class Mere")
         self.running_thread = True
         self.save_text_box()
         while True:
@@ -257,11 +337,13 @@ class Mode:
             except Exception as e:
                 print(f"[Mode_Direct] Erreur dans le thread : {e}")
 
+            time.sleep(0.1)
+
         self.update_sortie()
         start = time.time()
         while not self.engine.is_transcription_terminee():
-            self.status_bar.config(text='Attente fin de transcription...',
-                                   bg='lightblue', fg='darkblue', anchor=tk.W)
+            update_status_bar(self.status_bar, text='Attente fin de transcription...',
+                              bg='lightblue', fg='darkblue', anchor=tk.W)
             self.update_sortie()
             if (time.time()-start) > 2.0:
                 break
@@ -269,8 +351,8 @@ class Mode:
             texte_info = "Transcription terminée"
         else:
             texte_info = "Transcription interrompue, on sort"
-        self.status_bar.config(text=texte_info,
-                               bg='lightblue', fg='darkblue', anchor=tk.W)
+        update_status_bar(self.status_bar, text=texte_info,
+                          bg='lightblue', fg='darkblue', anchor=tk.W)
 
         print(texte_info)
         print(f"{self.engine.lib.is_task_completed()} and not {self.engine.lib.is_task_in_progress()} => "
@@ -281,13 +363,14 @@ class Mode:
         """
         Met à jour tous les composants de l'interface (statut, bouton, cercle, titre...).
         """
-
-        self._update_rec_circle()
-        self._update_image_button()
-        self._update_barre_status()
-        self._update_title_window()
-        if self.app.config.debug:
-            self.app.info()
+        def update_safe():
+            self._update_rec_circle()
+            self._update_image_button()
+            self._update_barre_status()
+            self._update_title_window()
+            if self.app.config.debug:
+                self.app.info()
+        self.add_to_ui_queue(update_safe)
 
     def name(self) -> str:
         """
@@ -346,6 +429,42 @@ class Mode:
         self.app.config.dictionnaire = self.dico_var.get()
         if hasattr(self, "text_box") and self.text_box.winfo_exists():
             self.verification_dico()
+
+    def lance_vlc(self):
+        """Ouvre une boîte de dialogue pour choisir un média, puis lance VLC déjà
+        configuré pour sortir sur le pipe et commence la lecture."""
+
+        self.use_vlc = True
+        self.vlc_var.set(True)    # ← coche la case du menu
+
+        # 1) Sélection du fichier
+        filepath = filedialog.askopenfilename(
+            title="Choisir un fichier audio ou vidéo",
+            filetypes=[
+                ("Audio/vidéo", "*.wav *.mp3 *.flac *.mp4 *.mkv *.avi *.mov"),
+                ("Tous les fichiers", "*.*"),
+            ],
+        )
+        if not filepath:
+            return  # l’utilisateur a annulé
+
+        # 2) Démarre d’abord le serveur pipe (indispensable avant VLC)
+        if not self.engine.pipe:
+            self.engine.start_audio_pipe()
+
+        # 3) (Re)démarre VLC avec le bon --sout et le média choisi
+        if self.vlc is not None:
+            self.vlc.close()          # on termine proprement le précédent processus
+            time.sleep(0.2)
+
+        update_status_bar(self.status_bar, text=f"Chargement via VLC [{filepath}] ... en cours",
+                          bg='lightblue', fg='darkblue', anchor=tk.W)
+        self.vlc = VLC()
+        self.vlc.open(filepath)       # le paramètre source configure aussi --sout
+        # self.vlc.play_pause()                   # bascule pause → play → lance ffmpeg
+
+        time.sleep(0.5)               # petite marge pour négocier le Named Pipe
+        self.file_source = filepath
 
     def toggle_vlc(self, *_):
         """Active ou désactive l’utilisation de VLC."""
@@ -424,45 +543,46 @@ class Mode:
             auto (bool): Si True, remplace automatiquement les mots mal orthographiés
             quand une seule suggestion est trouvée.
         """
+        def verify():
+            # efface les marquages précédents
+            self.text_box.tag_remove("incorrect", "1.0", tk.END)
+            if not self.app.config.dictionnaire:
+                return
 
-        # efface les marquages précédents
-        self.text_box.tag_remove("incorrect", "1.0", tk.END)
-        if not self.app.config.dictionnaire:
-            return
+            contenu = self.text_box.get("1.0", tk.END)
+            # Séparer le contenu en mots
+            # mots = contenu.split()
+            mots = re.findall(r'\b[\w-]+\b', contenu)  # permet de ne pas couper si mot composé (-)
 
-        contenu = self.text_box.get("1.0", tk.END)
-        # Séparer le contenu en mots
-        # mots = contenu.split()
-        mots = re.findall(r'\b[\w-]+\b', contenu)  # permet de ne pas couper si mot composé (-)
+            for mot in mots:
+                # Nettoyer le mot de la ponctuation en début et fin, sans modifier l'original
+                mot_nettoye = mot.strip(string.punctuation)
+                # Vérifier chaque mot
+                if mot_nettoye and not self.dico.check(mot_nettoye):
+                    # Obtenir les suggestions
+                    suggestions = self.dico.suggest(mot_nettoye)
 
-        for mot in mots:
-            # Nettoyer le mot de la ponctuation en début et fin, sans modifier l'original
-            mot_nettoye = mot.strip(string.punctuation)
-            # Vérifier chaque mot
-            if mot_nettoye and not self.dico.check(mot_nettoye):
-                # Obtenir les suggestions
-                suggestions = self.dico.suggest(mot_nettoye)
-
-                # Si une seule suggestion est disponible, remplacer automatiquement le mot
-                if len(suggestions) == 1 and auto:
-                    correct_mot = suggestions[0]
-                    self.save_text_box()
-                    # Trouver la position exacte du mot dans le Text widget
-                    start_idx = self.text_box.search(mot, "1.0", tk.END)
-                    if not start_idx:
-                        continue
-                    end_idx = f"{start_idx} + {len(mot)}c"
-                    # Remplacer le mot incorrect par le mot correct
-                    self.text_box.delete(start_idx, end_idx)
-                    self.text_box.insert(start_idx, correct_mot)
-                else:
-                    # Marquer le mot comme incorrect s'il n'y a pas une seule suggestion
-                    start_idx = self.text_box.search(mot, "1.0", tk.END)
-                    if not start_idx:
-                        continue
-                    end_idx = f"{start_idx} + {len(mot)}c"
-                    # print(start_idx, end_idx)
-                    self.text_box.tag_add("incorrect", start_idx, end_idx)
+                    # Si une seule suggestion est disponible, remplacer automatiquement le mot
+                    if len(suggestions) == 1 and auto:
+                        correct_mot = suggestions[0]
+                        self.save_text_box()
+                        # Trouver la position exacte du mot dans le Text widget
+                        start_idx = self.text_box.search(mot, "1.0", tk.END)
+                        if not start_idx:
+                            continue
+                        end_idx = f"{start_idx} + {len(mot)}c"
+                        # Remplacer le mot incorrect par le mot correct
+                        self.text_box.delete(start_idx, end_idx)
+                        self.text_box.insert(start_idx, correct_mot)
+                    else:
+                        # Marquer le mot comme incorrect s'il n'y a pas une seule suggestion
+                        start_idx = self.text_box.search(mot, "1.0", tk.END)
+                        if not start_idx:
+                            continue
+                        end_idx = f"{start_idx} + {len(mot)}c"
+                        # print(start_idx, end_idx)
+                        self.text_box.tag_add("incorrect", start_idx, end_idx)
+        self.add_to_ui_queue(verify)
 
     def show_context_menu(self, event) -> None:
         """
@@ -471,55 +591,56 @@ class Mode:
         Args:
             event: Événement de clic droit Tkinter.
         """
+        def show_menu():
+            # Obtenir la position du clic droit dans le widget Text
+            index = self.text_box.index(f"@{event.x},{event.y}")
 
-        # Obtenir la position du clic droit dans le widget Text
-        index = self.text_box.index(f"@{event.x},{event.y}")
+            # Obtenir la ligne complète où le clic droit a eu lieu
+            line_start = f"{index.split('.')[0]}.0"
+            line_end = f"{index.split('.')[0]}.end"
+            line_text = self.text_box.get(line_start, line_end)
 
-        # Obtenir la ligne complète où le clic droit a eu lieu
-        line_start = f"{index.split('.')[0]}.0"
-        line_end = f"{index.split('.')[0]}.end"
-        line_text = self.text_box.get(line_start, line_end)
+            # Obtenir la position relative du curseur dans la ligne
+            cursor_pos_in_line = int(index.split('.')[1])
 
-        # Obtenir la position relative du curseur dans la ligne
-        cursor_pos_in_line = int(index.split('.')[1])
+            # Utiliser une regex pour trouver le mot avec un trait d'union sous le curseur
+            # Recherche de mots contenant des lettres, chiffres et traits d'union
+            for match in re.finditer(r'\b[\w-]+\b', line_text):
+                start, end = match.span()
+                if start <= cursor_pos_in_line <= end:
+                    incorrect_word = match.group(0)
+                    word_start = f"{line_start} + {start}c"
+                    word_end = f"{line_start} + {end}c"
+                    break
+            else:
+                return  # Aucun mot trouvé sous le curseur
 
-        # Utiliser une regex pour trouver le mot avec un trait d'union sous le curseur
-        # Recherche de mots contenant des lettres, chiffres et traits d'union
-        for match in re.finditer(r'\b[\w-]+\b', line_text):
-            start, end = match.span()
-            if start <= cursor_pos_in_line <= end:
-                incorrect_word = match.group(0)
-                word_start = f"{line_start} + {start}c"
-                word_end = f"{line_start} + {end}c"
-                break
-        else:
-            return  # Aucun mot trouvé sous le curseur
+            # Vérifier si le mot est incorrect et obtenir des suggestions
+            if not self.dico.check(incorrect_word):
+                suggestions = self.dico.suggest(incorrect_word)
 
-        # Vérifier si le mot est incorrect et obtenir des suggestions
-        if not self.dico.check(incorrect_word):
-            suggestions = self.dico.suggest(incorrect_word)
+                personnalise_suggestions = [
+                    s for s in suggestions if s in self.mots_personnels
+                ]
+                autres_suggestions = [
+                    s for s in suggestions if s not in self.mots_personnels
+                ]
+                suggestions = personnalise_suggestions + autres_suggestions
 
-            personnalise_suggestions = [
-                s for s in suggestions if s in self.mots_personnels
-            ]
-            autres_suggestions = [
-                s for s in suggestions if s not in self.mots_personnels
-            ]
-            suggestions = personnalise_suggestions + autres_suggestions
-
-            # Effacer le menu précédent et ajouter les nouvelles suggestions
-            self.context_menu.delete(0, tk.END)
-            for suggestion in suggestions:
+                # Effacer le menu précédent et ajouter les nouvelles suggestions
+                self.context_menu.delete(0, tk.END)
+                for suggestion in suggestions:
+                    self.context_menu.add_command(
+                        label=suggestion,
+                        command=lambda s=suggestion, ws=word_start, we=word_end: self.replace_word(s, ws, we)
+                    )
+                self.context_menu.add_separator()
                 self.context_menu.add_command(
-                    label=suggestion,
-                    command=lambda s=suggestion, ws=word_start, we=word_end: self.replace_word(s, ws, we)
+                    label="Ajouter au dictionnaire",
+                    command=lambda: self.ajouter_mot_personnalise(incorrect_word)
                 )
-            self.context_menu.add_separator()
-            self.context_menu.add_command(
-                label="Ajouter au dictionnaire",
-                command=lambda: self.ajouter_mot_personnalise(incorrect_word)
-            )
-            self.context_menu.post(event.x_root, event.y_root)
+                self.context_menu.post(event.x_root, event.y_root)
+        self.add_to_ui_queue(show_menu)
 
     def replace_word(self, suggestion: str, word_start: str, word_end: str) -> None:
         """
@@ -530,13 +651,15 @@ class Mode:
             word_start (str): Position de début dans le widget Text.
             word_end (str): Position de fin.
         """
+        def replace():
+            self.save_text_box()
+            # Remplacer le mot dans la text box
+            self.text_box.delete(word_start, word_end)
+            self.text_box.insert(word_start, suggestion)
+            # Retirer le marquage incorrect
+            self.text_box.tag_remove("incorrect", word_start, word_end)
 
-        self.save_text_box()
-        # Remplacer le mot dans la text box
-        self.text_box.delete(word_start, word_end)
-        self.text_box.insert(word_start, suggestion)
-        # Retirer le marquage incorrect
-        self.text_box.tag_remove("incorrect", word_start, word_end)
+        self.add_to_ui_queue(replace)
 
     def ajouter_mot_personnalise(self, mot: str) -> None:
         """
@@ -599,7 +722,8 @@ class Mode:
             file_path (str): Chemin vers le fichier audio.
         """
 
-        self.status_bar.config(text=f'Traitement du fichier : {file_path}', bg='lightblue', fg='darkblue', anchor=tk.W)
+        update_status_bar(self.status_bar, text=f'Traitement du fichier : {file_path}',
+                          bg='lightblue', fg='darkblue', anchor=tk.W)
         self.unpause(file_path)
 
     def log(self, text: str = "", nb_mots: int = 0) -> None:
@@ -621,3 +745,30 @@ class Mode:
                     nb_mots=nb_mots,
                     mode=mode,
                     model=model,)
+
+    import threading
+
+    def add_to_ui_queue(self, func, *args, **kwargs):
+        """Ajoute une tâche à la file d'attente UI pour exécution dans le thread principal."""
+        task_id = (func, args, tuple(kwargs.items()))  # Identifiant unique pour la tâche
+        if task_id in self.pending_tasks:
+            # print(f"Tâche déjà en attente : {func.__name__}")
+            return  # Ignorez les doublons
+        self.pending_tasks.add(task_id)
+
+        def safe_task():
+            try:
+                # print(f"Exécution de la tâche réelle : {func.__name__}({args}, {kwargs})")
+                func(*args, **kwargs)
+            except Exception as e:
+                print(f"Erreur dans la tâche ajoutée à UI_QUEUE : {e}")
+            finally:
+                self.pending_tasks.remove(task_id)  # Retirez la tâche après exécution
+
+        # Vérifiez si vous êtes dans le thread principal Tkinter
+        if threading.current_thread() == threading.main_thread():
+            # print(f"Exécution immédiate de la tâche : {func.__name__}({args})")
+            safe_task()  # Exécute immédiatement si dans le thread principal
+        else:
+            # print(f"Tâche ajoutée à UI_QUEUE : {func.__name__}({args})")
+            UI_QUEUE.put(safe_task)

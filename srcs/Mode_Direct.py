@@ -1,4 +1,3 @@
-import time
 import tkinter as tk
 import tkinter.font as tkFont
 from Mode import Mode
@@ -157,19 +156,20 @@ class Mode_Direct(Mode):
         """
         Efface le texte sélectionné ou tout le texte s’il n’y a pas de sélection.
         """
-        time.sleep(0.5)
+
         self.save_text_box()
         _, all = self.get_selected_text()
 
-        self.text_box.config(state=tk.NORMAL)
-        if all:
+        def clear():
+            self.text_box.config(state=tk.NORMAL)
+            if all:
+                self.engine.clear()
+                self.text_box.delete('1.0', tk.END)
+            else:
+                Simulator([Key.delete])
 
-            self.engine.clear()
-            self.text_box.delete('1.0', tk.END)
-        else:
-            Simulator([Key.delete])
-
-        self.root.update()
+        self.add_to_ui_queue(clear)
+        # self.root.update()
 
     def get_pos_curseur(self) -> int:
         """
@@ -192,52 +192,61 @@ class Mode_Direct(Mode):
         Args:
             position_globale (int): Position souhaitée en caractères depuis le début.
         """
-        # Utiliser "1.0" comme point de départ et déplacer le curseur à la position globale
-        index_ligne_colonne = self.text_box.index(f"1.0 + {position_globale}c")
+        def set_cursor():
+            # Utiliser "1.0" comme point de départ et déplacer le curseur à la position globale
+            index_ligne_colonne = self.text_box.index(f"1.0 + {position_globale}c")
 
-        # Repositionner le curseur à l'index ligne.colonne calculé
-        self.text_box.mark_set("insert", index_ligne_colonne)
+            # Repositionner le curseur à l'index ligne.colonne calculé
+            self.text_box.mark_set("insert", index_ligne_colonne)
 
-        # S'assurer que le curseur est visible
-        self.text_box.see("insert")
+            # S'assurer que le curseur est visible
+            self.text_box.see("insert")
 
-    def write_text_box(self, texte):
+        self.add_to_ui_queue(set_cursor)
+
+    def write_text_box(self, texte: str):
         if not hasattr(self, "text_box") or not self.text_box.winfo_exists():
             return  # Le widget a été détruit
+        if len(texte.strip()) == 0:
+            return
 
-        if self.text_box:
+        def write(texte=texte):
             self.text_box.config(state=tk.NORMAL)
             self.text_box.delete('1.0', tk.END)
             self.text_box.insert(tk.END, texte)
             self.text_box.config(state=tk.DISABLED)
-        else:
-            print("Pas de TextBox")
+            self.root.update_idletasks()  # Force la mise à jour de l'interface utilisateur
+        self.add_to_ui_queue(write, texte)
 
     def update_sortie(self):
         texte = self.engine.get(insertions=self.app.insertions,
                                 dico=self.app.config.dictionnaire)
-        self.write_text_box(texte)
+        if texte.strip():  # Vérifiez que le texte n'est pas vide
+            self.write_text_box(texte)
 
     def start_transcription_loop(self):
-        self.trash_button.config(state=tk.DISABLED)
-        super().start_transcription_loop()
-        self.trash_button.config(state=tk.NORMAL)
-        self.rec_button.config(state=tk.NORMAL)
-        # self.engine.print_all_segments()
-        # self.update_text_box()
-        self.text_box.config(state=tk.NORMAL)
-        self.log(nb_mots=self.engine.get_nb_mots_trancripts())
+        def start_loop():
+            print("start_transcription loop au niveau de Mode Direct")
+            self.trash_button.config(state=tk.DISABLED)
+            # Utilisation explicite de super() avec la classe et l'instance
+            super(Mode_Direct, self).start_transcription_loop()
+            self.trash_button.config(state=tk.NORMAL)
+            self.rec_button.config(state=tk.NORMAL)
+            self.text_box.config(state=tk.NORMAL)
+            self.log(nb_mots=self.engine.get_nb_mots_trancripts())
+
+        self.add_to_ui_queue(start_loop)
 
     def copy_to_clipboard(self) -> None:
         """
         Copie le texte sélectionné (ou tout le texte) dans le presse-papier.
         """
+        def copy():
+            self.status_bar.config(text='- Copie -', bg='lightblue', fg='darkblue', anchor=tk.CENTER)
+            self.root.clipboard_clear()
+            self.root.clipboard_append(self.get_selected_text()[0])
 
-        self.status_bar.config(text='- Copie -', bg='lightblue', fg='darkblue', anchor=tk.CENTER)
-        self.root.clipboard_clear()
-        self.root.clipboard_append(self.get_selected_text()[0])
-        time.sleep(0.5)
-        self._update_barre_status()
+        self.add_to_ui_queue(copy)
 
     def on_text_change(self, event) -> None:
         """
@@ -257,14 +266,15 @@ class Mode_Direct(Mode):
         """
         Applique les changements de texte et met à jour la transcription et le curseur.
         """
+        def apply_changes():
+            self.trash_button.config(state=tk.NORMAL)
+            nouveau_text = self.text_box.get("1.0", tk.END)
+            # self.save_text_box()
+            if self.engine:
+                self.engine.set(nouveau_text)
+            self.verification_dico()
 
-        self.trash_button.config(state=tk.NORMAL)
-        nouveau_text = self.text_box.get("1.0", tk.END)
-        # self.save_text_box()
-        if self.engine:
-            self.engine.set(nouveau_text)
-
-        self.verification_dico()
+        self.add_to_ui_queue(apply_changes)
 
     def exit(self) -> str:
         """

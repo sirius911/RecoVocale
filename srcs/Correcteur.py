@@ -80,19 +80,41 @@ def detecter_chiffre_roman(text: str) -> str | None:
 def remplacement_special(text: str):
     """
     Traite les commandes spéciales comme "date" ou "chiffre romain".
-
-    Args:
-        text (str): Le texte après "insérer".
-
-    Returns:
-        str | None: Le remplacement à effectuer, ou None si aucun remplacement.
+    Remplace seulement le mot‑clé, en conservant le reste du texte.
     """
-    retour = None
-    if text.lower() == "date":
-        print("[Insérer][DATE]")
-        return datetime.now().strftime("%d/%m/%Y"), True
+    # Nettoyage minimal (espaces, deux‑points)
+    clean = text.lstrip(" :").rstrip()
+
+    # --- gestion de la date ---
+    # repère "date" en tout début, puis stocke le reste
+    m = re.match(r"(?i)^date\b(.*)", clean)
+    if m:
+        reste = m.group(1)          # ce qu’il y a après "date"
+        date_aujourdhui = datetime.now().strftime("%d/%m/%Y")
+        retour = date_aujourdhui + reste   # on recolle le reste inchangé
+        return retour, True
+
+    # --- autres cas (ex. chiffre romain) ---
     retour, _insertion = detecter_chiffre_roman(text)
     return retour, _insertion
+
+
+# def remplacement_special(text: str):
+#     """
+#     Traite les commandes spéciales comme "date" ou "chiffre romain".
+
+#     Args:
+#         text (str): Le texte après "insérer".
+
+#     Returns:
+#         str | None: Le remplacement à effectuer, ou None si aucun remplacement.
+#     """
+#     retour = None
+#     if text.lower() == "date":
+#         print("[Insérer][DATE]")
+#         return datetime.now().strftime("%d/%m/%Y"), True
+#     retour, _insertion = detecter_chiffre_roman(text)
+#     return retour, _insertion
 
 
 def remplacer_avec_dictionnaire(texte: str, pattern: str, dico_insertion: dict[str, str]) -> str:
@@ -143,7 +165,7 @@ def remplacer_avec_dictionnaire(texte: str, pattern: str, dico_insertion: dict[s
     return re.sub(pattern, remplacement, texte, flags=re.IGNORECASE), insertion
 
 
-def insertion(phrase: str, dico_insertion: dict[str, str]) -> str:
+def insertion(phrase: str, dico_insertion: dict[str, str]) -> str | bool:
     """
     Applique la logique d'insertion vocale à une phrase.
 
@@ -155,12 +177,27 @@ def insertion(phrase: str, dico_insertion: dict[str, str]) -> str:
         str: La phrase modifiée après traitement.
         _insertion: bool True si une insertion a eu lieu.
     """
-    pattern = r"\bins[éèêe]r(é|ez|er|ée|ées|és)[,. ]+([\w\s]+)"
+    # pattern = r"\bins[éèêe]r(é|ez|er|ée|ées|és)[,. ]+([\w\s]+)"
+    pattern = (
+        r"\bins[éèêe]r(é|er|ez|ée|ées|és)\b"   # ← parenthèses CAPTURANTES
+        r"\s*:?\s*"
+        r"([^\n]*?)"                           # 2ᵉ groupe = texte à insérer
+        r"(?=\bins[éèêe]r(?:é|er|ez|ée|ées|és)\b|$)"
+    )
 
-    # match = re.search(pattern, phrase)
-    nouveau_texte, _insertion = remplacer_avec_dictionnaire(phrase, pattern, dico_insertion)
-    # print(f"nouvelle phrase = {nouveau_texte}")
-    return nouveau_texte, _insertion
+    insertion_effectuee = False
+
+    while True:
+        texte_apres, a_change = remplacer_avec_dictionnaire(phrase, pattern, dico_insertion)
+        insertion_effectuee = insertion_effectuee or a_change
+        if not a_change:          # plus aucune nouvelle insertion : on s’arrête
+            break
+        phrase = texte_apres       # on continue de traiter la nouvelle phrase
+
+    return texte_apres, insertion_effectuee
+    # nouveau_texte, _insertion = remplacer_avec_dictionnaire(phrase, pattern, dico_insertion)
+    # # print(f"nouvelle phrase = {nouveau_texte}")
+    # return nouveau_texte, _insertion
 
 
 def proteger_points_speciaux(phrases: str) -> str:
@@ -274,13 +311,15 @@ def corrige_ponctuation(phrases: str) -> str:
 
     # supprimer la ponctuation après le \n
     phrases_finale = re.sub(r'(?<=\n)[.,;:!?]', '',  phrases_finale)
-    # capture deux signes de ponctuation consécutifs et ne garde que le dernier sauf si 3 points
-    phrases_finale = re.sub(r'(?<!\.)[.,;:!?]{2}(?!\.)', lambda match: match.group(0)[-1], phrases_finale)
-    # Suppression des espaces précédant '.', ',', ';', ':'
-    phrases_finale = re.sub(r' +(?=[.,;:])', '', phrases_finale)
-    # Supprimer uniquement les espaces avant et après un '\n'
+
+    # 1) Supprimer les espaces avant la ponctuation
+    phrases_finale = re.sub(r'\s+([.,;:!?])', r'\1', phrases_finale)
+
+    # 2) Réduire tout doublon de ponctuation, même s'il restait des espaces entre les deux signes
+    phrases_finale = re.sub(r'([.,;:!?])(?:\s*\1)+', r'\1', phrases_finale)
+
+    # 3) Nettoyer les espaces autour des sauts de ligne
     phrases_finale = re.sub(r' (?=\n)|(?<=\n) ', '', phrases_finale)
-    # print(f" Après regex 4 : {phrases_finale}")
 
     return phrases_finale
 
@@ -351,3 +390,72 @@ def corriger_texte(texte: str) -> str:
                 offset += len(correct_mot) - len(mot)
 
     return texte_corrige
+
+
+if __name__ == "__main__":
+    dico_insertion = {
+        r"\bheure\b": datetime.now().strftime("%H:%M"),
+        r"\bbonjour\b": "👋",
+    }
+    phrase = input("Tapez une phrase : ")
+    while True:
+        print("1) intercept()")
+        print("2) corriger_texte()")
+        print("3) corrige_ponctuation()")
+        print("4) remplacement_normal()")
+        print("5) proteger_points_speciaux()")
+        print("5) remplacement_special()")
+        print("6) insertion()")
+        print("7) int_to_roman()")
+        print("8) detecter_chiffre_roman()")
+        print("9) remplacer_avec_dictionnaire()")
+        print("10) restaurer_points_speciaux()")
+        print("11) convertir_unités")
+        print("12) changer la phrase")
+        print("\n\t0)  -> quitte")
+
+        while True:
+            print("Choisissez la fonction a tester : ")
+            try:
+                choix = int(input(f"\tPour la phrase = [{phrase}] : "))
+                break
+            except ValueError:
+                print("erreur")
+        interception = False
+        match choix:
+            case 1:
+                phrase_corrigee, interception = intercept(phrase, dico_insertion)
+            case 2:
+                phrase_corrigee = corriger_texte(phrase)
+            case 3:
+                phrase_corrigee = corrige_ponctuation(phrase)
+            case 4:
+                phrase_corrigee = remplacement_normal(phrase)
+            case 5:
+                phrase_corrigee = proteger_points_speciaux(phrase)
+            case 6:
+                phrase_corrigee, interception = insertion(phrase, dico_insertion)
+            case 7:
+                num = int(input("Rentrer un Entier : "))
+                phrase_corrigee = str(int_to_roman(num))
+            case 8:
+                phrase_corrigee = str(detecter_chiffre_roman(phrase))
+            case 9:
+                phrase_corrigee = remplacer_avec_dictionnaire(phrase, dico_insertion)
+            case 10:
+                phrase_corrigee = restaurer_points_speciaux(phrase)
+            case 11:
+                phrase_corrigee = convertir_unites(phrase)
+            case 12:
+                phrase = input("Tapez une nouvelle phrase : ")
+                phrase_corrigee = phrase
+            case 0:
+                break
+            case _:
+                print("mauvaise commande...")
+        modif = (phrase.strip() != phrase_corrigee.strip()) or interception
+        print("\n---------------------------------------")
+        print(f"phrase origine = {phrase}")
+        print(f"après fonction = {phrase_corrigee}{' [⚠️]' if modif else ''}")
+        print("\n---------------------------------------")
+        phrase = phrase_corrigee

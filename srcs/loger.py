@@ -32,16 +32,17 @@ def envoyer_log(event="start", texte: str = "", nb_mots: int = 0,
     if event == "transcription" and nb_mots == 0:
         nb_mots = compter_mots(texte)
     try:
-        log_data = {
-            "event": event,
-            "username": getpass.getuser(),
-            "ip": socket.gethostbyname(socket.gethostname()),
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "mode": mode,
-            "model": model,
-            "nb_mots": nb_mots,
-        }
-        # print(f"[LOG] Envoi du log : {log_data}")
-        requests.post("http://10.1.147.12:5000/log", json=log_data, timeout=2)
+        if nb_mots > 0:
+            log_data = {
+                "event": event,
+                "username": getpass.getuser(),
+                "ip": socket.gethostbyname(socket.gethostname()),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "mode": mode,
+                "model": model,
+                "nb_mots": nb_mots,
+            }
+            # print(f"[LOG] Envoi du log : {log_data}")
+            requests.post("http://10.1.147.12:5000/log", json=log_data, timeout=2)
     except Exception as e:
         print(f"[LOG] Échec d'envoi du log : {e}")

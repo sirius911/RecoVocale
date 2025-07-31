@@ -2,8 +2,6 @@ import keyboard
 import tkinter as tk
 from tkinter import messagebox
 
-from utils_window import change_toolTip
-
 
 class ShortcutManager:
     """
@@ -121,6 +119,7 @@ class ShortcutManager:
         Valide et enregistre les nouveaux raccourcis clavier définis.
         Met à jour le config, les hotkeys actifs, et ferme la fenêtre.
         """
+        from utils_window import change_toolTip
 
         # Validation des deux raccourcis
         start_keys = self.keyboard_shortcut.split('+')

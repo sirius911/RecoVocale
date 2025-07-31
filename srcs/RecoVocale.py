@@ -1,3 +1,40 @@
+# --- Diagnostic natif -------------------------------------------------
+import os, sys, signal, faulthandler, ctypes, traceback, threading
+
+# 1) log des crash C/Python
+logfile = open(os.path.join(os.getcwd(), "fatal.log"), "w", buffering=1)
+faulthandler.enable(file=logfile, all_threads=True)
+
+
+# 2) log des exceptions Python non rattrapées
+def excepthook(exc_type, exc, tb):
+    traceback.print_exception(exc_type, exc, tb, file=logfile)
+    traceback.print_exception(exc_type, exc, tb)
+    sys.__excepthook__(exc_type, exc, tb)
+
+
+sys.excepthook = excepthook
+
+
+# 3) hook panic Rust installé dès le chargement de la DLL
+def load_engine_dll():
+    dll_path = os.path.join(os.path.dirname(__file__), "C:/Users/lorcyr/recovocale_engine/target/release/recovocale_engine.dll")
+    lib = ctypes.CDLL(dll_path)
+    try:
+        lib.init_panic_hook()        # exposé dans la DLL
+    except AttributeError:
+        # pour les versions précédentes
+        pass
+    return lib
+
+
+ENGINE_DLL = load_engine_dll()
+
+# 4) capture CTRL +C pour fermer proprement et flusher fatal.log
+signal.signal(signal.SIGINT, lambda *_: sys.exit(0))
+# ----------------------------------------------------------------------
+
+
 import os
 import socket
 import time
@@ -27,6 +64,8 @@ from fenetre_debug import DebugWindow
 from insertions import GestionnaireInsertion
 from utils_window import get_config_path
 from loger import envoyer_log
+from queue_manager import UI_QUEUE
+import queue
 
 # Envoi d'un log "stop" à la fermeture du programme
 atexit.register(lambda: envoyer_log("stop"))
@@ -56,6 +95,7 @@ class App:
             self.console_debug.debug_window.withdraw()
 
         self.root = root
+        self.root.after(100, self.process_ui_queue)
         # Récupérer l'adresse IP locale du client
         try:
             self.ip_client = socket.gethostbyname(socket.gethostname())
@@ -258,6 +298,34 @@ class App:
         """Permet à l'utilisateur de modifier les raccourcis clavier."""
         self.shortcut_manager.change_shortcut()
 
+    # def process_ui_queue(self):
+    #     """Traite une seule tâche en attente dans la file d'attente UI."""
+    #     if not UI_QUEUE.empty():
+    #         try:
+    #             task = UI_QUEUE.get_nowait()
+    #             # print(f"Exécution de la tâche : {task}")
+    #             task()  # Exécute une seule tâche
+    #         except queue.Empty:
+    #             pass
+    #         except Exception as e:
+    #             print(f"Erreur dans la tâche UI : {e}")
+    #     # Replanifie l'appel à cette méthode
+    #     self.root.after(10, self.process_ui_queue)  # Réduisez l'intervalle pour une exécution plus fluide
+
+    def process_ui_queue(self):
+        """Traite les tâches en attente dans la file d'attente UI."""
+        # print(f"Taille de UI_QUEUE : {UI_QUEUE.qsize()}")
+        while not UI_QUEUE.empty():
+            try:
+                task = UI_QUEUE.get_nowait()
+                task()  # Exécute la tâche (une fonction)
+            except queue.Empty:
+                pass
+            except Exception as e:
+                print(f"Erreur dans la tâche UI : {e}")
+        # Replanifie l'appel à cette méthode
+        self.root.after(100, self.process_ui_queue)
+
 
 def start_loop(loop: asyncio.AbstractEventLoop) -> None:
     """
@@ -307,6 +375,22 @@ if __name__ == "__main__":
     try:
 
         root = TkinterDnD.Tk()
+
+        from threading import current_thread, main_thread
+        import tkinter
+
+        def guard(method):
+            def wrapper(*a, **kw):
+                if current_thread() is not main_thread():
+                    msg = f"[WARN] Tk call from thread {current_thread().name}\n"
+                    logfile.write(msg)
+                    print(msg, end="")
+                return method(*a, **kw)
+            return wrapper
+
+        tkinter.Misc.clipboard_append = guard(tkinter.Misc.clipboard_append)
+        tkinter.Misc.clipboard_clear = guard(tkinter.Misc.clipboard_clear)
+
         # Chemin vers l'icône (dans le répertoire de l'application installée)
         if getattr(sys, 'frozen', False):  # Mode exécutable compilé
             base_path = sys._MEIPASS
@@ -327,7 +411,7 @@ if __name__ == "__main__":
 
         def on_file_drop(event):
             file_path = event.data.strip("{}")  # Nettoyer le nom du fichier
-            if file_path.lower().endswith((".wav", ".mp3", ".flac", ".ogg")):
+            if file_path.lower().endswith((".wav", ".mp3", ".flac", ".ogg", "mp4")):
                 print("Fichier audio détecté :", file_path)
                 app.current_mode.handle_dropped_file(file_path)
                 hide_drop_overlay(app)
@@ -336,6 +420,7 @@ if __name__ == "__main__":
                 messagebox.showerror(
                     "Format non pris en charge",
                     f"Le fichier déposé n'est pas dans un format audio supporté.\n\nFichier :\n{file_path}")
+                hide_drop_overlay(app)
                 return
 
         # Activer le drop sur la fenêtre principale

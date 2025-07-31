@@ -11,6 +11,10 @@ from loger import compter_mots
 from vlc_perso import VLC
 
 
+def vide(chaine: str) -> bool:
+    return all(c == " " for c in chaine)
+
+
 PATH_LIB = "C:/Users/lorcyr/recovocale_engine/target/release/recovocale_engine.dll"
 
 
@@ -64,6 +68,10 @@ class RecoVocaleClientEngine:
             raise FileNotFoundError(f"DLL manquante : {self.dll_path}")
 
         self.lib = ctypes.CDLL(self.dll_path)
+        # Pour le debug
+        self.lib.init_panic_hook.argtypes = []
+        self.lib.init_panic_hook.restype = None
+        self.lib.init_panic_hook()  # debugRecoVocaleClientEngine que tu as déjà
 
         # Signatures des fonctions
         self.lib.get_version.restype = ctypes.c_char_p
@@ -121,7 +129,10 @@ class RecoVocaleClientEngine:
         print(f"Chargement dll version {self.version_dll}")
 
     def connect(self):
+        if self.is_connected():
+            return True
         self.lib.init(self.ip.encode(), self.port, self.json_config)
+
         for _ in range(10):
             if self.lib.is_connected():
                 self.backend = self.get_backend()
@@ -163,7 +174,6 @@ class RecoVocaleClientEngine:
 
     def is_capturing(self) -> bool:
         ret: bool = self.lib.is_capturing()
-        # print(f"is_capturing = {ret}")
         return ret
 
     def start(self, file_temp=None, file_to_capture=None, listen=True):
@@ -277,35 +287,52 @@ class RecoVocaleClientEngine:
             self.transcription_totale[phrase] = None
 
     def _update(self) -> None:
-        self._add(self.get_completed())
         self.transcription_en_cours = self.get_partial()
+        chaine = self.get_completed()
+        if not vide(chaine):
+            self._add(chaine)
+            # print(f"len(transcription_totale) = {len(self.transcription_totale)}")
 
     def get_reduit(self):
         # On renvoi text , flag completed
         self._update()
-        if self.transcription_en_cours:
-            return self.transcription_en_cours, False
-        ret = ""
-        if self.transcription_totale:
-            ret = list(self.transcription_totale.keys())[-1]
-        return ret, True
+        # essais
+        return self.transcription_en_cours, self.transcription_totale.keys()
+        # if self.transcription_en_cours:
+        #     return self.transcription_en_cours, False
+        # ret = ""
+        # if self.transcription_totale:
+        #     ret = list(self.transcription_totale.keys())[-1]
+        # return ret, True
 
     def get(self, insertions, dico=False) -> str:
         self._update()
         chaine = " ".join(self.transcription_totale.keys())
-
+        # if vide(chaine):
+        #     print("chaine VIDE")
         text_apres_insertion, insertion = intercept(chaine, insertions.get())
+        # if vide(text_apres_insertion):
+        #     print("text_apres_insertion VIDE")
         text_apres_insertion += f" {self.transcription_en_cours}"
+        # if vide(text_apres_insertion):
+        #     print("text_apres_insertion VIDE")
         text_apres_ponctuation = corrige_ponctuation(text_apres_insertion)
+        # if vide(text_apres_ponctuation):
+        #     print("text_apres_ponctuation VIDE")
         if dico:
             text_to_copy = corriger_texte(text_apres_ponctuation)
         else:
             text_to_copy = text_apres_ponctuation
         self.texte_merge = text_to_copy
+        # if vide(self.texte_merge):
+        #     print("self.texte_merge VIDE")
         if insertion:
             # self.wait_transcription_en_cours(1.0)
+            self.merge()
             self.clear_transcriptions()
-            return f"{self.merge()} {self.transcription_en_cours}"
+            return (f"{self.texte_merge} {self.transcription_en_cours}")
+        # if vide(text_to_copy):
+        #     print("text_to_copy VIDE")
         return text_to_copy
 
     def print_transcriptions_lignes(self):
@@ -349,8 +376,6 @@ class RecoVocaleClientEngine:
         """
         if self.pipe:
             self.start_audio_pipe()
-        if not self.is_connected():
-            raise RuntimeError("Client non connecté ; appelez connect() d'abord")
 
         # encodage UTF-8 + terminaison \0 prise en charge par ctypes
         self.lib.start_capture_audio_file(audio_path.encode("utf-8"), listen)
@@ -358,8 +383,9 @@ class RecoVocaleClientEngine:
     def start_audio_pipe(self):
         """Démarre la capture depuis un Named-Pipe Windows."""
         # pipe_name: str = "recovocale_pipe"
-        if self.is_connected():
+        if self.connect():
             if not self.pipe:
+                print("start_capture_pipe()")
                 self.lib.start_capture_pipe(VLC.PIPE.encode("utf-8"), False)
                 self.pipe = True
         else:

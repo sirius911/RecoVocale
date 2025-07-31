@@ -2,10 +2,10 @@
 import tkinter as tk
 from pynput.keyboard import Key
 from Mode import Mode
-from utils_window import create_menus, create_buttons, show_bubble_message, remove_bubble
+from utils_window import create_menus, create_buttons, show_bubble_message
+from utils_window import remove_bubble, update_status_bar
 from info import REDUIT, VERSION
 from utils_keyboard import Simulator
-# from RecoVocaleClientEngine import RecoVocaleClientEngine
 from Correcteur import intercept, corrige_ponctuation, corriger_texte
 
 
@@ -46,47 +46,102 @@ class Mode_Reduit(Mode):
         """
         print("Stop dans Mode Reduit")
         self.stop_client()
-        remove_bubble()
+        remove_bubble
         self.a_ecrit = True
         self.engine.clear_transcriptions()
         self.engine.clear()
+        self.shown_segments = set()
         self.running_thread = False
 
     def update_sortie(self):
-        texte, completed = self.engine.get_reduit()
-        if not completed:
-            show_bubble_message(self.root, texte)
-            self.status_bar.config(text="* Transcription ... *",
-                                   bg='lightblue', fg='darkblue', anchor=tk.CENTER)
-            self.a_ecrit = False
-        else:
-            if texte and texte not in self.shown_segments:
-                self.shown_segments.add(texte)
+        transcription_en_cours, transcription_totale = self.engine.get_reduit()
+
+        # ── partiel ─────────────────────────────────────────
+        if not all(c == ' ' for c in transcription_en_cours):
+            show_bubble_message(self.root, transcription_en_cours)
+            update_status_bar(self.status_bar, "* Transcription ... *",
+                              bg="red", fg="darkblue", anchor=tk.CENTER)
+
+        # ── segments complets ──────────────────────────────
+        for texte in list(transcription_totale):
+            if texte in self.shown_segments or not texte:
+                continue
+            self.shown_segments.add(texte)
+
+            def traiter_segment(t=texte):
                 remove_bubble()
-                self.root.clipboard_clear()
-                text_apres_intercept, _ = intercept(texte, self.app.insertions.get())
-                text_apres_ponctuation = corrige_ponctuation(text_apres_intercept)
+
+                # post-corrections
+                txt, _ = intercept(t, self.app.insertions.get())
+                txt = corrige_ponctuation(txt)
                 if self.app.config.dictionnaire:
-                    text_to_copy = corriger_texte(text_apres_ponctuation)
-                else:
-                    text_to_copy = text_apres_ponctuation
-                self.root.clipboard_append(f"{text_to_copy} ")
-                if not self.a_ecrit:
+                    txt = corriger_texte(txt)
+
+                # copier-coller au curseur
+                self.root.clipboard_clear()
+                self.root.clipboard_append(f"{txt} ")
+                try:
                     Simulator([Key.ctrl, 'v'])
-                    self.a_ecrit = True
-                    self.log(text=text_to_copy)
+                except Exception as e:
+                    print("[pynput]", e)
+
+                    self.log(text=txt)
+            self.add_to_ui_queue(traiter_segment, texte)
+
+            # remove_bubble()
+            # self.root.clipboard_clear()
+            # text_apres_intercept, _ = intercept(texte, self.app.insertions.get())
+            # text_apres_ponctuation = corrige_ponctuation(text_apres_intercept)
+            # if self.app.config.dictionnaire:
+            #     text_to_copy = corriger_texte(text_apres_ponctuation)
+            # else:
+            #     text_to_copy = text_apres_ponctuation
+            # self.root.clipboard_append(f"{text_to_copy} ")
+            # Simulator([Key.ctrl, 'v'])
+            # self.log(text=text_to_copy)
+
+        # texte, completed = self.engine.get_reduit()
+        # if all(c == " " for c in texte):
+        #     return
+        # if not completed:
+        #     show_bubble_message(self.root, texte)
+        #     self.status_bar.config(text="* Transcription ... *",
+        #                            bg='lightblue', fg='darkblue', anchor=tk.CENTER)
+        #     self.a_ecrit = False
+        # else:
+        #     if texte and texte not in self.shown_segments:
+        #         self.shown_segments.add(texte)
+        #         remove_bubble()
+        #         self.root.clipboard_clear()
+        #         text_apres_intercept, _ = intercept(texte, self.app.insertions.get())
+        #         text_apres_ponctuation = corrige_ponctuation(text_apres_intercept)
+        #         if self.app.config.dictionnaire:
+        #             text_to_copy = corriger_texte(text_apres_ponctuation)
+        #         else:
+        #             text_to_copy = text_apres_ponctuation
+        #         self.root.clipboard_append(f"{text_to_copy} ")
+        #         if not self.a_ecrit:
+        #             Simulator([Key.ctrl, 'v'])
+        #             self.a_ecrit = True
+        #             self.log(text=text_to_copy)
 
     def start_transcription_loop(self):
         super().start_transcription_loop()
-        text_bulle = remove_bubble()
-        if not self.a_ecrit and text_bulle:
-            self.root.clipboard_append(text_bulle)
-            Simulator([Key.ctrl, 'v'])
-            self.a_ecrit = True
-            self.log(text=text_bulle)
+        remove_bubble()
+        # remove_bubble(self.root)
+        # if not self.a_ecrit and text_bulle:
+        #     print("icicicicicici")
+        #     self.root.clipboard_append(text_bulle)
+        #     Simulator([Key.ctrl, 'v'])
+        #     self.a_ecrit = True
+        #     self.log(text=text_bulle)
 
         self.running_thread = False
         self.engine.clear()
+        self.shown_segments = set()
+
+    def copy_to_clipboard(self, text: str) -> None:
+        pass
 
     def clear_text_box(self) -> None:
         """
