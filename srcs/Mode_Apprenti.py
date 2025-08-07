@@ -6,7 +6,8 @@ from datetime import datetime
 import tkinter as tk
 
 from Mode_Direct import Mode_Direct
-from utils_window import create_menus, create_buttons
+from utils_window import create_buttons
+from menus import create_menus
 from info import APPRENTI
 from sftp_upload import upload_files_to_sftp
 

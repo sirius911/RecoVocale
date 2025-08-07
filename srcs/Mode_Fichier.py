@@ -3,7 +3,7 @@ from pygame import mixer
 import tkinter.filedialog as filedialog
 import tkinter.font as tkFont
 from Mode_Direct import Mode_Direct
-from utils_window import create_menus
+from menus import create_menus
 from info import FICHIER
 
 

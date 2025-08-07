@@ -14,7 +14,8 @@ from RecoVocaleClientEngine import RecoVocaleClientEngine
 from loger import envoyer_log
 from vlc_perso import VLC
 from queue_manager import UI_QUEUE
-from utils_window import remove_bubble, update_status_bar, show_messagebox
+from utils_window import update_status_bar, show_messagebox
+from bubble import remove_bubble
 
 
 class Mode:

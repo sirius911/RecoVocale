@@ -1,7 +1,8 @@
 import tkinter as tk
 import tkinter.font as tkFont
 from Mode import Mode
-from utils_window import create_menus, create_buttons
+from utils_window import create_buttons
+from menus import create_menus
 from info import DIRECT
 from utils_keyboard import Simulator
 from pynput.keyboard import Key

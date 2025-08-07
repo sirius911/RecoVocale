@@ -2,8 +2,10 @@
 import tkinter as tk
 from pynput.keyboard import Key
 from Mode import Mode
-from utils_window import create_menus, create_buttons, show_bubble_message
-from utils_window import remove_bubble, update_status_bar
+from utils_window import create_buttons
+from menus import create_menus
+from utils_window import update_status_bar
+from bubble import show_bubble_message, remove_bubble
 from info import REDUIT, VERSION
 from utils_keyboard import Simulator
 from Correcteur import intercept, corrige_ponctuation, corriger_texte

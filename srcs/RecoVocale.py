@@ -388,7 +388,7 @@ if __name__ == "__main__":
             def wrapper(*a, **kw):
                 if current_thread() is not main_thread():
                     msg = f"[WARN] Tk call from thread {current_thread().name}\n"
-                    logfile.write(msg)
+                    # logfile.write(msg)  # Pour le debug
                     print(msg, end="")
                 return method(*a, **kw)
             return wrapper
