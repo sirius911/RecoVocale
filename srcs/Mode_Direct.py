@@ -225,17 +225,16 @@ class Mode_Direct(Mode):
             self.write_text_box(texte)
 
     def start_transcription_loop(self):
-        def start_loop():
-            print("start_transcription loop au niveau de Mode Direct")
-            self.trash_button.config(state=tk.DISABLED)
-            # Utilisation explicite de super() avec la classe et l'instance
-            super(Mode_Direct, self).start_transcription_loop()
+        print("start_transcription loop au niveau de Mode Direct")
+        super().start_transcription_loop()
+
+        def _ui_cleanup():
             self.trash_button.config(state=tk.NORMAL)
             self.rec_button.config(state=tk.NORMAL)
             self.text_box.config(state=tk.NORMAL)
             self.log(nb_mots=self.engine.get_nb_mots_trancripts())
 
-        self.add_to_ui_queue(start_loop)
+        self.add_to_ui_queue(_ui_cleanup)
 
     def copy_to_clipboard(self) -> None:
         """

@@ -1,5 +1,6 @@
 import os
 import sys
+import threading
 import tkinter as tk
 from screeninfo import get_monitors
 from tkinter import BooleanVar
@@ -210,6 +211,12 @@ def create_menus(self) -> None:
         self.edit_menu.add_command(label="Effacer",
                                    command=self.clear_text_box)
 
+    if self.mode == REDUIT:
+        self.edit_menu.add_separator
+        self.word_space_var = BooleanVar(value=self.app.config.word_space)
+        self.edit_menu.add_checkbutton(label="Espace avant ", variable=self.word_space_var,
+                                       command=self.toggle_word_space)
+
     # =========================
     # 3. Mode  (NOUVEAU menu racine)
     # =========================
@@ -329,7 +336,7 @@ def _show_bubble_message(parent: tk.Tk, message: str, background: str = "yellow"
             bubble.attributes("-topmost", True)
 
             label_in_bubble = tk.Label(bubble, text=message, font=("Arial", 10),
-                                    background=background, fg="black", borderwidth=0)
+                                       background=background, fg="black", borderwidth=0)
             label_in_bubble.pack(padx=10, pady=5)
 
             bubble_width = bubble.winfo_width()
@@ -343,7 +350,6 @@ def _show_bubble_message(parent: tk.Tk, message: str, background: str = "yellow"
 
         except tk.TclError as e:
             print(f"[ERROR] à la création du bubble: {e}")
-
 
 
 def get_text_bubble() -> str:
@@ -402,16 +408,21 @@ def show_bubble_message(root: tk.Tk, message: str, background: str = "yellow") -
     UI_QUEUE.put(show)
 
 
-def remove_bubble() -> str:
+def remove_bubble(force: bool = False) -> str:
     """
     Ferme la bulle de message si elle existe.
+    Si `force` est True, on exécute immédiatement (dans le thread courant)
+    au lieu de passer par UI_QUEUE.
     """
-
     def remove():
         return _remove_bubble()
 
-    # Ajouter la tâche à la file d'attente pour exécution dans le thread principal
-    UI_QUEUE.put(remove)
+    if force or threading.current_thread() == threading.main_thread():
+        # appel direct : on évite tout délai
+        return _remove_bubble()
+    else:
+        UI_QUEUE.put(remove)
+        return ""
 
 
 def update_bubble_background(color: str) -> None:

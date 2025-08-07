@@ -1,38 +1,38 @@
-# --- Diagnostic natif -------------------------------------------------
-import os, sys, signal, faulthandler, ctypes, traceback, threading
+# # --- Diagnostic natif -------------------------------------------------
+# import os, sys, signal, faulthandler, ctypes, traceback, threading
 
-# 1) log des crash C/Python
-logfile = open(os.path.join(os.getcwd(), "fatal.log"), "w", buffering=1)
-faulthandler.enable(file=logfile, all_threads=True)
-
-
-# 2) log des exceptions Python non rattrapées
-def excepthook(exc_type, exc, tb):
-    traceback.print_exception(exc_type, exc, tb, file=logfile)
-    traceback.print_exception(exc_type, exc, tb)
-    sys.__excepthook__(exc_type, exc, tb)
+# # 1) log des crash C/Python
+# logfile = open(os.path.join(os.getcwd(), "fatal.log"), "w", buffering=1)
+# faulthandler.enable(file=logfile, all_threads=True)
 
 
-sys.excepthook = excepthook
+# # 2) log des exceptions Python non rattrapées
+# def excepthook(exc_type, exc, tb):
+#     traceback.print_exception(exc_type, exc, tb, file=logfile)
+#     traceback.print_exception(exc_type, exc, tb)
+#     sys.__excepthook__(exc_type, exc, tb)
 
 
-# 3) hook panic Rust installé dès le chargement de la DLL
-def load_engine_dll():
-    dll_path = os.path.join(os.path.dirname(__file__), "C:/Users/lorcyr/recovocale_engine/target/release/recovocale_engine.dll")
-    lib = ctypes.CDLL(dll_path)
-    try:
-        lib.init_panic_hook()        # exposé dans la DLL
-    except AttributeError:
-        # pour les versions précédentes
-        pass
-    return lib
+# sys.excepthook = excepthook
 
 
-ENGINE_DLL = load_engine_dll()
+# # 3) hook panic Rust installé dès le chargement de la DLL
+# def load_engine_dll():
+#     dll_path = os.path.join(os.path.dirname(__file__), "C:/Users/lorcyr/recovocale_engine/target/release/recovocale_engine.dll")
+#     lib = ctypes.CDLL(dll_path)
+#     try:
+#         lib.init_panic_hook()        # exposé dans la DLL
+#     except AttributeError:
+#         # pour les versions précédentes
+#         pass
+#     return lib
 
-# 4) capture CTRL +C pour fermer proprement et flusher fatal.log
-signal.signal(signal.SIGINT, lambda *_: sys.exit(0))
-# ----------------------------------------------------------------------
+
+# ENGINE_DLL = load_engine_dll()
+
+# # 4) capture CTRL +C pour fermer proprement et flusher fatal.log
+# signal.signal(signal.SIGINT, lambda *_: sys.exit(0))
+# # ----------------------------------------------------------------------
 
 
 import os
@@ -197,6 +197,11 @@ class App:
             if self.current_mode.mode != mode:
                 log_en_cours = self.console_debug.get_log_message()
                 self.current_mode.stop()
+                while not UI_QUEUE.empty():
+                    try:
+                        UI_QUEUE.get_nowait()
+                    except queue.Empty:
+                        break
                 self.current_mode.exit()
                 # log_en_cours = self.console_debug.get_log_message()
                 self.current_mode = None

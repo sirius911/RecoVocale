@@ -3,6 +3,8 @@ import pathlib
 import subprocess
 import time
 import socket
+import ctypes
+import ctypes.wintypes as wt
 from utils import FFMPEG_PATH
 
 
@@ -14,10 +16,7 @@ class VLC:
         self.vlc_path = r"C:\Program Files\VideoLAN\VLC\vlc.exe"   # ou simplement "vlc" si %PATH%
         self.vlc_dir = pathlib.Path(self.vlc_path).parent
         self.plugin_dir = self.vlc_dir / "plugins"
-        # self.sout = (
-        #     "#transcode{vcodec=none,acodec=s16l,channels=1,samplerate=16000}:"
-        #     "duplicate{dst=file{dst=\\\\\\\\\\.\\\\pipe\\\\recovocale_pipe,mux=raw},dst=display}"
-        # )
+        self.sock = None
         self.proc = None
         self.source = None
         self.playing = False
@@ -56,10 +55,21 @@ class VLC:
             env=env,
         )
 
-        # Attendre que VLC écoute sur le port
-        self._wait_for_rc_port()
+        # 2) Vérifier l'interface RC
+        if not self._wait_for_rc_port():
+            # échec → on nettoie et on signale False
+            self.proc.terminate()
+            try:
+                self.proc.wait(timeout=2)
+            except subprocess.TimeoutExpired:
+                self.proc.kill()
+            self.proc = None
+            return False
+
+        # 3) Connexion socket
         self._connect_socket()
         self.playing = False
+        return True
 
     def _wait_for_rc_port(self, timeout=10):
         print(f"Attente démarrage RC sur le port {VLC.DEFAULT_PORT}...", flush=True)
@@ -69,10 +79,11 @@ class VLC:
                 s = socket.create_connection(("localhost", VLC.DEFAULT_PORT), timeout=1)
                 s.close()
                 print("RC prêt", flush=True)
-                return
+                return True
             except (ConnectionRefusedError, OSError):
                 time.sleep(0.2)
-        raise RuntimeError("VLC RC interface n'est pas disponible")
+        print("⚠️  Interface RC non disponible après %.1f s" % timeout, flush=True)
+        return False
 
     def _connect_socket(self):
         print("Connexion RC socket...", flush=True)
@@ -84,6 +95,42 @@ class VLC:
         except Exception:
             pass
         print("Socket connectée", flush=True)
+
+    def _vlc_is_actually_playing(self) -> bool:
+        """
+        Retourne True si VLC est réellement en lecture.
+        Utilise la commande 'is_playing' du RC (1 = play, 0 = pause/stop).
+        """
+        if not self.is_open():
+            return False
+
+        # 1) vider le buffer éventuel
+        self.sock.setblocking(False)
+        try:
+            while self.sock.recv(4096):
+                pass
+        except BlockingIOError:
+            pass
+        finally:
+            self.sock.setblocking(True)
+
+        # 2) envoyer la commande
+        self._rc("is_playing")
+
+        deadline = time.time() + 0.5    # 500 ms max pour recevoir "0" ou "1"
+        buf = b""
+        while time.time() < deadline:
+            try:
+                buf += self.sock.recv(4096)
+            except socket.timeout:
+                continue
+
+            for token in buf.decode(errors="ignore").split():
+                if token.strip() in ("0", "1"):
+                    return token.strip() == "1"
+
+        # par défaut, on considère que ça ne joue pas
+        return False
 
     # ------------------------------------------------------------------ #
     # ↓↓↓ Commandes runtime ↓↓↓ ---------------------------------------- #
@@ -103,25 +150,38 @@ class VLC:
             print("Erreur lors de l'envoi RC")
 
     def play_pause(self):
-        self._rc("pause")
+        """
+        Bascule entre lecture et pause.
+        - Retourne False si VLC n'est pas lancé.
+        - Ne relance ffmpeg que si nécessaire.
+        """
+        if not self.is_open():
+            print("⚠️  play_pause() : VLC n'est pas lancé.")
+            return False
         self.playing = not self.playing
+        self._rc("pause")
         if self.playing:
+            # if not self._vlc_is_actually_playing():
+            #     self._rc("pause")
             self.start_ffmpeg_pipe()      # relance ffmpeg depuis la position courante
         else:
+            # if self._vlc_is_actually_playing():
+            #     self._rc("pause")
             self.stop_ffmpeg_pipe()
 
     def stop_ffmpeg_pipe(self):
         if getattr(self, "ffmpeg_proc", None):
             self.ffmpeg_proc.terminate()
             try:
-                rc = self.ffmpeg_proc.wait(timeout=2)   # ← laisse le temps de fermer le pipe
-                print(f"ffmpeg exited with {rc}")
+                self.ffmpeg_proc.wait(timeout=2)
             except subprocess.TimeoutExpired:
                 self.ffmpeg_proc.kill()
-                self.ffmpeg_proc.wait()
-            except Exception as e:
-                print(f"[Exception] stop_ffmpeg(): {e}")
-            self.ffmpeg_proc = None
+                try:
+                    self.ffmpeg_proc.wait(timeout=1)
+                except subprocess.TimeoutExpired:
+                    print("⚠️  ffmpeg ne répond toujours pas ; on continue.")
+            finally:
+                self.ffmpeg_proc = None
 
     def seek(self, seconds: int):
         self._rc(f"seek {seconds}")
@@ -136,7 +196,7 @@ class VLC:
         print("Fermeture de VLC...", end=" ", flush=True)
         self.stop_ffmpeg_pipe()
         try:
-            if self.sock:
+            if getattr(self, "sock", None):
                 try:
                     self._rc("stop")
                     # Essaye de quitter proprement (rarement fonctionne sous Windows)
@@ -199,7 +259,8 @@ class VLC:
         return 0
 
     def start_ffmpeg_pipe(self):
-        time.sleep(0.10)
+        if not self._wait_pipe_ready():
+            return
         t0 = self.get_time()
         print(f"Lancement ffmpeg depuis {t0} s")
 
@@ -209,7 +270,7 @@ class VLC:
         cmd = [
             FFMPEG_PATH, "-loglevel", "warning", "-y",
             "-re",
-            "-ss", str(t0),             #     ← -ss avant -i   (fast-seek)
+            "-ss", str(t0),  # ← -ss avant -i   (fast-seek)
             "-i", self.source,
             "-vn", "-ac", "1", "-ar", "16000",
             "-sample_fmt", "s16", "-f", "s16le",
@@ -218,3 +279,23 @@ class VLC:
 
         # Lance le ffmpeg en arrière-plan (il écrit vers le pipe)
         self.ffmpeg_proc = subprocess.Popen(cmd)
+
+    def _wait_pipe_ready(self, name: str = r"\\.\pipe\recovocale_pipe", timeout: float = 5.0) -> bool:
+        """
+        Attend qu’un serveur Named-Pipe soit prêt.
+        Retourne True si OK, False si délai dépassé.
+        Ne lève plus d’exception bloquante.
+        """
+        k32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        WaitNamedPipeW = k32.WaitNamedPipeW
+        WaitNamedPipeW.argtypes = [ctypes.c_wchar_p, wt.DWORD]
+        WaitNamedPipeW.restype = wt.BOOL
+
+        deadline = time.time() + timeout
+        while time.time() < deadline:
+            if WaitNamedPipeW(ctypes.c_wchar_p(name), 200):   # test 200 ms
+                return True
+            time.sleep(0.05)                                  # laisse respirer Tk
+
+        print(f"Pipe {name} toujours indisponible après {timeout} s")
+        return False

@@ -55,6 +55,7 @@ class UserConfig:
             "Oncologie": "30004",
             "Model RT": "30000"
         }
+        self._word_space = False
 
         # Lire la configuration si le fichier existe, sinon la créer
         if os.path.exists(self.config_file):
@@ -89,6 +90,7 @@ class UserConfig:
         self.nb_repeat = int(config.get('SETTINGS', 'NB_REPEAT', fallback=self.nb_repeat))
         self.dictionnaire = (config.get('SETTINGS', 'DICTIONNAIRE', fallback=self.dictionnaire) == 'True')
         self._play_audio = (config.get('SETTINGS', 'PLAY_AUDIO', fallback=self._play_audio) == 'True')
+        self._word_space = (config.get('SETTINGS', 'WORD_SPACE', fallback=self._word_space) == 'True')
 
     def save_config(self, root) -> None:
         """
@@ -117,6 +119,7 @@ class UserConfig:
             'NB_REPEAT': self.nb_repeat,
             'DICTIONNAIRE': self.dictionnaire,
             'PLAY_AUDIO': self._play_audio,
+            'WORD_SPACE': self._word_space,
         }
         print(f"Sauvegarde {self.config_file} ...", end=' ')
 
@@ -197,3 +200,13 @@ class UserConfig:
     def shortcut_stop(self, value: str) -> None:
         """Définit le raccourci pour arrêter la transcription."""
         self._shortcut_stop = value
+
+    @property
+    def word_space(self) -> bool:
+        """Retourne l'état de l'option 'word_space'."""
+        return self._word_space
+
+    @word_space.setter
+    def word_space(self, value: bool) -> None:
+        """Active ou désactive l'espace apres chaque segment en mode réduit."""
+        self._word_space = value

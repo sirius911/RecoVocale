@@ -14,7 +14,7 @@ from RecoVocaleClientEngine import RecoVocaleClientEngine
 from loger import envoyer_log
 from vlc_perso import VLC
 from queue_manager import UI_QUEUE
-from utils_window import update_status_bar, show_messagebox
+from utils_window import remove_bubble, update_status_bar, show_messagebox
 
 
 class Mode:
@@ -117,18 +117,21 @@ class Mode:
         Met en pause la transcription et met à jour.
         """
         print(f"Pause() dans {self.mode.name}")
-        if self.app.recording:
-            if self.use_vlc:
-                self.vlc.play_pause()
-                self.app.recording = False
-                self.running_thread = False
-            else:
-                self.engine.stop(self.file_source)
-                self.file_source = None  # On ne charge qu'une seule fois
-                self.app.recording = False
-                self.running_thread = False
-            # self.audio_file = None
-            self.update()
+        if not self.app.recording:
+            return
+
+        remove_bubble(force=True)
+
+        if self.use_vlc:
+            threading.Thread(target=self.vlc.play_pause(), daemon=True).start()
+
+        else:
+            self.engine.stop(self.file_source)
+            self.file_source = None  # On ne charge qu'une seule fois
+
+        self.app.recording = False
+        self.running_thread = False
+        self.update()
 
     def unpause(self, audio_file: str | None = None):
         """Relance (ou démarre) la boucle de transcription.
@@ -177,7 +180,7 @@ class Mode:
                               fg="darkblue", anchor=tk.CENTER)
 
             # 4-a  S’assurer que le serveur pipe tourne
-            if not self.engine.pipe:
+            if not self.engine.pipe:           # pipe absent (None ou False)
                 self.engine.start_audio_pipe()
 
             # 4-b  Vérifier que VLC est lancé par « Lancer VLC »
@@ -189,33 +192,10 @@ class Mode:
                         message="Utilisez d’abord le menu « Lancer VLC » pour choisir un fichier."
                     )
                     return
-                # else:
-                # try:
-                #     while not self.engine.is_capturing():
-                #         update_status_bar(self.status_bar,
-                #                           text="Attente du Pipe et Capture()",
-                #                           bg="lightblue", fg="darkblue", anchor=tk.W,
-                #                           )
-                #         time.sleep(0.05)
-                # except KeyboardInterrupt:
-                #     update_status_bar(self.status_bar,
-                #                       text="Attente Interrompue (Ctrl+C)",
-                #                       bg="lightblue", fg="darkblue", anchor=tk.W,
-                #                       )
-                #     return
-
-            #     else:
-            #         # fichier demandé
-            #         update_status_bar(self.status_bar, text=f"Chargement via VLC [{audio_file}] ... en cours",
-            #                           bg='lightblue', fg='darkblue', anchor=tk.W)
-            #         self.vlc = VLC()
-            #         self.vlc.open(audio_file)
-            #         self.file_source = audio_file
-            #         time.sleep(0.5)
 
             # 4-c  Remet VLC en lecture seulement s’il est en pause
-            if self.vlc is not None and not self.vlc.is_playing():
-                self.vlc.play_pause()      # toggle pause→play
+            if self.vlc is not None:
+                self.vlc.play_pause()
 
         # ------------------------------------------------------------
         # 5)  Capture directe sans VLC
@@ -460,8 +440,9 @@ class Mode:
         update_status_bar(self.status_bar, text=f"Chargement via VLC [{filepath}] ... en cours",
                           bg='lightblue', fg='darkblue', anchor=tk.W)
         self.vlc = VLC()
-        self.vlc.open(filepath)       # le paramètre source configure aussi --sout
-        # self.vlc.play_pause()                   # bascule pause → play → lance ffmpeg
+        if not self.vlc.open(filepath):
+            print("Impossible de lancer VLC pour ce fichier.")
+            return
 
         time.sleep(0.5)               # petite marge pour négocier le Named Pipe
         self.file_source = filepath
@@ -478,7 +459,6 @@ class Mode:
         """
         Détruit tous les widgets enfants de la fenêtre principale.
         """
-        print(f"ici use_vlc = {self.use_vlc}")
         if self.use_vlc:
             print("fermeture de vlc")
             if self.vlc is not None:

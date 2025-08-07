@@ -46,7 +46,7 @@ class Mode_Reduit(Mode):
         """
         print("Stop dans Mode Reduit")
         self.stop_client()
-        remove_bubble
+        remove_bubble()
         self.a_ecrit = True
         self.engine.clear_transcriptions()
         self.engine.clear()
@@ -58,6 +58,8 @@ class Mode_Reduit(Mode):
 
         # ── partiel ─────────────────────────────────────────
         if not all(c == ' ' for c in transcription_en_cours):
+            if not self.app.recording:
+                return
             show_bubble_message(self.root, transcription_en_cours)
             update_status_bar(self.status_bar, "* Transcription ... *",
                               bg="red", fg="darkblue", anchor=tk.CENTER)
@@ -79,62 +81,25 @@ class Mode_Reduit(Mode):
 
                 # copier-coller au curseur
                 self.root.clipboard_clear()
-                self.root.clipboard_append(f"{txt} ")
+
+                if self.app.config.word_space:
+                    to_copy = f" {txt}"
+                else:
+                    to_copy = f"{txt} "
+
+                self.root.clipboard_append(to_copy)
+
                 try:
                     Simulator([Key.ctrl, 'v'])
                 except Exception as e:
-                    print("[pynput]", e)
+                    print("[Simulator]", e)
 
                     self.log(text=txt)
             self.add_to_ui_queue(traiter_segment, texte)
 
-            # remove_bubble()
-            # self.root.clipboard_clear()
-            # text_apres_intercept, _ = intercept(texte, self.app.insertions.get())
-            # text_apres_ponctuation = corrige_ponctuation(text_apres_intercept)
-            # if self.app.config.dictionnaire:
-            #     text_to_copy = corriger_texte(text_apres_ponctuation)
-            # else:
-            #     text_to_copy = text_apres_ponctuation
-            # self.root.clipboard_append(f"{text_to_copy} ")
-            # Simulator([Key.ctrl, 'v'])
-            # self.log(text=text_to_copy)
-
-        # texte, completed = self.engine.get_reduit()
-        # if all(c == " " for c in texte):
-        #     return
-        # if not completed:
-        #     show_bubble_message(self.root, texte)
-        #     self.status_bar.config(text="* Transcription ... *",
-        #                            bg='lightblue', fg='darkblue', anchor=tk.CENTER)
-        #     self.a_ecrit = False
-        # else:
-        #     if texte and texte not in self.shown_segments:
-        #         self.shown_segments.add(texte)
-        #         remove_bubble()
-        #         self.root.clipboard_clear()
-        #         text_apres_intercept, _ = intercept(texte, self.app.insertions.get())
-        #         text_apres_ponctuation = corrige_ponctuation(text_apres_intercept)
-        #         if self.app.config.dictionnaire:
-        #             text_to_copy = corriger_texte(text_apres_ponctuation)
-        #         else:
-        #             text_to_copy = text_apres_ponctuation
-        #         self.root.clipboard_append(f"{text_to_copy} ")
-        #         if not self.a_ecrit:
-        #             Simulator([Key.ctrl, 'v'])
-        #             self.a_ecrit = True
-        #             self.log(text=text_to_copy)
-
     def start_transcription_loop(self):
         super().start_transcription_loop()
         remove_bubble()
-        # remove_bubble(self.root)
-        # if not self.a_ecrit and text_bulle:
-        #     print("icicicicicici")
-        #     self.root.clipboard_append(text_bulle)
-        #     Simulator([Key.ctrl, 'v'])
-        #     self.a_ecrit = True
-        #     self.log(text=text_bulle)
 
         self.running_thread = False
         self.engine.clear()
@@ -164,3 +129,11 @@ class Mode_Reduit(Mode):
             self.engine.disconnect()
         super().exit()
         return ""
+
+    def toggle_word_space(self) -> None:
+        """
+        Ajoute un espace avant le segment envoyé au curseur
+        """
+
+        # maj de la variable config
+        self.app.config.word_space = self.word_space_var.get()

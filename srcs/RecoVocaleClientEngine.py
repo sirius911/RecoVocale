@@ -9,6 +9,16 @@ from info import VERSION_DLL
 from Correcteur import intercept, corrige_ponctuation, corriger_texte
 from loger import compter_mots
 from vlc_perso import VLC
+import ctypes.wintypes as wt
+
+
+def _pipe_exists(name=r"\\.\pipe\recovocale_pipe") -> bool:
+    k32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    GetFileAttributesW = k32.GetFileAttributesW
+    GetFileAttributesW.argtypes = [ctypes.c_wchar_p]
+    GetFileAttributesW.restype = wt.DWORD
+    attrs = GetFileAttributesW(ctypes.c_wchar_p(name))
+    return attrs != 0xFFFFFFFF
 
 
 def vide(chaine: str) -> bool:
@@ -392,5 +402,11 @@ class RecoVocaleClientEngine:
             print("Client Non connecté")
 
     def stop_audio_pipe(self):
-        self.lib.stop_capture_pipe()
-        self.pipe = False
+        """Stoppe proprement le serveur Named-Pipe côté DLL."""
+        self.lib.stop_capture_pipe()                # demande l’arrêt
+        deadline = time.time() + 2.0                # 2 s max d’attente
+        while time.time() < deadline and _pipe_exists():
+            time.sleep(0.05)
+        if _pipe_exists():
+            print("Le pipe existe encore après l’attente -> on continue quand même")
+        self.pipe = None                            # indique « pas de pipe »
