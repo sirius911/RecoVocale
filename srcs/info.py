@@ -1,6 +1,6 @@
 from types import SimpleNamespace
 
-VERSION = '1.34'
+VERSION = '1.35'
 VERSION_DLL = '0.1.6'
 
 # ------------------------ M O D E S ----------------------

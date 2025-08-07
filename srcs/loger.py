@@ -32,7 +32,7 @@ def envoyer_log(event="start", texte: str = "", nb_mots: int = 0,
     if event == "transcription" and nb_mots == 0:
         nb_mots = compter_mots(texte)
     try:
-        if nb_mots > 0:
+        if nb_mots > 0 or event == 'start' or event == 'stop':
             log_data = {
                 "event": event,
                 "username": getpass.getuser(),

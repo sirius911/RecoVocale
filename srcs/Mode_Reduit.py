@@ -94,8 +94,8 @@ class Mode_Reduit(Mode):
                 except Exception as e:
                     print("[Simulator]", e)
 
-                    self.log(text=txt)
             self.add_to_ui_queue(traiter_segment, texte)
+            self.log(text=texte)
 
     def start_transcription_loop(self):
         super().start_transcription_loop()
