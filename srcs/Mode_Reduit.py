@@ -4,8 +4,6 @@ from pynput.keyboard import Key
 from Mode import Mode
 from utils_window import create_buttons
 from menus import create_menus
-from utils_window import update_status_bar
-from bubble import show_bubble_message, remove_bubble
 from info import REDUIT, VERSION
 from utils_keyboard import Simulator
 from Correcteur import intercept, corrige_ponctuation, corriger_texte
@@ -42,70 +40,67 @@ class Mode_Reduit(Mode):
         self.status_bar = tk.Label(self.root, text=f"RecoVocale {VERSION}", bd=1, relief=tk.SUNKEN, anchor=tk.W)
         self.status_bar.grid(row=2, column=0, sticky="ew")
 
-    def stop(self) -> None:
-        """
-        Arrête la transcription et, si besoin, colle le texte automatiquement.
-        """
-        print("Stop dans Mode Reduit")
-        self.stop_client()
-        remove_bubble()
-        self.a_ecrit = True
-        self.engine.clear_transcriptions()
-        self.engine.clear()
-        self.shown_segments = set()
-        self.running_thread = False
+    def unpause(self, audio_file=None):
+        if self.app.recording or self.vt.is_recording:
+            return
+        try:
+            self.vt.start()
+            self.app.recording = True
+            self.on_record_start()
+        except Exception as e:
+            self.status_bar.config(text=f"Erreur start micro: {e}",
+                                   bg="lightblue", fg="darkblue", anchor=tk.W)
 
-    def update_sortie(self):
-        transcription_en_cours, transcription_totale = self.engine.get_reduit()
+    def pause(self):
+        if not self.app.recording and not self.vt.is_recording:
+            return
 
-        # ── partiel ─────────────────────────────────────────
-        if not all(c == ' ' for c in transcription_en_cours):
-            if not self.app.recording:
-                return
-            show_bubble_message(self.root, transcription_en_cours)
-            update_status_bar(self.status_bar, "* Transcription ... *",
-                              bg="red", fg="darkblue", anchor=tk.CENTER)
+        try:
+            texte = self.vt.stop()  # transcription finale
+        except Exception as e:
+            self.status_bar.config(text=f"Erreur stop/transcription: {e}",
+                                   bg="lightblue", fg="darkblue", anchor=tk.W)
+            texte = ""
+        finally:
+            self.app.recording = False
 
-        # ── segments complets ──────────────────────────────
-        for texte in list(transcription_totale):
-            if texte in self.shown_segments or not texte:
-                continue
-            self.shown_segments.add(texte)
+        if texte and texte.strip():
+            self.handle_final_text(texte)
 
-            def traiter_segment(t=texte):
-                remove_bubble()
+        self.status_bar.config(text="Transcription terminée",
+                               bg='lightblue', fg='darkblue', anchor=tk.W)
 
-                # post-corrections
-                txt, _ = intercept(t, self.app.insertions.get())
-                txt = corrige_ponctuation(txt)
-                if self.app.config.dictionnaire:
-                    txt = corriger_texte(txt)
+    def stop(self):
+        if self.vt.is_recording or self.app.recording:
+            self.pause()
+            return
+        # sinon: rien de spécial
 
-                # copier-coller au curseur
-                self.root.clipboard_clear()
+    def on_record_start(self):
+        # UI rouge pendant l'enregistrement
+        self.status_bar.config(text="* Enregistrement… *",
+                               bg="red", fg="darkblue", anchor=tk.CENTER)
 
-                if self.app.config.word_space:
-                    to_copy = f" {txt}"
-                else:
-                    to_copy = f"{txt} "
+    def handle_final_text(self, text: str):
+        # Post-traitements
+        txt, _ = intercept(text, self.app.insertions.get())
+        txt = corrige_ponctuation(txt)
+        if self.app.config.dictionnaire:
+            txt = corriger_texte(txt)
 
-                self.root.clipboard_append(to_copy)
+        to_copy = f" {txt}" if self.app.config.word_space else f"{txt} "
 
-                try:
-                    Simulator([Key.ctrl, 'v'])
-                except Exception as e:
-                    print("[Simulator]", e)
+        def _copy_and_paste():
+            # 1) maj presse-papier (thread UI garanti)
+            self.root.clipboard_clear()
+            self.root.clipboard_append(to_copy)
+            self.root.update_idletasks()
+            # 2) petit after pour laisser Windows “committer” le clipboard
+            self.root.after(0, lambda: Simulator([Key.ctrl, 'v']))
+            # 3) log une fois que c’est parti
+            self.log(text)
 
-            self.add_to_ui_queue(traiter_segment, texte)
-            self.log(text=texte)
-
-    def start_transcription_loop(self):
-        super().start_transcription_loop()
-        remove_bubble()
-
-        self.running_thread = False
-        self.engine.clear()
-        self.shown_segments = set()
+        self.add_to_ui_queue(_copy_and_paste)
 
     def copy_to_clipboard(self, text: str) -> None:
         pass
@@ -124,11 +119,6 @@ class Mode_Reduit(Mode):
         Simulator([Key.ctrl, "z"])
 
     def exit(self) -> str:
-        remove_bubble()
-        self.running_thread = False
-        if self.engine.is_connected():
-            self.engine.stop()
-            self.engine.disconnect()
         super().exit()
         return ""
 

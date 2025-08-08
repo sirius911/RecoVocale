@@ -8,6 +8,7 @@ DIRECTORY = 'data'
 AUDIO_DIRECTORY = f'{DIRECTORY}/utilisateurs/audios'  # Répertoire cible dans le serveur SFTP
 TEXT_DIRECTORY = f'{DIRECTORY}/utilisateurs/rapports'  # Répertoire cible dans le serveur SFTP
 
+
 def ensure_directory(sftp, directory):
     """
     Vérifie si un répertoire existe et le crée s'il n'existe pas.
@@ -23,6 +24,7 @@ def ensure_directory(sftp, directory):
         except Exception as e:
             print(f"Erreur lors de la création du répertoire {directory}: {e}")
             raise
+
 
 def upload_files_to_sftp(audio_file, text_file, filenames):
     try:
@@ -52,7 +54,7 @@ def upload_files_to_sftp(audio_file, text_file, filenames):
         sftp.close()
         transport.close()
         print("Fichiers envoyés avec succès")
-        return True,""
+        return True, ""
     except Exception as e:
         print(f"Erreur : {e}")
-        return False,e
+        return False, e

@@ -1,21 +1,17 @@
 import re
 import string
 import threading
-import time
-from tkinter import filedialog
 import enchant
 import tkinter as tk
-
-from info import REDUIT, VERSION, APPRENTI
-from Transcription import Transcription
+import pygame
+from info import REDUIT, VERSION
 from insertions import FenetreGestion
 from utils_socket import check_server_status
-from RecoVocaleClientEngine import RecoVocaleClientEngine
 from loger import envoyer_log
-from vlc_perso import VLC
 from queue_manager import UI_QUEUE
 from utils_window import update_status_bar, show_messagebox
 from bubble import remove_bubble
+from VoiceTranscriber import VoiceTranscriber
 
 
 class Mode:
@@ -50,7 +46,6 @@ class Mode:
         self.mode = mode
         self.mod_var = tk.StringVar()
         self.mod_var.set(mode)
-        self.transcription = Transcription()
         self.fenetre_gestion_ouverte = False  # Attribut pour savoir si la fenêtre est ouverte
         self.transcription_en_cours = False
         self.file_source = None  # peut etre un fichier audio
@@ -58,16 +53,12 @@ class Mode:
         self.dico = enchant.Dict("fr_FR")
         self.mots_personnels = set()
         self.model = ""
-        self.engine = RecoVocaleClientEngine(ip=self.app.config.server_ip,
-                                             port=int(self.app.config.port),
-                                             ip_client=self.app.ip_client)
+        base_url = app.get_vt_server_url()
+        self.vt = VoiceTranscriber(server_url=base_url, language="fr", device=None)
         self.pile = ['']
         self.thread = None
         self.running_thread = False
         self.transcription_interrompue = False
-        # self.audio_file = None # redondant
-        self.use_vlc = False
-        self.vlc = None
 
         self.pending_tasks = set()  # a supprimer apres les debug
 
@@ -84,23 +75,12 @@ class Mode:
             self.root.title(f"RV v{VERSION}")
         else:
             self.root.title(f"RecoVocale [{self.app.config.server_ip}:{self.app.config.port}] " +
-                            f"(v{VERSION}) {"" if self.app.status_server else "not"} connected")
+                            f"(v{VERSION}) {'connected' if self.app.status_server else 'not connected'}")
 
         self.ui()
 
     def get_selected_text(self):
         return self.transcription.get()
-
-    def stop_client(self) -> None:
-        """
-        Arrête le client de transcription.
-        """
-        self.app.recording = False
-        self.running_thread = False
-        if self.thread and self.thread.is_alive():
-            self.thread.join(timeout=0.5)
-        self.engine.stop()
-        self.update()
 
     def copy_to_clipboard(self) -> None:
         """
@@ -113,125 +93,44 @@ class Mode:
                               text='- Copie -', bg='lightblue', fg='darkblue', anchor=tk.CENTER)
         self.add_to_ui_queue(copy)
 
-    def pause(self) -> None:
-        """
-        Met en pause la transcription et met à jour.
-        """
-        print(f"Pause() dans {self.mode.name}")
-        if not self.app.recording:
-            return
-
-        remove_bubble(force=True)
-
-        if self.use_vlc:
-            threading.Thread(target=self.vlc.play_pause(), daemon=True).start()
-
-        else:
-            self.engine.stop(self.file_source)
-            self.file_source = None  # On ne charge qu'une seule fois
-
-        self.app.recording = False
-        self.running_thread = False
-        self.update()
-
     def unpause(self, audio_file: str | None = None):
-        """Relance (ou démarre) la boucle de transcription.
-
-        ‣ Si `self.use_vlc` est vrai, on part du principe que `lancer_vlc()`
-        a déjà …
-            • démarré le serveur pipe (`start_audio_pipe()`),  
-            • lancé VLC avec le média choisi et la sortie `--sout` correcte.
-        `unpause()` ne fait donc qu’assurer que tout tourne
-        et basculer VLC en lecture si besoin.
-
-        ‣ Si l’on n’utilise pas VLC, on garde le comportement précédent :
-        `audio_file` désigne alors le fichier à capturer directement.
-        """
-
-        # ------------------------------------------------------------
-        # 1)  Ne rien faire si l’enregistrement est déjà actif
-        # ------------------------------------------------------------
-        if self.app.recording:           # déjà en capture
+        if self.app.recording or self.vt.is_recording:
             return
+        try:
+            self.vt.start()
+            self.app.recording = True
+            self.on_record_start()
+        except Exception as e:
+            update_status_bar(self.status_bar, f"Erreur start micro: {e}",
+                              bg="lightblue", fg="darkblue", anchor=tk.W)
 
-        self.transcription_interrompue = False
-
-        # ------------------------------------------------------------
-        # 2)  Connexion à la DLL WhisperLive
-        # ------------------------------------------------------------
-        if not self.engine.is_connected() and not self.engine.connect():
-            update_status_bar(self.status_bar,
-                              text="Impossible de se connecter au serveur WhisperLive via DLL.",
-                              bg="lightblue", fg="darkblue", anchor=tk.W,
-                              )
-            print("❌ Impossible de se connecter au serveur WhisperLive via DLL.")
+    def pause(self) -> None:
+        if not self.app.recording and not self.vt.is_recording:
             return
+        remove_bubble(force=True)
+        text = ""
+        try:
+            text = self.vt.stop()
+        except Exception as e:
+            update_status_bar(self.status_bar, f"Erreur stop/transcription: {e}",
+                              bg="lightblue", fg="darkblue", anchor=tk.W)
+        finally:
+            self.app.recording = False
+        if text and text.strip():
+            self.handle_final_text(text)
+        update_status_bar(self.status_bar, "Transcription terminée",
+                          bg='lightblue', fg='darkblue', anchor=tk.W)
 
-        # ------------------------------------------------------------
-        # 3)  Branche « APPRENTI »
-        # ------------------------------------------------------------
-        if self.mode == APPRENTI:
-            self.engine.start(file_temp=self.temp_wav_file)
+    # Hooks à surcharger
+    def on_record_start(self):
+        pass
 
-        # ------------------------------------------------------------
-        # 4)  Branche lecture via VLC
-        # ------------------------------------------------------------
-        elif self.use_vlc:
-            update_status_bar(self.status_bar, text="Lecture via VLC", bg="lightblue",
-                              fg="darkblue", anchor=tk.CENTER)
-
-            # 4-a  S’assurer que le serveur pipe tourne
-            if not self.engine.pipe:           # pipe absent (None ou False)
-                self.engine.start_audio_pipe()
-
-            # 4-b  Vérifier que VLC est lancé par « Lancer VLC »
-            if self.vlc is None:
-                if audio_file is None:
-                    show_messagebox(
-                        message_type="warning",
-                        title="VLC non lancé pour lire",
-                        message="Utilisez d’abord le menu « Lancer VLC » pour choisir un fichier."
-                    )
-                    return
-
-            # 4-c  Remet VLC en lecture seulement s’il est en pause
-            if self.vlc is not None:
-                self.vlc.play_pause()
-
-        # ------------------------------------------------------------
-        # 5)  Capture directe sans VLC
-        # ------------------------------------------------------------
-        else:
-            self.vlc = None
-            self.engine.start(file_to_capture=audio_file,
-                              listen=self.app.config.play_audio)
-
-        # ------------------------------------------------------------
-        # 6)  Attendre le début de la capture audio
-        # ------------------------------------------------------------
-        for _ in range(20):                # ~1 s max
-            if self.engine.is_capturing():
-                break
-            time.sleep(0.05)
-
-        # ------------------------------------------------------------
-        # 7)  Lancer le thread de transcription
-        # ------------------------------------------------------------
-        self.app.recording = True
-        self.thread = threading.Thread(
-            target=self.start_transcription_loop, daemon=True
-        )
-        self.thread.start()
-
-        self.update()
+    def handle_final_text(self, text: str):
+        pass
 
     def exit_app(self) -> None:
-        """
-        Ferme correctement l'application en appelant la méthode de fermeture principale.
-        """
-
-        # self.icon.stop()
-        self.app.on_closing()
+        """Compat : ne fait que déléguer au nettoyage local, sans rappeler l'app."""
+        return self.exit()
 
     def _update_rec_circle(self) -> None:
         """
@@ -273,8 +172,7 @@ class Mode:
             update_status_bar(self.status_bar, message, 'red', 'lightblue', tk.W)
         elif self.app.recording:
             if self.file_source is not None:
-                message = f"{'Transcription via VLC' if self.use_vlc else 'Transcription de'} "
-                f"[{self.file_source}] ... en cours"
+                message = f"Transcription de [{self.file_source}] ... en cours"
             else:
                 message = "Transcription Entrée audio en cours..."
             update_status_bar(self.status_bar, text=message, fg='black', bg='red', anchor=tk.CENTER)
@@ -297,48 +195,6 @@ class Mode:
                 f"(v{VERSION}) {'connected' if self.app.status_server else 'not connected'} "
                 f"[{self.app.config.service}]"
             )
-
-    def start_transcription_loop(self):
-        """
-        Thread de transcription qui affiche les segments partiels et colle les segments complets.
-        """
-        print("start_transcription loop au niveau de Mode Class Mere")
-        self.running_thread = True
-        self.save_text_box()
-        while True:
-            self.app.recording = self.engine.is_capturing()
-            try:
-
-                self.update_sortie()
-                if (self.engine.is_transcription_terminee() and not self.app.recording) or not self.running_thread:
-                    break
-
-            except KeyboardInterrupt:
-                break
-            except Exception as e:
-                print(f"[Mode_Direct] Erreur dans le thread : {e}")
-
-            time.sleep(0.1)
-
-        self.update_sortie()
-        start = time.time()
-        while not self.engine.is_transcription_terminee():
-            update_status_bar(self.status_bar, text='Attente fin de transcription...',
-                              bg='lightblue', fg='darkblue', anchor=tk.W)
-            self.update_sortie()
-            if (time.time()-start) > 2.0:
-                break
-        if self.engine.is_transcription_terminee():
-            texte_info = "Transcription terminée"
-        else:
-            texte_info = "Transcription interrompue, on sort"
-        update_status_bar(self.status_bar, text=texte_info,
-                          bg='lightblue', fg='darkblue', anchor=tk.W)
-
-        print(texte_info)
-        print(f"{self.engine.lib.is_task_completed()} and not {self.engine.lib.is_task_in_progress()} => "
-              f"{self.engine.lib.is_task_completed() and not self.engine.lib.is_task_in_progress()}")
-        self.running_thread = False
 
     def update(self) -> None:
         """
@@ -371,9 +227,6 @@ class Mode:
             self.text_box.config(state=tk.NORMAL)
             self.text_box.delete('1.0', tk.END)
             self.text_box.insert('1.0', dernier_etat)
-            self.transcription.set(dernier_etat)
-            if self.engine:
-                self.engine.set(dernier_etat)
 
         if not self.pile:
             self.pile = ['']
@@ -414,56 +267,37 @@ class Mode:
     def lance_vlc(self):
         """Ouvre une boîte de dialogue pour choisir un média, puis lance VLC déjà
         configuré pour sortir sur le pipe et commence la lecture."""
-
-        self.use_vlc = True
-        self.vlc_var.set(True)    # ← coche la case du menu
-
-        # 1) Sélection du fichier
-        filepath = filedialog.askopenfilename(
-            title="Choisir un fichier audio ou vidéo",
-            filetypes=[
-                ("Audio/vidéo", "*.wav *.mp3 *.flac *.mp4 *.mkv *.avi *.mov"),
-                ("Tous les fichiers", "*.*"),
-            ],
-        )
-        if not filepath:
-            return  # l’utilisateur a annulé
-
-        # 2) Démarre d’abord le serveur pipe (indispensable avant VLC)
-        if not self.engine.pipe:
-            self.engine.start_audio_pipe()
-
-        # 3) (Re)démarre VLC avec le bon --sout et le média choisi
-        if self.vlc is not None:
-            self.vlc.close()          # on termine proprement le précédent processus
-            time.sleep(0.2)
-
-        update_status_bar(self.status_bar, text=f"Chargement via VLC [{filepath}] ... en cours",
-                          bg='lightblue', fg='darkblue', anchor=tk.W)
-        self.vlc = VLC()
-        if not self.vlc.open(filepath):
-            print("Impossible de lancer VLC pour ce fichier.")
-            return
-
-        time.sleep(0.5)               # petite marge pour négocier le Named Pipe
-        self.file_source = filepath
-
-    def toggle_vlc(self, *_):
-        """Active ou désactive l’utilisation de VLC."""
-        self.use_vlc = self.vlc_var.get()
-        if not self.use_vlc and self.vlc is not None:
-            self.vlc.close()
-            if self.engine:
-                self.engine.stop_audio_pipe()
+        show_messagebox(message_type="warning",
+                        title="Ne fonctionne pas",
+                        message="Cette fonctionnalité ne fonctionne pas encore ! \n Patience !")
 
     def exit(self) -> None:
-        """
-        Détruit tous les widgets enfants de la fenêtre principale.
-        """
-        if self.use_vlc:
-            print("fermeture de vlc")
-            if self.vlc is not None:
-                self.vlc.close()
+        # stop VT si besoin
+        try:
+            if getattr(self, "vt", None) and getattr(self.vt, "is_recording", False):
+                self.vt.stop()
+        except Exception:
+            pass
+
+        # stop audio si besoin
+        try:
+            if getattr(self, "audio_playing", False):
+                pygame.mixer.music.stop()
+                self.audio_playing = False
+        except Exception:
+            pass
+
+        # supprimer fichiers temp si présents
+        import os
+        for attr in ("temp_txt_file", "temp_wav_file"):
+            path = getattr(self, attr, None)
+            if path and os.path.exists(path):
+                try:
+                    os.remove(path)
+                except Exception:
+                    pass
+
+        # détruire les widgets du mode
         for widget in self.root.winfo_children():
             widget.destroy()
 
@@ -488,33 +322,6 @@ class Mode:
 
     def save_text_box(self) -> None:
         pass
-
-    # def on_text_change(self, event) -> None:
-    #     """
-    #     Gère les changements dans le champ texte. Ignore certaines touches de contrôle.
-
-    #     Args:
-    #         event: Événement clavier de Tkinter.
-    #     """
-
-    #     if event and (event.keysym in ("Shift_L", "Shift_R", "Control_L", "Control_R", "Alt_L", "Alt_R") or
-    #                   (event.state & 0x4 and event.keysym == "z")):
-    #         return
-    #     self.save_text_box()
-    #     self.root.after_idle(self.text_change)  # pour attendre que tkinter est bien écrit les modifications
-
-    # def text_change(self) -> None:
-    #     """
-    #     Applique les changements de texte et met à jour la transcription et le curseur.
-    #     """
-
-    #     self.trash_button.config(state=tk.NORMAL)
-    #     nouveau_text = self.text_box.get("1.0", tk.END)
-    #     # self.save_text_box()
-    #     if self.engine:
-    #         self.engine.set(nouveau_text)
-
-    #     self.verification_dico()
 
     def verification_dico(self, auto: bool = False) -> None:
         """
@@ -667,27 +474,6 @@ class Mode:
     def clear_text_box(self):
         pass
 
-    def set_service(self, service: str) -> None:
-        """
-        Modifie le service (et donc l'IP/Port du serveur) puis force la reconnexion.
-        """
-        # 1) Mémoriser le service sélectionné
-        self.app.config.service = service
-
-        # 2) Mettre à jour l’UI immédiatement
-        self._update_title_window()
-        self._update_barre_status()
-
-        # 3) Tenter la reconnexion vers le nouveau serveur
-        success = self.engine.restart_connection(
-            ip=self.app.config.server_ip,
-            port=int(self.app.config.port)
-        )
-
-        # 4) Afficher le résultat
-        self.app.status_server = success
-        self._update_barre_status()
-
     def toggle_play_audio(self) -> None:
         """
         Met à jour l'option `play_audio` depuis la case à cocher utilisateur.
@@ -697,15 +483,41 @@ class Mode:
 
     def handle_dropped_file(self, file_path: str) -> None:
         """
-        Gère un fichier glissé-déposé. (Ici, la fonctionnalité n’est pas encore implémentée.)
-
-        Args:
-            file_path (str): Chemin vers le fichier audio.
+        Transcrit un fichier déposé via VoiceTranscriber.transcribe_file(), en thread.
         """
+        import threading
+        self.file_source = file_path
+        self.transcription_en_cours = True
 
-        update_status_bar(self.status_bar, text=f'Traitement du fichier : {file_path}',
-                          bg='lightblue', fg='darkblue', anchor=tk.W)
-        self.unpause(file_path)
+        update_status_bar(self.status_bar,
+                          text=f"Transcription de [{file_path}] ... en cours",
+                          bg="red", fg="black", anchor=tk.CENTER)
+
+        def worker():
+            try:
+                texte = self.vt.transcribe_file(file_path, language="fr")
+            except Exception as e:
+                def _fail(e):
+                    update_status_bar(self.status_bar,
+                                      text=f"Erreur transcription fichier: {e}",
+                                      bg="lightblue", fg="darkblue", anchor=tk.W)
+                self.add_to_ui_queue(_fail, e)
+                return
+            finally:
+                self.transcription_en_cours = False
+                self.file_source = None
+
+            if texte and texte.strip():
+                # délègue au comportement du mode (Direct = insert ; Réduit = coller)
+                self.add_to_ui_queue(self.handle_final_text, texte)
+
+            def _done():
+                update_status_bar(self.status_bar,
+                                  text="Transcription terminée",
+                                  bg="lightblue", fg="darkblue", anchor=tk.W)
+            self.add_to_ui_queue(_done)
+
+        threading.Thread(target=worker, daemon=True).start()
 
     def log(self, text: str = "", nb_mots: int = 0) -> None:
         """
@@ -715,7 +527,7 @@ class Mode:
             text (str): Texte de la transcription à inclure dans le log.
         """
 
-        model = self.engine.get_model()
+        model = "Non connu"
 
         if self.file_source is not None:
             mode = f"[{self.mode.name}] - fichier: {self.file_source}"
@@ -727,14 +539,15 @@ class Mode:
                     mode=mode,
                     model=model,)
 
-    import threading
-
     def add_to_ui_queue(self, func, *args, **kwargs):
         """Ajoute une tâche à la file d'attente UI pour exécution dans le thread principal."""
+        if getattr(self.app, "shutting_down", False):
+            return  # on n'empile plus de tâches UI quand on ferme
+
         task_id = (func, args, tuple(kwargs.items()))  # Identifiant unique pour la tâche
         if task_id in self.pending_tasks:
-            # print(f"Tâche déjà en attente : {func.__name__}")
             return  # Ignorez les doublons
+
         self.pending_tasks.add(task_id)
 
         def safe_task():

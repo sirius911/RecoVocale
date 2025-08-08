@@ -1,40 +1,3 @@
-# # --- Diagnostic natif -------------------------------------------------
-# import os, sys, signal, faulthandler, ctypes, traceback, threading
-
-# # 1) log des crash C/Python
-# logfile = open(os.path.join(os.getcwd(), "fatal.log"), "w", buffering=1)
-# faulthandler.enable(file=logfile, all_threads=True)
-
-
-# # 2) log des exceptions Python non rattrapées
-# def excepthook(exc_type, exc, tb):
-#     traceback.print_exception(exc_type, exc, tb, file=logfile)
-#     traceback.print_exception(exc_type, exc, tb)
-#     sys.__excepthook__(exc_type, exc, tb)
-
-
-# sys.excepthook = excepthook
-
-
-# # 3) hook panic Rust installé dès le chargement de la DLL
-# def load_engine_dll():
-#     dll_path = os.path.join(os.path.dirname(__file__), "C:/Users/lorcyr/recovocale_engine/target/release/recovocale_engine.dll")
-#     lib = ctypes.CDLL(dll_path)
-#     try:
-#         lib.init_panic_hook()        # exposé dans la DLL
-#     except AttributeError:
-#         # pour les versions précédentes
-#         pass
-#     return lib
-
-
-# ENGINE_DLL = load_engine_dll()
-
-# # 4) capture CTRL +C pour fermer proprement et flusher fatal.log
-# signal.signal(signal.SIGINT, lambda *_: sys.exit(0))
-# # ----------------------------------------------------------------------
-
-
 import os
 import socket
 import time
@@ -95,7 +58,7 @@ class App:
             self.console_debug.debug_window.withdraw()
 
         self.root = root
-        self.root.after(100, self.process_ui_queue)
+        self.root.after(30, self.process_ui_queue)
         # Récupérer l'adresse IP locale du client
         try:
             self.ip_client = socket.gethostbyname(socket.gethostname())
@@ -137,12 +100,20 @@ class App:
             keyboard.add_hotkey("F3", self.current_mode.toggle_start_stop)
             keyboard.add_hotkey("F4", self.current_mode.stop)
 
-        self.root.protocol("WM_DELETE_WINDOW", self.current_mode.exit_app)
+        self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
 
         # #---------------------------MICRO----------------------------
         # Initialize the microphone
         self.mic = Micro(loop=self.loop, app=self.current_mode, call_back=self.update)
         self.info()
+
+    def get_vt_server_url(self) -> str:
+        """URL de base pour VoiceTranscriber.
+        TODO : voir avec fichier configuration un truc du genre : 
+                f"http://{self.config.tensorRT_ip}:{self.config.port}/v1"
+        """
+        base_url = "http://10.1.147.252:8000/v1"
+        return base_url
 
     def paste_from_clipboard(self) -> None:
         """Colle le contenu du presse-papier dans la fenêtre active via une simulation clavier."""
@@ -150,16 +121,6 @@ class App:
         Simulator([Key.ctrl, 'v'])
         time.sleep(0.5)
         self.current_mode._update_barre_status()
-
-    def running(self) -> bool:
-        """
-        Renvoie l'état d'exécution du client manager.
-
-        Returns:
-            bool: True si le client est actif, False sinon.
-        """
-        if self.current_mode.client_manager:
-            return self.client_manager.running
 
     def update(self) -> None:
         """Met à jour l'affichage du mode courant et les informations de débogage."""
@@ -169,18 +130,47 @@ class App:
 
     def on_closing(self) -> None:
         """Gère la fermeture de l'application en sauvegardant la configuration."""
-        self.current_mode.stop()
-        self.current_mode.exit()
+        if getattr(self, "_closing", False):
+            return
+        self._closing = True
+        self.shutting_down = True  # <— indique aux modes d'arrêter de poster des tâches
+
+        # 1) arrêter proprement le mode
+        try:
+            if self.current_mode:
+                self.current_mode.stop()
+                self.current_mode.exit()
+        except Exception as e:
+            print("Erreur stop/exit mode:", e)
+
+        # 2) micro
         if self.mic:
-            self.mic.disconnect()
-        # sauvegarde userConfig
+            try:
+                self.mic.disconnect()
+            except Exception:
+                pass
+
+        # 3) sauver la config
         self.config.shortcut = self.shortcut_manager.keyboard_shortcut
         self.config.shortcut_stop = self.shortcut_manager.stop_keyboard_shortcut
         self.config.mode = self.current_mode.name()
         self.config.x_window = self.root.winfo_rootx()
         self.config.y_window = self.root.winfo_rooty()
         self.config.save_config(self.root)
-        self.loop.stop()
+
+        # 4) vider la file UI pour éviter les callbacks sur des widgets détruits
+        import queue as _q
+        while not UI_QUEUE.empty():
+            try:
+                UI_QUEUE.get_nowait()
+            except _q.Empty:
+                break
+
+        # 5) stop boucle + quitter Tk
+        try:
+            self.loop.stop()
+        except Exception:
+            pass
         self.root.quit()
 
     def switch_mode(self, mode) -> None:
@@ -193,7 +183,6 @@ class App:
         if self.config.debug:
             print(f"switch_mode({mode.name})")
         if self.current_mode:
-            # last_model = self.current_mode.engine.model
             if self.current_mode.mode != mode:
                 log_en_cours = self.console_debug.get_log_message()
                 self.current_mode.stop()
@@ -250,17 +239,16 @@ class App:
             self.console_debug.delete_status()
             self.console_debug.append_status_with_format("Version : ", font_style="italic")
             self.console_debug.append_status_with_format(f"v{VERSION}\n", color="green")
-            self.console_debug.append_status_with_format("Version DLL : ", font_style="italic")
-            self.console_debug.append_status_with_format(f"{self.current_mode.engine.version_dll}\n", color="green")
-            self.console_debug.append_status_with_format("backend : ", font_style="italic")
-            self.console_debug.append_status_with_format(f"{self.current_mode.engine.backend}\n", color="green")
-            self.console_debug.append_status_with_format("Modèle : ", font_style="italic")
-            self.console_debug.append_status_with_format(f"{self.current_mode.engine.model}\n", color="green")
+
+            # --- Infos VoiceTranscriber (VT) ---
+            base_url = self.get_vt_server_url()
+            self.console_debug.append_status_with_format("Serveur VT : ", font_style="italic")
+            self.console_debug.append_status_with_format(f"{base_url}\n", color="green")
 
             self.console_debug.append_status_with_format("Serveur : ", font_style="italic")
             if check_server_status(self.config.server_ip, self.config.port, self.ip_client):
                 self.console_debug.append_status_with_format(
-                    f"Connected @{self.config.server_ip}:{self.config._port}\n", color="green")
+                    f"Connected @{self.config.server_ip}:{self.config.port}\n", color="green")
             else:
                 self.console_debug.append_status_with_format(
                     f"NOT Connected @{self.config.server_ip}:{self.config.port}\n", color="red")
@@ -303,23 +291,17 @@ class App:
         """Permet à l'utilisateur de modifier les raccourcis clavier."""
         self.shortcut_manager.change_shortcut()
 
-    # def process_ui_queue(self):
-    #     """Traite une seule tâche en attente dans la file d'attente UI."""
-    #     if not UI_QUEUE.empty():
-    #         try:
-    #             task = UI_QUEUE.get_nowait()
-    #             # print(f"Exécution de la tâche : {task}")
-    #             task()  # Exécute une seule tâche
-    #         except queue.Empty:
-    #             pass
-    #         except Exception as e:
-    #             print(f"Erreur dans la tâche UI : {e}")
-    #     # Replanifie l'appel à cette méthode
-    #     self.root.after(10, self.process_ui_queue)  # Réduisez l'intervalle pour une exécution plus fluide
-
     def process_ui_queue(self):
         """Traite les tâches en attente dans la file d'attente UI."""
-        # print(f"Taille de UI_QUEUE : {UI_QUEUE.qsize()}")
+        if getattr(self, "shutting_down", False):
+            # purge silencieuse
+            while not UI_QUEUE.empty():
+                try:
+                    UI_QUEUE.get_nowait()
+                except queue.Empty:
+                    break
+            return  # ne replanifie pas si tu vas quitter dans la foulée
+
         while not UI_QUEUE.empty():
             try:
                 task = UI_QUEUE.get_nowait()
@@ -329,7 +311,7 @@ class App:
             except Exception as e:
                 print(f"Erreur dans la tâche UI : {e}")
         # Replanifie l'appel à cette méthode
-        self.root.after(100, self.process_ui_queue)
+        self.root.after(30, self.process_ui_queue)
 
 
 def start_loop(loop: asyncio.AbstractEventLoop) -> None:
@@ -388,7 +370,6 @@ if __name__ == "__main__":
             def wrapper(*a, **kw):
                 if current_thread() is not main_thread():
                     msg = f"[WARN] Tk call from thread {current_thread().name}\n"
-                    # logfile.write(msg)  # Pour le debug
                     print(msg, end="")
                 return method(*a, **kw)
             return wrapper
@@ -416,7 +397,7 @@ if __name__ == "__main__":
 
         def on_file_drop(event):
             file_path = event.data.strip("{}")  # Nettoyer le nom du fichier
-            if file_path.lower().endswith((".wav", ".mp3", ".flac", ".ogg", "mp4")):
+            if file_path.lower().endswith((".wav", ".mp3", ".flac", ".ogg", ".mp4")):
                 print("Fichier audio détecté :", file_path)
                 app.current_mode.handle_dropped_file(file_path)
                 hide_drop_overlay(app)

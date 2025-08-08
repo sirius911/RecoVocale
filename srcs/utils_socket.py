@@ -90,6 +90,9 @@ def check_server_status(host: str, port: int, ip_client: str, timeout: int = 2) 
         bool: True si le serveur est accessible, False sinon.
     """
 
+    # TODO
+    return True
+
     try:
         # Récupérer ou créer une boucle événementielle
         try:

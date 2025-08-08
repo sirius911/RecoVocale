@@ -109,22 +109,69 @@ class Mode_Apprenti(Mode_Direct):
 
     def unpause(self, audio_file=None) -> None:
         """
-        Relance le client si l'utilisateur est prêt à apprendre.
-
-        Args:
-            audio_file (str | None): Fichier audio à transcrire.
+        Lance un enregistrement micro en sauvegardant le WAV pour relecture.
         """
-        if not self.ready_to_learn:
-            super().unpause(audio_file)
+        if self.ready_to_learn:
+            return
+        try:
+            self.vt.start(save_to=self.temp_wav_file)
+            self.app.recording = True
+            self.on_record_start()  # met l'UI en rouge
+        except Exception as e:
+            self.status_bar.config(text=f"Erreur start micro: {e}",
+                                   bg="lightblue", fg="darkblue", anchor=tk.W)
+
+    def pause(self) -> None:
+        if not self.app.recording and not self.vt.is_recording:
+            return
+        try:
+            texte = self.vt.stop()
+        except Exception as e:
+            self.status_bar.config(text=f"Erreur stop/transcription: {e}",
+                                   bg="lightblue", fg="darkblue", anchor=tk.W)
+            texte = ""
+        finally:
+            self.app.recording = False
+
+        if texte.strip():
+            self.handle_final_text(texte)
+
+        self.ready_to_learn = True
+        self.text_box.config(state=tk.NORMAL)
+        self.rec_button.config(state=tk.DISABLED)
+        self.learning_button.config(state=tk.NORMAL)
+        self.play_button.config(state=tk.NORMAL)
+        self.trash_button.config(state=tk.NORMAL)
+        self.status_bar.config(text="Lecture/Validation prêtes.")
+
+    def handle_final_text(self, text: str):
+        """Insère le texte tel quel (brut), sans intercept ni corrections."""
+        if not text:
+            return
+
+        def _insert_raw():
+            self.text_box.config(state=tk.NORMAL)
+            self.text_box.insert("insert", text)
+            self.text_box.see("insert")
+            # En mode apprentissage, on laisse editable pour correction
+        if hasattr(self, "add_to_ui_queue"):
+            self.add_to_ui_queue(_insert_raw)
+        else:
+            _insert_raw()
 
     def stop_client(self) -> None:
-        """
-        Arrête le client et interrompt la lecture audio si nécessaire.
-        """
-
+        # Stopper lecture audio si en cours
         if self.audio_playing:
             pygame.mixer.music.stop()
-        super().stop_client()
+            self.audio_playing = False
+
+        # Stopper une éventuelle capture VT en cours
+        if getattr(self.vt, "is_recording", False) or self.app.recording:
+            try:
+                self.vt.stop()
+            except Exception:
+                pass
+            self.app.recording = False
 
     def clear_text_box(self) -> None:
         """
@@ -134,7 +181,6 @@ class Mode_Apprenti(Mode_Direct):
 
         time.sleep(0.5)
         self.save_text_box()
-        self.engine.clear()
         self.text_box.config(state=tk.NORMAL)
         self.text_box.delete('1.0', tk.END)
         self.rec_button.config(state=tk.NORMAL)
@@ -157,18 +203,6 @@ class Mode_Apprenti(Mode_Direct):
                 print(f"{fichier} non trouvé")
 
         self.root.update()
-
-    def start_transcription_loop(self):
-        """
-        Thread de transcription qui affiche les segments partiels et colle les segments complets.
-        """
-        super().start_transcription_loop()
-        self.ready_to_learn = True
-        self.text_box.config(state=tk.NORMAL)
-        self.rec_button.config(state=tk.DISABLED)
-        self.learning_button.config(state=tk.NORMAL)
-        self.play_button.config(state=tk.NORMAL)
-        self.trash_button.config(state=tk.NORMAL)
 
     def learning(self) -> None:
         """
@@ -266,13 +300,70 @@ class Mode_Apprenti(Mode_Direct):
                 self.status_bar.config(text="Lecture arrêtée.")
                 self.audio_playing = False
 
+    def exit(self):
+        """Nettoyage spécifique + générique, sans rappeler l’app."""
+        # Stop audio si besoin
+        if getattr(self, "audio_playing", False):
+            try:
+                pygame.mixer.music.stop()
+            except Exception:
+                pass
+            self.audio_playing = False
+
+        # Supprimer WAV/TXT temporaires (si tu veux garder ce ménage spécifique)
+        for f in [getattr(self, "temp_txt_file", None), getattr(self, "temp_wav_file", None)]:
+            if f and os.path.exists(f):
+                try:
+                    os.remove(f)
+                    print(f"🗑️ Suppression du fichier temporaire: {f}")
+                except Exception as e:
+                    print(f"Erreur suppression {f}: {e}")
+
+        # Appeler le nettoyage générique (ne ferme pas l’app)
+        return super().exit()
+
     def handle_dropped_file(self, file_path: str) -> None:
         """
-        Gère un fichier glissé-déposé. (Ici, la fonctionnalité n’est pas encore implémentée.)
-
-        Args:
-            file_path (str): Chemin vers le fichier audio.
+        Transcrit un fichier audio déposé, bascule en mode apprentissage
+        avec la transcription et permet la lecture du fichier.
         """
+        import threading
+        import shutil
 
-        self.status_bar.config(text=f'Traitement du fichier : {file_path} IMPOSSIBLE en Mode Apprentissage',
-                               bg='red', fg='white', anchor=tk.W)
+        try:
+            print(f"Copie de {file_path} -> {self.temp_wav_file}...", end=' ')
+            shutil.copy2(file_path, self.temp_wav_file)
+            print("ok")
+        except Exception as e:
+            print("ERREUR")
+            self.status_bar.config(text=f"Copie impossible: {e}",
+                                   bg="lightblue", fg="darkblue", anchor=tk.W)
+            return
+
+        self.status_bar.config(text=f"Transcription de [{file_path}] ... en cours",
+                               bg="red", fg="white", anchor=tk.CENTER)
+
+        def worker():
+            try:
+                texte = self.vt.transcribe_file(self.temp_wav_file, language="fr")
+            except Exception as e:
+                def _fail(e):
+                    self.status_bar.config(text=f"Erreur transcription fichier: {e}",
+                                           bg="lightblue", fg="darkblue", anchor=tk.W)
+                self.add_to_ui_queue(_fail, e)
+                return
+
+            # Insérer le texte + activer l’apprentissage
+            def _ok(texte):
+                if texte and texte.strip():
+                    self.handle_final_text(texte)
+                self.ready_to_learn = True
+                self.text_box.config(state=tk.NORMAL)
+                self.rec_button.config(state=tk.DISABLED)
+                self.learning_button.config(state=tk.NORMAL)
+                self.play_button.config(state=tk.NORMAL)
+                self.trash_button.config(state=tk.NORMAL)
+                self.status_bar.config(text="Lecture/Validation prêtes.")
+            self.add_to_ui_queue(_ok, texte)
+
+        threading.Thread(target=worker, daemon=True).start()

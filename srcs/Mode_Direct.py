@@ -6,6 +6,7 @@ from menus import create_menus
 from info import DIRECT
 from utils_keyboard import Simulator
 from pynput.keyboard import Key
+from Correcteur import intercept, corrige_ponctuation, corriger_texte
 
 
 class Mode_Direct(Mode):
@@ -72,27 +73,78 @@ class Mode_Direct(Mode):
         self.status_bar = tk.Label(self.root, text="Bienvenue dans l'application", bd=1, relief=tk.SUNKEN, anchor=tk.W)
         self.status_bar.grid(row=2, column=0, sticky="ew")
 
-    def stop(self) -> None:
-        """
-        Stoppe la transcription, active les boutons,
-        repositionne le curseur et vérifie l’orthographe du texte.
-        """
+    def unpause(self, audio_file: str | None = None):
+        if self.app.recording or self.vt.is_recording:
+            return
+        try:
+            self.vt.start()
+            self.app.recording = True
+            self.text_box.config(state=tk.NORMAL)
+            self.status_bar.config(text="* Enregistrement… *", bg="red", fg="darkblue", anchor=tk.CENTER)
+            # (TODO désactiver ce qu'il faut : self.trash_button.config(state=tk.DISABLED), etc.)
+        except Exception as e:
+            self.status_bar.config(text=f"Erreur start micro: {e}", bg="lightblue", fg="darkblue", anchor=tk.W)
 
-        print("Stop() dans Mode Direct", flush=True)
-        self.stop_client()
-        self.engine.wait_transcription_en_cours(2.0)
-        self.engine.clear_transcriptions()
-        self.engine.merge()
-        self.running_thread = False
+    def pause(self):
+        if not self.app.recording and not self.vt.is_recording:
+            return
+        try:
+            texte = self.vt.stop()  # transcription finale d’un seul tenant
+        except Exception as e:
+            self.status_bar.config(text=f"Erreur stop/transcription: {e}",
+                                   bg="lightblue", fg="darkblue", anchor=tk.W)
+            texte = ""
+        finally:
+            self.app.recording = False
+
+        if texte and texte.strip():
+            self.handle_final_text(texte)
+
+        self.status_bar.config(text="Segment ajouté",
+                               bg='lightblue', fg='darkblue', anchor=tk.W)
+
+    def stop(self) -> None:
+        # Si on utilise VT et qu’on enregistre, faire une pause (récupère et insère)
+        if hasattr(self, "vt") and (self.vt.is_recording or self.app.recording):
+            self.pause()
+            return
+
+    def on_record_start(self):
+        # UI rouge pendant l’enregistrement
         self.text_box.config(state=tk.NORMAL)
-        self.trash_button.config(state=tk.NORMAL)
-        self.rec_button.config(state=tk.NORMAL)
-        self.transcription_en_cours = False
-        self.transcription.validation()
-        self.set_pos_curseur(self.transcription.fin_insertion)
-        self.status_bar.config(text="Transcription ...interrompue", bg='lightblue', fg='darkblue', anchor=tk.W)
-        self.transcription_interrompue = True
-        self.verification_dico(True)
+        self.status_bar.config(text="* Enregistrement… *",
+                               bg="red", fg="darkblue", anchor=tk.CENTER)
+
+    def handle_final_text(self, text: str):
+        # Post-traitements habituels
+        txt, _ = intercept(text, self.app.insertions.get())
+        txt = corrige_ponctuation(txt)
+        if self.app.config.dictionnaire:
+            txt = corriger_texte(txt)
+
+        # Undo snapshot si tu as une pile d’undo
+        if hasattr(self, "save_text_box"):
+            self.save_text_box()
+
+        # Insérer au curseur (remplacer la sélection si présente)
+        def _insert_final(t=txt):
+            if self.text_box.tag_ranges("sel"):
+                self.text_box.delete(tk.SEL_FIRST, tk.SEL_LAST)
+            self.text_box.insert("insert", t + " ")
+            self.text_box.see("insert")
+            self.root.update_idletasks()
+
+        # Utilise ta file UI si elle existe, sinon appelle direct
+        if hasattr(self, "add_to_ui_queue"):
+            self.add_to_ui_queue(_insert_final)
+            # relancer la vérif dico si tu l’as
+            if hasattr(self, "verification_dico"):
+                self.add_to_ui_queue(self.verification_dico)
+        else:
+            _insert_final()
+            if hasattr(self, "verification_dico"):
+                self.verification_dico()
+        self.log(text)
 
     def save_text_box(self) -> None:
         """
@@ -124,10 +176,12 @@ class Mode_Direct(Mode):
                 return selected_text, False
             else:
                 # si aucune selection on envoi la transcription complète
-                return self.engine.texte_merge, True
+                selected_text = self.text_box.get("1.0", tk.END)
+                return selected_text, True
         except tk.TclError:
             # Gestion d'erreur si aucune sélection n'est faite
-            return self.engine.texte_merge, True
+            selected_text = self.text_box.get("1.0", tk.END)
+            return selected_text, True
 
     def get_pos_select(self) -> tuple[int, int]:
         """
@@ -164,7 +218,6 @@ class Mode_Direct(Mode):
         def clear():
             self.text_box.config(state=tk.NORMAL)
             if all:
-                self.engine.clear()
                 self.text_box.delete('1.0', tk.END)
             else:
                 Simulator([Key.delete])
@@ -205,38 +258,6 @@ class Mode_Direct(Mode):
 
         self.add_to_ui_queue(set_cursor)
 
-    def write_text_box(self, texte: str):
-        if not hasattr(self, "text_box") or not self.text_box.winfo_exists():
-            return  # Le widget a été détruit
-        if len(texte.strip()) == 0:
-            return
-
-        def write(texte=texte):
-            self.text_box.config(state=tk.NORMAL)
-            self.text_box.delete('1.0', tk.END)
-            self.text_box.insert(tk.END, texte)
-            self.text_box.config(state=tk.DISABLED)
-            self.root.update_idletasks()  # Force la mise à jour de l'interface utilisateur
-        self.add_to_ui_queue(write, texte)
-
-    def update_sortie(self):
-        texte = self.engine.get(insertions=self.app.insertions,
-                                dico=self.app.config.dictionnaire)
-        if texte.strip():  # Vérifiez que le texte n'est pas vide
-            self.write_text_box(texte)
-
-    def start_transcription_loop(self):
-        print("start_transcription loop au niveau de Mode Direct")
-        super().start_transcription_loop()
-
-        def _ui_cleanup():
-            self.trash_button.config(state=tk.NORMAL)
-            self.rec_button.config(state=tk.NORMAL)
-            self.text_box.config(state=tk.NORMAL)
-            self.log(nb_mots=self.engine.get_nb_mots_trancripts())
-
-        self.add_to_ui_queue(_ui_cleanup)
-
     def copy_to_clipboard(self) -> None:
         """
         Copie le texte sélectionné (ou tout le texte) dans le presse-papier.
@@ -268,10 +289,7 @@ class Mode_Direct(Mode):
         """
         def apply_changes():
             self.trash_button.config(state=tk.NORMAL)
-            nouveau_text = self.text_box.get("1.0", tk.END)
-            # self.save_text_box()
-            if self.engine:
-                self.engine.set(nouveau_text)
+            self.save_text_box()
             self.verification_dico()
 
         self.add_to_ui_queue(apply_changes)
@@ -279,10 +297,13 @@ class Mode_Direct(Mode):
     def exit(self) -> str:
         """
         Ferme proprement la fenêtre du mode et retourne le texte courant.
-
-        Returns:
-            str: Texte actuellement dans la zone de transcription.
         """
-        retour = self.text_box.get("1.0", tk.END).rstrip("\n")  # on retourne la transcription en cours
+        retour = ""
+        try:
+            if hasattr(self, "text_box") and self.text_box.winfo_exists():
+                retour = self.text_box.get("1.0", tk.END).rstrip("\n")
+        except tk.TclError:
+            retour = ""
+
         super().exit()
         return retour

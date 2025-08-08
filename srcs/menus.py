@@ -30,7 +30,7 @@ def create_menus(self) -> None:
     self.service_var = tk.StringVar(value=self.app.config.service)
     self.service_menu = tk.Menu(self.settings_menu, tearoff=0)
     self.settings_menu.add_cascade(label="Services", menu=self.service_menu)
-
+    self.settings_menu.entryconfig("Services", state="disabled")
     for service in self.app.config.get_services():
         self.service_menu.add_radiobutton(label=service,
                                           variable=self.service_var,
@@ -57,7 +57,7 @@ def create_menus(self) -> None:
                                        command=self.toggle_dictionnaire)
 
     self.settings_menu.add_separator()
-    self.settings_menu.add_command(label="Quitter", command=self.exit_app)
+    self.settings_menu.add_command(label="Quitter", command=self.app.on_closing)
 
     # =========================
     # 2. Édition
@@ -130,7 +130,8 @@ def create_menus(self) -> None:
         variable=self.vlc_var,
         onvalue=True,
         offvalue=False,
-        command=self.toggle_vlc      # ⇐ fonction décrite ci-dessous
+        command=None,
+        state='disabled'
     )
 
     # Lancer VLC
