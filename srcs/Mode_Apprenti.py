@@ -111,7 +111,7 @@ class Mode_Apprenti(Mode_Direct):
         """
         Lance un enregistrement micro en sauvegardant le WAV pour relecture.
         """
-        if self.ready_to_learn:
+        if self.ready_to_learn or self.app.recording or self.vt.is_recording or not self.app.status_server:
             return
         try:
             self.vt.start(save_to=self.temp_wav_file)

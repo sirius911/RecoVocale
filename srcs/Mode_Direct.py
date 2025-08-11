@@ -74,7 +74,7 @@ class Mode_Direct(Mode):
         self.status_bar.grid(row=2, column=0, sticky="ew")
 
     def unpause(self, audio_file: str | None = None):
-        if self.app.recording or self.vt.is_recording:
+        if self.app.recording or self.vt.is_recording or not self.app.status_server:
             return
         try:
             self.vt.start()

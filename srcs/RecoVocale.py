@@ -19,7 +19,7 @@ from Mode_Direct import Mode_Direct
 from Mode_Apprenti import Mode_Apprenti
 from Mode_Reduit import Mode_Reduit
 from Mode_Fichier import Mode_Fichier
-from utils_socket import check_server_status, get_windows_session
+from utils_socket import get_windows_session
 from utils_keyboard import Simulator
 from Micro import Micro
 from info import VERSION, DIRECT, REDUIT, APPRENTI, FICHIER
@@ -29,6 +29,7 @@ from utils_window import get_config_path
 from loger import envoyer_log
 from queue_manager import UI_QUEUE
 import queue
+from VoiceTranscriber import VoiceTranscriber
 
 # Envoi d'un log "stop" à la fermeture du programme
 atexit.register(lambda: envoyer_log("stop"))
@@ -70,8 +71,17 @@ class App:
         self.recording = False
         self.root.attributes("-topmost", True)  # Keep the window on top of others
 
+        # Instance unique de VT
+        self.vt = VoiceTranscriber(
+            server_url=self.get_vt_server_url(),
+            language="fr",
+            device=None
+        )
+
         # -------------------check serveur-----------------------
-        self.status_server = check_server_status(self.config.server_ip, self.config.port, self.ip_client, timeout=5)
+        self.status_server, _ = self.vt.check_server_fast()
+        self.status_server, _ = self.vt.check_server_fast()
+        self._heartbeat_server_status()  # démarre le heartbeat
 
         # ----------------------MODE----------------------------
         mode = self.config.mode
@@ -115,6 +125,23 @@ class App:
         base_url = "http://10.1.147.252:8000/v1"
         return base_url
 
+    def _heartbeat_server_status(self):
+        """
+        Met à jour périodiquement self.status_server avec un TTL adaptatif :
+        - si down -> recheck rapide (1s)
+        - si up   -> recheck espacé (10s)
+        """
+        try:
+            # ttl=None => laisse VT choisir (TTL adaptatif)
+            self.status_server = self.vt.is_server_up(timeout=0.25, ttl=None)
+        except Exception:
+            self.status_server = False
+
+        # prochaine exécution en fonction de l'état courant
+        delay_ms = 1000 if not self.status_server else 10000
+        self.update()
+        self.root.after(delay_ms, self._heartbeat_server_status)
+
     def paste_from_clipboard(self) -> None:
         """Colle le contenu du presse-papier dans la fenêtre active via une simulation clavier."""
         self.current_mode.status_bar.config(text='- Coller -', bg='lightblue', fg='darkblue', anchor=tk.CENTER)
@@ -124,7 +151,7 @@ class App:
 
     def update(self) -> None:
         """Met à jour l'affichage du mode courant et les informations de débogage."""
-        if self.current_mode:
+        if hasattr(self, 'current_mode') and self.current_mode:
             self.current_mode.update()
             self.info()
 
@@ -246,12 +273,14 @@ class App:
             self.console_debug.append_status_with_format(f"{base_url}\n", color="green")
 
             self.console_debug.append_status_with_format("Serveur : ", font_style="italic")
-            if check_server_status(self.config.server_ip, self.config.port, self.ip_client):
-                self.console_debug.append_status_with_format(
-                    f"Connected @{self.config.server_ip}:{self.config.port}\n", color="green")
-            else:
-                self.console_debug.append_status_with_format(
-                    f"NOT Connected @{self.config.server_ip}:{self.config.port}\n", color="red")
+
+            # Etat du serveur VT (check HTTP rapide)
+            msg_vt = self.vt.last_health_message() or "—"
+            self.console_debug.append_status_with_format("VT status : ", font_style="italic")
+            self.console_debug.append_status_with_format(
+                ("OK " if self.status_server else "DOWN ") + f"({msg_vt})\n",
+                color=("green" if self.status_server else "red")
+            )
 
             self.console_debug.append_status_with_format("Service : ", font_style="italic")
             self.console_debug.append_status_with_format(f"{self.config.service}\n", color="green")

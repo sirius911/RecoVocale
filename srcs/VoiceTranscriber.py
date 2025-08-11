@@ -6,6 +6,9 @@ import io
 import wave
 import requests
 import threading
+import socket
+import time
+from urllib.parse import urlparse
 
 
 class VoiceTranscriber:
@@ -32,11 +35,11 @@ class VoiceTranscriber:
             "temperature": 0,
             "no_speech_threshold": 0.9,
             "vad_filter": True,
-            # "response_format": "verbose_json",          # décommente si supporté
-            # "condition_on_previous_text": False,
-            # "beam_size": 1,
-            # "word_timestamps": False,
-            # "compute_type": "float16",                  # si supporté côté serveur
+            "response_format": "verbose_json",          # décommente si supporté
+            "condition_on_previous_text": False,
+            "beam_size": 1,
+            "word_timestamps": False,
+            "compute_type": "float16",                  # si supporté côté serveur
         }
         if stt_options:
             self.stt_options.update(stt_options)
@@ -46,7 +49,71 @@ class VoiceTranscriber:
         self._lock = threading.Lock()
         self._recording = False
         self._save_to = None
+        self._health_ok = None
+        self._health_ts = 0.0
+        self._ttl_ok = 10.0    # recheck lent quand OK
+        self._ttl_ko = 1.0     # recheck rapide quand KO
+        self._health_msg = ""  # pour afficher dans debug
         print(f"VoiceTranscriber({server_url})")
+
+    def _parse_host_port(self):
+        u = urlparse(self.server_url)
+        host = u.hostname or "localhost"
+        port = u.port or (443 if u.scheme == "https" else 80)
+        return host, port
+
+    def check_server_fast(self, timeout_connect=0.2, timeout_read=0.2):
+        """
+        Test ultra-rapide pour vérifier que le serveur est dispo.
+        1) TCP connect court
+        2) GET /openapi.json (200 attendu)
+        """
+        start = time.perf_counter()
+        host, port = self._parse_host_port()
+
+        # 1) TCP connect rapide
+        try:
+            with socket.create_connection((host, port), timeout=timeout_connect):
+                pass
+        except Exception as e:
+            dt = int((time.perf_counter() - start) * 1000)
+            return False, f"TCP fail: {e} ({dt} ms)"
+
+        # 2) GET /openapi.json (léger)
+        headers = {}
+        if self.api_key:
+            headers["Authorization"] = f"Bearer {self.api_key}"
+        base = self.server_url.rstrip("/v1")
+        try:
+            r = requests.get(f"{base}/openapi.json",
+                             headers=headers,
+                             timeout=(timeout_connect, timeout_read))
+            dt = int((time.perf_counter() - start) * 1000)
+            if 200 <= r.status_code < 300:
+                return True, f"/openapi.json: {r.status_code} ({dt} ms)"
+            return False, f"/openapi.json: HTTP {r.status_code} ({dt} ms)"
+        except Exception as e:
+            dt = int((time.perf_counter() - start) * 1000)
+            return False, f"HTTP fail: {e} ({dt} ms)"
+
+    def is_server_up(self, timeout: float = 0.25, ttl: float | None = None) -> bool:
+        now = time.perf_counter()
+
+        # TTL adaptatif (si l'appelant ne force pas via ttl)
+        if ttl is None:
+            ttl = self._ttl_ok if self._health_ok else self._ttl_ko
+
+        if self._health_ok is not None and (now - self._health_ts) < ttl:
+            return self._health_ok
+        ok, msg = self.check_server_fast(timeout_connect=min(timeout, 0.25),
+                                         timeout_read=min(timeout, 0.25))
+        self._health_ok = ok
+        self._health_ts = time.perf_counter()
+        self._health_msg = msg
+        return ok
+
+    def last_health_message(self) -> str:
+        return self._health_msg or ""
 
     @staticmethod
     def list_devices():

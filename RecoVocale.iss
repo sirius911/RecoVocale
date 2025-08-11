@@ -27,11 +27,11 @@ Source: "C:\Users\lorcyr\RecoVocale\srcs\config\micro_actions_config.json"; Dest
 Source: "C:\Users\lorcyr\Appdata\Local\enchant\fr_FR.dic"; DestDir: "{localappdata}\enchant"; Flags: onlyifdoesntexist
 Source: "C:\Users\lorcyr\RecoVocale\srcs\config\insertions.xml"; DestDir: "{localappdata}\RecoVocale"; Flags: onlyifdoesntexist
 Source: "dist\bin\ffmpeg.exe"; DestDir: "{app}\bin"; Flags: onlyifdoesntexist
-Source: "dist\bin\recovocale_engine.dll"; DestDir: "{app}\bin"; Flags: ignoreversion
+; Source: "dist\bin\recovocale_engine.dll"; DestDir: "{app}\bin"; Flags: ignoreversion
 
 [Icons]
 ; Ajouter une icône pour l'application dans le menu démarrer
-Name: "{group}\RecoVocale"; Filename: "{app}\RecoVocale.exe"
+Name: "{group}\RecoVocale"; Filename: "{app}\RecoVocale.exe"; Comment: "RecoVocale {#SetupSetting('AppVersion')}"
 
 [Run]
 ; Exécuter l'application après l'installation (optionnel)

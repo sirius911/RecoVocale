@@ -62,18 +62,18 @@ $issFile = ".\RecoVocale.iss"
 Write-Host "Mise à jour de la version dans RecoVocale.iss"
 
 # Copie de la DLL Rust dans srcs/bin/ pour l'inclusion par PyInstaller
-$dllSource = "C:\Users\lorcyr\recovocale_engine\target\release\recovocale_engine.dll"
-$dllTarget = ".\srcs\bin\recovocale_engine.dll"
+# $dllSource = "C:\Users\lorcyr\recovocale_engine\target\release\recovocale_engine.dll"
+# $dllTarget = ".\srcs\bin\recovocale_engine.dll"
 
 if (-not (Test-Path ".\srcs\bin")) {
     New-Item -ItemType Directory -Path ".\srcs\bin" | Out-Null
 }
-if (Test-Path $dllSource) {
-    Copy-Item -Path $dllSource -Destination $dllTarget -Force
-    Write-Host "✅ DLL Rust copiée dans srcs/bin/"
-} else {
-    Write-Host "❌ DLL Rust non trouvée à $dllSource"
-}
+# if (Test-Path $dllSource) {
+#     Copy-Item -Path $dllSource -Destination $dllTarget -Force
+#     Write-Host "✅ DLL Rust copiée dans srcs/bin/"
+# } else {
+#     Write-Host "❌ DLL Rust non trouvée à $dllSource"
+# }
 
 # 🧹 Supprimer les anciens dossiers de build et dist pour forcer une recompilation propre
 if (Test-Path ".\build") {
@@ -98,7 +98,7 @@ if (-not (Test-Path $distBin)) {
 
 # 🔁 Copie ffmpeg.exe et la DLL Rust manuellement
 Copy-Item -Path ".\srcs\bin\ffmpeg.exe" -Destination "$distBin\" -Force
-Copy-Item -Path ".\srcs\bin\recovocale_engine.dll" -Destination "$distBin\" -Force
+# Copy-Item -Path ".\srcs\bin\recovocale_engine.dll" -Destination "$distBin\" -Force
 Write-Host "✅ Copie manuelle de ffmpeg.exe et de la DLL dans dist/bin/"
 
 

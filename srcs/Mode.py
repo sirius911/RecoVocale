@@ -6,12 +6,9 @@ import tkinter as tk
 import pygame
 from info import REDUIT, VERSION
 from insertions import FenetreGestion
-from utils_socket import check_server_status
 from loger import envoyer_log
 from queue_manager import UI_QUEUE
 from utils_window import update_status_bar, show_messagebox
-# from bubble import remove_bubble
-from VoiceTranscriber import VoiceTranscriber
 
 
 class Mode:
@@ -53,8 +50,8 @@ class Mode:
         self.dico = enchant.Dict("fr_FR")
         self.mots_personnels = set()
         self.model = ""
-        base_url = app.get_vt_server_url()
-        self.vt = VoiceTranscriber(server_url=base_url, language="fr", device=None)
+        # base_url = app.get_vt_server_url()
+        self.vt = app.vt
         self.pile = ['']
         self.thread = None
         self.running_thread = False
@@ -94,7 +91,7 @@ class Mode:
         self.add_to_ui_queue(copy)
 
     def unpause(self, audio_file: str | None = None):
-        if self.app.recording or self.vt.is_recording:
+        if self.app.recording or self.vt.is_recording or not self.app.status_server:
             return
         try:
             self.vt.start()
@@ -107,7 +104,6 @@ class Mode:
     def pause(self) -> None:
         if not self.app.recording and not self.vt.is_recording:
             return
-        # remove_bubble(force=True)
         text = ""
         try:
             text = self.vt.stop()
@@ -146,22 +142,33 @@ class Mode:
         Met à jour l’image du bouton enregistrement/pause et son état (activé/désactivé).
         """
 
+        # --- blocage si VoiceTranscriber serveur HS ---
+        try:
+            # self.app.status_server = self.vt.is_server_up()
+            if not self.app.status_server:
+                self.rec_button.config(state=tk.DISABLED)
+                from utils_window import update_status_bar
+                update_status_bar(self.status_bar,
+                                  text="Serveur VT indisponible",
+                                  bg="lightblue", fg="darkblue", anchor=tk.W)
+                return
+            else:
+                self.rec_button.config(state=tk.NORMAL)
+        except Exception:
+            self.rec_button.config(state=tk.DISABLED)
+            return
+
         if self.app.recording:
             self.rec_button.config(image=self.pause_image)
         else:
             self.rec_button.config(image=self.record_image)
-        if self.app.status_server is False:
-            self.rec_button.config(state=tk.DISABLED)
-            self.app.status_server = check_server_status(self.app.config.server_ip,
-                                                         self.app.config.port,
-                                                         self.app.ip_client)
 
     def _update_barre_status(self) -> None:
         """
         Met à jour le message affiché dans la barre de statut selon l'état de l'application.
         """
         if self.mode == REDUIT:
-            message = f"RecoVocale {VERSION}"
+            message = f"RecoVocale {VERSION}:{'connected' if self.app.status_server else 'not connected'} "
         else:
             message = (
                 f"RecoVocale [{self.app.config.server_ip}:{self.app.config.port}] (v{VERSION}) "
