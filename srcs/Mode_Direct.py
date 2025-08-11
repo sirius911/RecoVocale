@@ -81,7 +81,8 @@ class Mode_Direct(Mode):
             self.app.recording = True
             self.text_box.config(state=tk.NORMAL)
             self.status_bar.config(text="* Enregistrement… *", bg="red", fg="darkblue", anchor=tk.CENTER)
-            # (TODO désactiver ce qu'il faut : self.trash_button.config(state=tk.DISABLED), etc.)
+            self._update_rec_circle()
+            self._update_image_button()
         except Exception as e:
             self.status_bar.config(text=f"Erreur start micro: {e}", bg="lightblue", fg="darkblue", anchor=tk.W)
 
@@ -99,7 +100,9 @@ class Mode_Direct(Mode):
 
         if texte and texte.strip():
             self.handle_final_text(texte)
-
+            self.trash_button.config(state=tk.NORMAL)
+        self._update_rec_circle()
+        self._update_image_button()
         self.status_bar.config(text="Segment ajouté",
                                bg='lightblue', fg='darkblue', anchor=tk.W)
 

@@ -66,7 +66,8 @@ class Mode_Reduit(Mode):
 
         if texte and texte.strip():
             self.handle_final_text(texte)
-
+        self._update_rec_circle()
+        self._update_image_button()
         self.status_bar.config(text="Transcription terminée",
                                bg='lightblue', fg='darkblue', anchor=tk.W)
 
@@ -78,6 +79,8 @@ class Mode_Reduit(Mode):
 
     def on_record_start(self):
         # UI rouge pendant l'enregistrement
+        self._update_rec_circle()
+        self._update_image_button()
         self.status_bar.config(text="* Enregistrement… *",
                                bg="red", fg="darkblue", anchor=tk.CENTER)
 

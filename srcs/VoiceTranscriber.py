@@ -125,11 +125,11 @@ class VoiceTranscriber:
             "temperature": 0,
             "no_speech_threshold": 0.9,
             "vad_filter": True,
-            # "response_format": "verbose_json",        # ← décommente si supporté par ton serveur
-            # "condition_on_previous_text": False,
-            # "beam_size": 1,
-            # "word_timestamps": False,
-            # "compute_type": "float16",
+            "response_format": "verbose_json",        # ← décommente si supporté par ton serveur
+            "condition_on_previous_text": False,
+            "beam_size": 1,
+            "word_timestamps": False,
+            "compute_type": "float16",
         }
 
         # Envoi au serveur Whisper

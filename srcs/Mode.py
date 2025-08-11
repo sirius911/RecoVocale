@@ -10,7 +10,7 @@ from utils_socket import check_server_status
 from loger import envoyer_log
 from queue_manager import UI_QUEUE
 from utils_window import update_status_bar, show_messagebox
-from bubble import remove_bubble
+# from bubble import remove_bubble
 from VoiceTranscriber import VoiceTranscriber
 
 
@@ -107,7 +107,7 @@ class Mode:
     def pause(self) -> None:
         if not self.app.recording and not self.vt.is_recording:
             return
-        remove_bubble(force=True)
+        # remove_bubble(force=True)
         text = ""
         try:
             text = self.vt.stop()
@@ -123,6 +123,7 @@ class Mode:
 
     # Hooks à surcharger
     def on_record_start(self):
+        self.update()
         pass
 
     def handle_final_text(self, text: str):

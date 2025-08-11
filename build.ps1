@@ -10,6 +10,49 @@ $infoContent = $infoContent -replace "VERSION = '.*'", "VERSION = '$version'"
 $infoContent | Set-Content "srcs/info.py"
 Write-Host "Version d'info.py à jour"
 
+# Transformer 2.03 -> tuple (2,3,0,0)
+$parts = $version.Split('.')
+while ($parts.Count -lt 4) { $parts += '0' }
+[int[]]$vt = $parts | ForEach-Object {[int]$_}
+
+# Mise à jour des versions dans version_file.txt
+$VerInfoPath = ".\version_info.txt"
+@"
+# UTF-8
+VSVersionInfo(
+  ffi=FixedFileInfo(
+    filevers=($($vt[0]), $($vt[1]), $($vt[2]), $($vt[3])),
+    prodvers=($($vt[0]), $($vt[1]), $($vt[2]), $($vt[3])),
+    mask=0x3f,
+    flags=0x0,
+    OS=0x4,
+    fileType=0x1,
+    subtype=0x0,
+    date=(0, 0)
+  ),
+  kids=[
+    StringFileInfo(
+      [
+        StringTable(
+          u'040904B0',
+          [
+            StringStruct(u'CompanyName', u'CH-Perigueux'),
+            StringStruct(u'FileDescription', u'RecoVocale $version'),
+            StringStruct(u'FileVersion', u'$version'),
+            StringStruct(u'InternalName', u'RecoVocale'),
+            StringStruct(u'LegalCopyright', u'CH-Perigueux © 2025'),
+            StringStruct(u'OriginalFilename', u'RecoVocale.exe'),
+            StringStruct(u'ProductName', u'RecoVocale'),
+            StringStruct(u'ProductVersion', u'$version')
+          ]
+        )
+      ]
+    ),
+    VarFileInfo([VarStruct(u'Translation', [1033, 1200])])
+  ]
+)
+"@ | Set-Content -Encoding UTF8 $VerInfoPath
+
 # Mise à jour des versions dans RecoVocale.iss
 $issFile = ".\RecoVocale.iss"
 (Get-Content $issFile) `
