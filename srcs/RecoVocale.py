@@ -122,7 +122,8 @@ class App:
         TODO : voir avec fichier configuration un truc du genre :
                 f"http://{self.config.tensorRT_ip}:{self.config.port}/v1"
         """
-        base_url = "http://10.1.147.252:8000/v1"
+        # base_url = "http://10.1.147.252:8000/v1"
+        base_url = f"http://{self.config.server_ip}:{self.config.port}/v1"
         return base_url
 
     def _heartbeat_server_status(self):

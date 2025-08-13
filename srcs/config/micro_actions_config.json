@@ -71,11 +71,29 @@
             "5": {"class": "StopAction"},
             "1": {"class": "NoAction"},
             "3": {"class": "StopAction"},
-            "4411": {"class": "toggle_start_stop"},
+            "4411": {"class": "Toggle_start_stop"},
             "4409": {"class": "NoAction"}
         },
         "hash" : "0x02",
         "audio": true
+    },
+        "Jabra Link 390": {
+        "vendor_id": "0xb0e",
+        "product_id": "0x2e56",
+        "firmware": "0x0100",
+        "hash": "0x01",
+        "interfaces": [
+            "col01"
+        ],
+        "audio": true,
+        "actions": {
+            "1280": {
+                "class": "Toggle_start_stop"
+            },
+            "1024": {
+                "class": "NoAction"
+            }
+        }
     },
     "Footcontol USB": {
         "vendor_id": "0x911",

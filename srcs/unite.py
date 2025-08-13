@@ -32,6 +32,7 @@ def convertir_unites(texte: str) -> str:
         r"\bcentimètres?\b": "cm",
         r"\bcomprimés?\b": "comp.",
         r"\bminutes?\b": "min",
+        r"\bHB?\b": "Hb",
     }
 
     # Remplacement direct des unités longues par abréviations

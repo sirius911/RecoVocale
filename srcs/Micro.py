@@ -26,7 +26,6 @@ def hash_code(data: list[int]) -> int:
     Raises:
         ValueError: Si `data` a une longueur inférieure à 2.
     """
-
     if len(data) < 2:
         raise ValueError(f"Bad hash_code: {data}")
 
@@ -46,7 +45,6 @@ def hash_code2(data: list[int]) -> int:
     Returns:
         int: Code de hachage calculé.
     """
-
     result = 0
     for i, val in enumerate(data):
         result += val * (i + 1)
@@ -62,7 +60,8 @@ class BaseMic:
     """
 
     def __init__(self, loop, vendor_id, product_id, firmware, actions,
-                 app, micro_name, on_connect_disconnect=None, hash=1):
+                 app, micro_name, on_connect_disconnect=None, hash=1,
+                 interfaces: "list[str] | str | None" = None):
         """
         Initialise le micro HID avec ses paramètres et démarre la surveillance asynchrone.
 
@@ -87,6 +86,7 @@ class BaseMic:
         self.micro_name = micro_name
         self.connected = False
         self.device = []
+        self.interface_filters = interfaces
         self.prev_data = None
         self.call_back = on_connect_disconnect
         # Choix de la fonction de hash selon le modèle
@@ -140,6 +140,17 @@ class BaseMic:
                 product_id=self.product_id
             ).get_devices()
 
+            # Filtrage éventuel par "colXX"
+            def _col_name(dev):
+                try:
+                    return "col" + dev.device_path.lower().split("col")[-1].split("#")[0]
+                except Exception:
+                    return None
+
+            if self.interface_filters and self.interface_filters != "all":
+                wanted = {c.lower() for c in self.interface_filters}
+                self.devices = [d for d in self.devices if (_col_name(d) or "").lower() in wanted]
+            print(f"self.devices = {self.devices}")
             for dev in self.devices:
                 try:
                     dev.open()
@@ -203,11 +214,11 @@ class BaseMic:
             data (list[int]): Tableau de données brutes du micro.
         """
 
-        hascode = str(self.hash_function(data))
+        hashcode = str(self.hash_function(data))
 
-        if hascode in self.actions:
-
-            action_info = self.actions[hascode]
+        if hashcode in self.actions:
+            print(f"hascode = {hashcode} ... trouvé")
+            action_info = self.actions[hashcode]
             action_class = action_info["class"]
             # Instancier dynamiquement la classe d'action
             ActionClass = globals().get(action_class)
@@ -215,16 +226,16 @@ class BaseMic:
                 action = ActionClass(self.app)
                 # print(f"Execution de {action.__name__}")
                 if action.__name__ == 'NoAction':
-                    action.execute(hascode)
+                    action.execute(hashcode)
                 # Vérifier si l'action a un argument
                 elif "arg" in action_info:
                     action.execute(action_info["arg"])
                 else:
                     action.execute()
             else:
-                print(f"Classe d'action {action_class} introuvable pour {str(data)} ({hascode})")
+                print(f"Classe d'action {action_class} introuvable pour {str(data)} ({hashcode})")
         else:
-            print(f"No action found for data: {str(data)} {self.hash_function.__name__} ({hascode})")
+            print(f"No action found for data: {str(data)} {self.hash_function.__name__} ({hashcode})")
 
     async def monitor(self) -> None:
         """
@@ -280,6 +291,7 @@ def Micro(
             firmware_revision = int(micro_info["firmware"], 16)
             actions = micro_info["actions"]
             hash_value = int(micro_info.get("hash", "0x01"), 16)
+            interfaces = micro_info.get("interfaces")  # None / "all" / ["col01", ...]
 
         except Exception as e:
             print(f"Erreur dans la lecture du fichier [{file}]\n{e}\n Il faut mettre à jour le fichier json !")
@@ -294,7 +306,7 @@ def Micro(
 
         if all_hids:
             temp_mic = BaseMic(loop, vendor_id, product_id, firmware_revision,
-                               actions, app, micro_name, call_back, hash=hash_value)
+                               actions, app, micro_name, call_back, hash=hash_value, interfaces=interfaces)
             return temp_mic  # Retourne l'instance de la classe détectée
         else:
             print(f"{micro_name} ... non trouvé")
