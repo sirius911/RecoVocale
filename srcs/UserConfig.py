@@ -33,8 +33,8 @@ class UserConfig:
         print(f"init avec {self.config_file}")
         # Valeurs par défaut
         self.server_ip = "10.1.147.251"
-        self.tensorRT_ip = "10.1.147.252"
-        self.faster_ip = "10.1.147.251"
+        # self.tensorRT_ip = "10.1.147.252"
+        # self.faster_ip = "10.1.147.251"
         self._port = "30000"
         self._service = "Tous"
         self._shortcut = "F3"
@@ -45,7 +45,7 @@ class UserConfig:
         self.y_window = "10"
         self.debug = False
         self.insertions = "insertions.xml"
-        self.nb_repeat = 3
+        # self.nb_repeat = 3
         self.dictionnaire = False
         self._service_port_map = {
             "Tous": "30000",
@@ -73,7 +73,7 @@ class UserConfig:
         config.read(self.config_file)
 
         self.server_ip = config.get('SETTINGS', 'SERVEUR_IP', fallback=self.server_ip)
-        self.tensorRT_ip = config.get('SETTINGS', 'TENSORRT_IP', fallback=self.tensorRT_ip)
+        # self.tensorRT_ip = config.get('SETTINGS', 'TENSORRT_IP', fallback=self.tensorRT_ip)
         self._port = config.get('SETTINGS', 'PORT', fallback=self._port)
         self._service = config.get('SETTINGS', 'SERVICE', fallback=self._service)
         self._shortcut = config.get('SETTINGS', 'SHORTCUT', fallback=self._shortcut)
@@ -87,7 +87,7 @@ class UserConfig:
         self.y_window = config.get('SETTINGS', 'Y_WINDOW', fallback=self.y_window)
         self.debug = (config.get('SETTINGS', 'DEBUG', fallback=self.debug) == 'True')
         self.insertions = config.get('SETTINGS', 'INSERTIONS', fallback=self.insertions)
-        self.nb_repeat = int(config.get('SETTINGS', 'NB_REPEAT', fallback=self.nb_repeat))
+        # self.nb_repeat = int(config.get('SETTINGS', 'NB_REPEAT', fallback=self.nb_repeat))
         self.dictionnaire = (config.get('SETTINGS', 'DICTIONNAIRE', fallback=self.dictionnaire) == 'True')
         self._play_audio = (config.get('SETTINGS', 'PLAY_AUDIO', fallback=self._play_audio) == 'True')
         self._word_space = (config.get('SETTINGS', 'WORD_SPACE', fallback=self._word_space) == 'True')
@@ -106,7 +106,7 @@ class UserConfig:
         config = configparser.ConfigParser()
         config['SETTINGS'] = {
             'SERVEUR_IP': self.server_ip,
-            'TENSORRT_IP': self.tensorRT_ip,
+            # 'TENSORRT_IP': self.tensorRT_ip,
             'PORT': self._port,
             'SERVICE': self._service,
             'SHORTCUT': self._shortcut,
@@ -116,7 +116,7 @@ class UserConfig:
             'Y_WINDOW': root.winfo_y() if root else 0,
             'DEBUG': 'True' if self.debug else 'False',
             'INSERTIONS': self.insertions,
-            'NB_REPEAT': self.nb_repeat,
+            # 'NB_REPEAT': self.nb_repeat,
             'DICTIONNAIRE': self.dictionnaire,
             'PLAY_AUDIO': self._play_audio,
             'WORD_SPACE': self._word_space,

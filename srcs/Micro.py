@@ -150,7 +150,7 @@ class BaseMic:
             if self.interface_filters and self.interface_filters != "all":
                 wanted = {c.lower() for c in self.interface_filters}
                 self.devices = [d for d in self.devices if (_col_name(d) or "").lower() in wanted]
-            print(f"self.devices = {self.devices}")
+            # print(f"self.devices = {self.devices}")
             for dev in self.devices:
                 try:
                     dev.open()
@@ -217,7 +217,7 @@ class BaseMic:
         hashcode = str(self.hash_function(data))
 
         if hashcode in self.actions:
-            print(f"hascode = {hashcode} ... trouvé")
+            # print(f"hascode = {hashcode} ... trouvé")
             action_info = self.actions[hashcode]
             action_class = action_info["class"]
             # Instancier dynamiquement la classe d'action

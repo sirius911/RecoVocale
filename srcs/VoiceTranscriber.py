@@ -21,7 +21,8 @@ class VoiceTranscriber:
         channels: int = 1,
         device: int | None = None,         # index du micro (None = défaut)
         timeout: int = 120,
-        stt_options: dict | None = None
+        stt_options: dict | None = None,
+        initial_prompt: str | None = None
     ):
         self.server_url = server_url.rstrip("/")
         self.api_key = api_key
@@ -43,7 +44,8 @@ class VoiceTranscriber:
         }
         if stt_options:
             self.stt_options.update(stt_options)
-
+        if initial_prompt:
+            self.stt_options["initial_prompt"] = initial_prompt
         self._frames = []
         self._stream = None
         self._lock = threading.Lock()
@@ -61,6 +63,12 @@ class VoiceTranscriber:
         host = u.hostname or "localhost"
         port = u.port or (443 if u.scheme == "https" else 80)
         return host, port
+
+    def set_initial_prompt(self, prompt: str | None):
+        if prompt:
+            self.stt_options["initial_prompt"] = prompt
+        else:
+            self.stt_options.pop("initial_prompt", None)
 
     def check_server_fast(self, timeout_connect=0.2, timeout_read=0.2):
         """
@@ -147,7 +155,7 @@ class VoiceTranscriber:
         )
         self._stream.start()
         self._recording = True
-        print("🎙️ Enregistrement démarré… (start)")
+        # print("🎙️ Enregistrement démarré… (start)")
 
     def stop(self) -> str:
         if not self._recording:
@@ -158,7 +166,7 @@ class VoiceTranscriber:
         self._stream.close()
         self._stream = None
         self._recording = False
-        print("⏹️  Enregistrement arrêté. Préparation…")
+        # print("⏹️  Enregistrement arrêté. Préparation…")
 
         # Concatène les chunks
         with self._lock:

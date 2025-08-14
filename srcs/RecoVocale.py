@@ -75,7 +75,8 @@ class App:
         self.vt = VoiceTranscriber(
             server_url=self.get_vt_server_url(),
             language="fr",
-            device=None
+            device=None,
+            initial_prompt='Rapport médical'
         )
 
         # -------------------check serveur-----------------------
