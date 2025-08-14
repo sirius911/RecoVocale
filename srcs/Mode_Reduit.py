@@ -2,7 +2,7 @@
 import tkinter as tk
 from pynput.keyboard import Key
 from Mode import Mode
-from utils_window import create_buttons
+from utils_window import create_buttons, update_status_bar
 from menus import create_menus
 from info import REDUIT, VERSION
 from utils_keyboard import Simulator
@@ -48,8 +48,8 @@ class Mode_Reduit(Mode):
             self.app.recording = True
             self.on_record_start()
         except Exception as e:
-            self.status_bar.config(text=f"Erreur start micro: {e}",
-                                   bg="lightblue", fg="darkblue", anchor=tk.W)
+            update_status_bar(status_bar=self.status_bar,
+                              text=f"Erreur start micro: {e}", bg="lightblue", fg="darkblue", anchor=tk.W)
 
     def pause(self):
         if not self.app.recording and not self.vt.is_recording:
@@ -58,8 +58,8 @@ class Mode_Reduit(Mode):
         try:
             texte = self.vt.stop()  # transcription finale
         except Exception as e:
-            self.status_bar.config(text=f"Erreur stop/transcription: {e}",
-                                   bg="lightblue", fg="darkblue", anchor=tk.W)
+            update_status_bar(status_bar=self.status_bar,
+                              text=f"Erreur stop/transcription: {e}", bg="lightblue", fg="darkblue", anchor=tk.W)
             texte = ""
         finally:
             self.app.recording = False
@@ -68,8 +68,9 @@ class Mode_Reduit(Mode):
             self.handle_final_text(texte)
         self._update_rec_circle()
         self._update_image_button()
-        self.status_bar.config(text="Transcription terminée",
-                               bg='lightblue', fg='darkblue', anchor=tk.W)
+        update_status_bar(status_bar=self.status_bar,
+                          text="Transcription terminée",
+                          bg='lightblue', fg='darkblue', anchor=tk.W)
 
     def stop(self):
         if self.vt.is_recording or self.app.recording:
@@ -81,8 +82,9 @@ class Mode_Reduit(Mode):
         # UI rouge pendant l'enregistrement
         self._update_rec_circle()
         self._update_image_button()
-        self.status_bar.config(text="* Enregistrement… *",
-                               bg="red", fg="darkblue", anchor=tk.CENTER)
+        update_status_bar(status_bar=self.status_bar,
+                          text="* Enregistrement… *",
+                          bg="red", fg="darkblue", anchor=tk.CENTER)
 
     def handle_final_text(self, text: str):
         # Post-traitements

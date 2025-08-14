@@ -6,7 +6,7 @@ from datetime import datetime
 import tkinter as tk
 
 from Mode_Direct import Mode_Direct
-from utils_window import create_buttons
+from utils_window import create_buttons, update_status_bar
 from menus import create_menus
 from info import APPRENTI
 from sftp_upload import upload_files_to_sftp
@@ -210,20 +210,26 @@ class Mode_Apprenti(Mode_Direct):
         puis réinitialise l'interface pour une nouvelle session d’apprentissage.
         """
 
-        label_service = "" if self.app.config.service.lower() == "tous" else f"[{self.app.config.service}]"
-        transcription = f"{label_service}{self.text_box.get("1.0", tk.END)}"
+        # label_service = "" if self.app.config.service.lower() == "tous" else f"[{self.app.config.service}]"
+        transcription = f"{self.text_box.get("1.0", tk.END)}"
         self.copy_to_clipboard()
         with open(self.temp_txt_file, "w", encoding="utf-8") as fichier_text:
             fichier_text.write(transcription)
         filename = datetime.now().strftime("%Y%m%d%H%M%S%f")[:-4]
 
         print(f"On a deux fichiers : \n\t-wav->{self.temp_wav_file} et \n\t-text->{self.temp_txt_file}")
-        self.status_bar.config(text="Transfert des fichiers...")
+        update_status_bar(self.status_bar, text='Transfert des fichiers...',
+                          bg='lightblue', fg='darkblue', anchor=tk.CENTER)
         result, e = upload_files_to_sftp(audio_file=self.temp_wav_file,
                                          text_file=self.temp_txt_file,
                                          filenames=filename)
-
-        self.status_bar.config(text="Merci.")
+        if result:
+            update_status_bar(self.status_bar, text='Merci',
+                              bg='lightblue', fg='darkblue', anchor=tk.CENTER)
+        else:
+            print(f"Erreur upload_files_to_sftp() : {e}")
+            update_status_bar(self.status_bar, f"Erreur : {e}",
+                              bg="red", fg="lightblue", anchor=tk.W)
         time.sleep(1)
         self.clear_text_box()
         self.pile = ['']

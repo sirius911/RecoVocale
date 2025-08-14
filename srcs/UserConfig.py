@@ -99,7 +99,6 @@ class UserConfig:
         Args:
             root: Fenêtre Tkinter (utilisée pour enregistrer la position de la fenêtre).
         """
-
         if not os.path.exists(self.config_dir):
             os.makedirs(self.config_dir)
 
@@ -112,8 +111,8 @@ class UserConfig:
             'SHORTCUT': self._shortcut,
             'SHORTCUT_STOP': self._shortcut_stop,
             'MODE': self.mode,
-            'X_WINDOW': root.winfo_x() if root else 0,
-            'Y_WINDOW': root.winfo_y() if root else 0,
+            'X_WINDOW': str(int(self.x_window)),
+            'Y_WINDOW': str(int(self.y_window)),
             'DEBUG': 'True' if self.debug else 'False',
             'INSERTIONS': self.insertions,
             # 'NB_REPEAT': self.nb_repeat,

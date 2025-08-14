@@ -67,7 +67,17 @@ class Mode:
         self.root.resizable(self.mode.resizable, self.mode.resizable)
         self.root.attributes("-topmost", self.mode.topmost)
         self.root.geometry(f"{self.mode.window_width}x{self.mode.window_height}+" +
-                           f"{self.app.config.x_window}+{self.app.config.y_window}")
+                           f"{int(self.app.config.x_window)}+{int(self.app.config.y_window)}")
+        self.root.update_idletasks()
+
+        # Vérification de la position réelle
+        rx, ry = self.root.winfo_rootx(), self.root.winfo_rooty()
+        cx, cy = int(self.app.config.x_window), int(self.app.config.y_window)
+        if (rx, ry) != (cx, cy):
+            self.root.after(100, lambda: self.root.geometry(
+                f"{self.mode.window_width}x{self.mode.window_height}+{cx}+{cy}"
+            ))
+
         if self.mode == REDUIT:
             self.root.title(f"RV v{VERSION}")
         else:
@@ -99,7 +109,7 @@ class Mode:
             self.on_record_start()
         except Exception as e:
             update_status_bar(self.status_bar, f"Erreur start micro: {e}",
-                              bg="lightblue", fg="darkblue", anchor=tk.W)
+                              bg="red", fg="lightblue", anchor=tk.W)
 
     def pause(self) -> None:
         if not self.app.recording and not self.vt.is_recording:

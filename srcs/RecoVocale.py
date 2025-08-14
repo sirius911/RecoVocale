@@ -183,8 +183,8 @@ class App:
         self.config.shortcut = self.shortcut_manager.keyboard_shortcut
         self.config.shortcut_stop = self.shortcut_manager.stop_keyboard_shortcut
         self.config.mode = self.current_mode.name()
-        self.config.x_window = self.root.winfo_rootx()
-        self.config.y_window = self.root.winfo_rooty()
+        self.config.x_window = self.root.winfo_x()
+        self.config.y_window = self.root.winfo_y()
         self.config.save_config(self.root)
 
         # 4) vider la file UI pour éviter les callbacks sur des widgets détruits
@@ -356,9 +356,11 @@ def start_loop(loop: asyncio.AbstractEventLoop) -> None:
     loop.run_forever()
 
 # def on_resize(event):
-#         width = event.width
-#         height = event.height
-#         print(f"Ma fenêtre Tkinter - Dimensions: {width}x{height}")
+#     width = event.width
+#     height = event.height
+#     x = root.winfo_x()
+#     y = root.winfo_y()
+#     print(f"Ma fenêtre Tkinter - Dimensions: {width}x{height} - position ({x}, {y})")
 
 
 def show_drop_overlay(app: App) -> None:
