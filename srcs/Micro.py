@@ -7,8 +7,12 @@ from Actions import (  # noqa: F401
     Clear, Toggle_start_stop, Keyboard, Copie_clipboard, CopierColler, Attendre, Run
 )
 from typing import Optional, Callable
-
+import time
 from utils_window import resource_path, get_config_path
+from queue_manager import UI_QUEUE
+
+
+OPENED_HID_PATHS: set[str] = set()
 
 
 def hash_code(data: list[int]) -> int:
@@ -61,7 +65,10 @@ class BaseMic:
 
     def __init__(self, loop, vendor_id, product_id, firmware, actions,
                  app, micro_name, on_connect_disconnect=None, hash=1,
-                 interfaces: "list[str] | str | None" = None):
+                 interfaces: "list[str] | str | None" = None,
+                 settle_ms: int = 1500,
+                 required_prefix: "list[int] | list[list[int]] | None" = None):
+
         """
         Initialise le micro HID avec ses paramètres et démarre la surveillance asynchrone.
 
@@ -85,10 +92,17 @@ class BaseMic:
         self.loop = loop
         self.micro_name = micro_name
         self.connected = False
-        self.device = []
+        self.devices = []
         self.interface_filters = interfaces
         self.prev_data = None
         self.call_back = on_connect_disconnect
+        self._opened_paths: list[str] = []
+
+        # ---- anti-bruit de reconnexion ----
+        self.required_prefix = required_prefix      # ex: [0,129] ; None = pas de filtre
+        self.settle_ms = int(settle_ms)          # durée d’attente après (re)connexion
+        self._settle_until = 0.0                 # timestamp (monotonic) fin d’attente
+
         # Choix de la fonction de hash selon le modèle
         if hash == 2:
             self.hash_function = hash_code2  # nouvelle méthode
@@ -97,6 +111,13 @@ class BaseMic:
 
         # Démarre la coroutine monitor dans une tâche
         asyncio.run_coroutine_threadsafe(self.monitor(), self.loop)
+
+    def _safe_ui(self, fn: Callable[[], None]) -> None:
+        """Poste une fonction UI dans la file pour exécution dans le thread Tk."""
+        try:
+            UI_QUEUE.put(fn)
+        except Exception:
+            pass
 
     async def check_connection(self) -> None:
         """
@@ -120,45 +141,75 @@ class BaseMic:
                 self.devices = all_hids  # ← stocke toutes les interfaces
                 self.connected = True
                 self.connect()
+                if self.call_back:
+                    self._safe_ui(self.call_back)
         else:
             if self.connected:
                 self.devices = []
                 self.connected = False
                 self.disconnect()
                 print(f"{self.__class__.__name__} non trouvé. En attente de connexion...")
-
-        self.call_back()
+                if self.call_back:
+                    self._safe_ui(self.call_back)
 
     def connect(self) -> None:
         """
         Ouvre les interfaces HID disponibles et associe un gestionnaire de données à chaque interface.
         """
+        # Fenêtre d’attente après (re)connexion
+        now = time.monotonic()
+        self._settle_until = now + (self.settle_ms / 1000.0)
+        self.prev_data = None
+        print(f"{self.micro_name} → initialisation du micro… (~{self.settle_ms} ms)")
 
         if self.connected:
-            self.devices = hid.HidDeviceFilter(
+            devices = self.devices or hid.HidDeviceFilter(
                 vendor_id=self.vendor_id,
                 product_id=self.product_id
             ).get_devices()
+            self.devices = devices
 
             # Filtrage éventuel par "colXX"
             def _col_name(dev):
                 try:
-                    return "col" + dev.device_path.lower().split("col")[-1].split("#")[0]
+                    path = (dev.device_path or "").lower()
+                    if "col" in path:
+                        return "col" + path.split("col")[-1].split("#")[0]
+                    return "root"
                 except Exception:
-                    return None
+                    return "root"
 
             if self.interface_filters and self.interface_filters != "all":
                 wanted = {c.lower() for c in self.interface_filters}
                 self.devices = [d for d in self.devices if (_col_name(d) or "").lower() in wanted]
-            # print(f"self.devices = {self.devices}")
-            for dev in self.devices:
-                try:
-                    dev.open()
-                    dev.set_raw_data_handler(self.on_data_handler)
-                    col_name = "col" + dev.device_path.lower().split("col")[-1].split("#")[0]
-                    print(f"{self.micro_name} → Interface HID activée : {dev.product_name} | " +
-                          f"Serial: {dev.serial_number or 'N/A'} | Interface: {col_name}")
 
+            for dev in self.devices:
+                self.prev_data = None
+
+                # --- verrou global pour éviter les doublons d’ouverture ---
+                path = getattr(dev, "device_path", "") or ""
+                norm_path = path.lower()
+                if norm_path and norm_path in OPENED_HID_PATHS:
+                    # Déjà ouverte par un autre watcher → on la saute
+                    # (facultatif) décommente si tu veux voir quand ça arrive :
+                    print(f"{self.micro_name} → interface déjà ouverte ailleurs, on saute: {norm_path}")
+                    continue
+
+                try:
+                    try:
+                        dev.open(shared=True)
+                    except TypeError:
+                        dev.open()
+
+                    dev.set_raw_data_handler(self.on_data_handler)
+
+                    if norm_path:
+                        OPENED_HID_PATHS.add(norm_path)
+                        self._opened_paths.append(norm_path)
+
+                    col_name = _col_name(dev)
+                    print(f"{self.micro_name} → Interface HID activée : {dev.product_name} | "
+                          f"Serial: {dev.serial_number or 'N/A'} | Interface: {col_name}")
                 except Exception as e:
                     print(f"Erreur ouverture interface : {e}")
 
@@ -173,6 +224,15 @@ class BaseMic:
             except Exception:
                 pass
         self.devices = []
+        self.prev_data = None
+
+        # Libère les chemins ouverts par CE watcher
+        for p in self._opened_paths:
+            try:
+                OPENED_HID_PATHS.discard(p)
+            except Exception:
+                pass
+        self._opened_paths.clear()
 
     def is_connected(self) -> bool:
         """
@@ -195,47 +255,58 @@ class BaseMic:
         self.app = mode
 
     def on_data_handler(self, data: list[int]) -> None:
-        """
-        Appelé automatiquement lorsqu'une nouvelle donnée HID est reçue.
+        # 1) Pendant la fenêtre d’attente “settle”, on ignore absolument tout (zéro action, zéro log)
+        if time.monotonic() < self._settle_until:
+            return
 
-        Args:
-            data (list[int]): Tableau de données HID.
-        """
+        # 2) Filtre par préfixe (accepte 1 ou N préfixes)
+        if self.required_prefix:
+            prefixes = self.required_prefix
+            if isinstance(prefixes, list) and prefixes and isinstance(prefixes[0], int):
+                prefixes = [prefixes]  # normalise: [0,129] -> [[0,129]]
+            if not any(len(data) >= len(pref) and data[:len(pref)] == pref for pref in prefixes):
+                return
 
-        if data != self.prev_data:
-            self.prev_data = data
-            self.handle_data(data)
+        # 3) Anti-duplication brute
+        if data == self.prev_data:
+            return
+        self.prev_data = data
+
+        # 4) Envoi au résolveur d'actions
+        self.handle_data(data)
 
     def handle_data(self, data: list[int]) -> None:
-        """
-        Traite les données HID et déclenche l'action associée si un code de hachage est reconnu.
+        # Si on est encore en "settle", on ne loggue rien et on ne déclenche rien
+        if time.monotonic() < getattr(self, "_settle_until", 0.0):
+            return
 
-        Args:
-            data (list[int]): Tableau de données brutes du micro.
-        """
+        # hash en INT pour la logique
+        try:
+            int_code = self.hash_function(data)
+        except Exception:
+            return
 
-        hashcode = str(self.hash_function(data))
+        # lookup en STR dans le mapping JSON
+        action_info = self.actions.get(str(int_code))
+        if not action_info:
+            # (option) commenter pour silence total :
+            print(f"No action found for data: {data} hash_code ({int_code})")
+            return
 
-        if hashcode in self.actions:
-            # print(f"hascode = {hashcode} ... trouvé")
-            action_info = self.actions[hashcode]
-            action_class = action_info["class"]
-            # Instancier dynamiquement la classe d'action
-            ActionClass = globals().get(action_class)
-            if ActionClass:
-                action = ActionClass(self.app)
-                # print(f"Execution de {action.__name__}")
-                if action.__name__ == 'NoAction':
-                    action.execute(hashcode)
-                # Vérifier si l'action a un argument
-                elif "arg" in action_info:
-                    action.execute(action_info["arg"])
-                else:
-                    action.execute()
-            else:
-                print(f"Classe d'action {action_class} introuvable pour {str(data)} ({hashcode})")
+        action_class = action_info.get("class")
+        ActionClass = globals().get(action_class)
+        if not ActionClass:
+            # print(f"Classe d'action {action_class} introuvable pour {str(data)} ({int_code})")
+            return
+
+        action = ActionClass(self.app)
+        # print(f"Execution de {ActionClass.__name__}")
+        if ActionClass.__name__ == 'NoAction':
+            action.execute(int_code)
+        elif "arg" in action_info:
+            action.execute(action_info["arg"])
         else:
-            print(f"No action found for data: {str(data)} {self.hash_function.__name__} ({hashcode})")
+            action.execute()
 
     async def monitor(self) -> None:
         """
@@ -243,8 +314,35 @@ class BaseMic:
         """
 
         while True:
-            await self.check_connection()
-            await asyncio.sleep(5)
+            try:
+                await self.check_connection()
+            except Exception as e:
+                print(f"[monitor] erreur: {e}")   
+            await asyncio.sleep(1 if not self.connected else 5)
+
+
+class MultiMic:
+    def __init__(self, mics: list[BaseMic]):
+        self.mics = mics
+
+    def is_connected(self) -> bool:
+        return any(m.is_connected() for m in self.mics)
+
+    def change_mode(self, mode) -> None:
+        for m in self.mics:
+            m.change_mode(mode)
+
+    def disconnect(self) -> None:
+        for m in self.mics:
+            try:
+                m.disconnect()
+            except Exception:
+                pass
+
+    @property
+    def micro_name(self) -> str:
+        connected = [m.micro_name for m in self.mics if m.is_connected()]
+        return connected[0] if connected else "Aucun"
 
 
 def Micro(
@@ -253,22 +351,14 @@ def Micro(
     call_back: Callable[[], None]
 ) -> Optional[BaseMic]:
     """
-    Initialise et retourne une instance de `BaseMic` si un micro compatible est détecté.
-
-    Lit la configuration JSON des micros autorisés et leur associe les actions définies.
-
-    Args:
-        loop: Boucle asyncio utilisée pour la surveillance du micro.
-        app: Instance de l'application qui exécutera les actions.
-        call_back: Fonction appelée lors des événements de connexion/déconnexion.
-
-    Returns:
-        BaseMic | None: Instance de BaseMic si un micro est trouvé, sinon None.
+    Crée UN watcher par entrée de config (spécifique ET/OU générique).
+    Si plusieurs watchers sont créés, on retourne un MultiMic qui les agrège.
     """
 
     # Charger le fichier JSON depuis le répertoire utilisateur
     config_path = get_config_path("micro_actions_config.json")
-    # Vérifier si le fichier de config existe dans %APPDATA%, sinon le copier depuis le package
+
+    # Copier la config par défaut si absente
     if not os.path.exists(config_path):
         default_config_path = resource_path("config/micro_actions_config.json")
         print(f"Tentative de copie de la configuration par défaut depuis : {default_config_path}")
@@ -280,35 +370,82 @@ def Micro(
         except FileNotFoundError:
             print(f"Le fichier de configuration par défaut est introuvable : {default_config_path}")
             raise
+
     print(f"lecture du fichier de configuration : {config_path}")
     with open(config_path, "r") as file:
         config = json.load(file)
+
+    # Normalise les entrées et crée un watcher pour CHACUNE (spécifique + générique)
+    watchers = []
+    seen = set()  # pour éviter exacts doublons (vid,pid,fw,interfaces,hash)
+
     for micro_name, micro_info in config.items():
-        # Convertir les vendor_id, product_id et firmwarehexadécimaux en entiers
         try:
-            vendor_id = int(micro_info["vendor_id"], 16)
-            product_id = int(micro_info["product_id"], 16)
-            firmware_revision = int(micro_info["firmware"], 16)
+            vid = int(micro_info["vendor_id"], 16)
+            pid = int(micro_info["product_id"], 16)
+            fw = int(micro_info["firmware"], 16)      # 0x0000 => générique (pas de filtre version)
             actions = micro_info["actions"]
             hash_value = int(micro_info.get("hash", "0x01"), 16)
             interfaces = micro_info.get("interfaces")  # None / "all" / ["col01", ...]
+            settle_ms = int(micro_info.get("settle_ms", 1500))
 
+            # -- normalisation robuste de required_prefix --
+            rp = micro_info.get("required_prefix", None)
+
+            def _normalize_prefixes(rp_val):
+                # Autorise:
+                #  - None
+                #  - [0, 129] (liste plate -> un seul préfixe)
+                #  - [[0, 129], [0, 128]] (liste de préfixes)
+                #  - "[0,129]" ou "[[0,129],[0,128]]" (chaîne -> on essaie d'évaluer proprement)
+                if rp_val is None:
+                    return None
+                if isinstance(rp_val, str):
+                    s = rp_val.strip()
+                    # essaye JSON-like
+                    try:
+                        import ast
+                        val = ast.literal_eval(s)
+                    except Exception:
+                        # tolère "0,129" -> [0,129]
+                        parts = [p.strip() for p in s.split(",") if p.strip()]
+                        val = [int(p) for p in parts]
+                    rp_val = val
+
+                if isinstance(rp_val, list):
+                    # liste plate -> un seul préfixe
+                    if all(isinstance(x, int) for x in rp_val):
+                        return [rp_val]
+                    # liste de listes -> plusieurs préfixes
+                    if all(isinstance(x, list) for x in rp_val):
+                        return [[int(y) for y in x] for x in rp_val]
+                # sinon on abandonne le filtre
+                return None
+
+            required_prefix = _normalize_prefixes(rp)
         except Exception as e:
             print(f"Erreur dans la lecture du fichier [{file}]\n{e}\n Il faut mettre à jour le fichier json !")
             return None
 
-        if firmware_revision > 0:
-            # si pas de firmware c'est que l'on prend le speech Mike generique
-            all_hids = hid.HidDeviceFilter(vendor_id=vendor_id, product_id=product_id,
-                                           version_number=firmware_revision).get_devices()
-        else:
-            all_hids = hid.HidDeviceFilter(vendor_id=vendor_id, product_id=product_id).get_devices()
+        key = (vid, pid, fw, str(interfaces), hash_value)
+        if key in seen:
+            continue
+        seen.add(key)
 
-        if all_hids:
-            temp_mic = BaseMic(loop, vendor_id, product_id, firmware_revision,
-                               actions, app, micro_name, call_back, hash=hash_value, interfaces=interfaces)
-            return temp_mic  # Retourne l'instance de la classe détectée
-        else:
-            print(f"{micro_name} ... non trouvé")
+        # Crée le watcher immédiatement : le hot-plug sera géré par monitor()/check_connection()
+        watcher = BaseMic(
+            loop, vid, pid, fw,
+            actions, app, micro_name,
+            call_back, hash=hash_value,
+            interfaces=interfaces,
+            settle_ms=settle_ms,
+            required_prefix=required_prefix
+        )
+        watchers.append(watcher)
 
-    return None  # Aucun micro compatible trouvé
+    if not watchers:
+        return None
+    if len(watchers) == 1:
+        return watchers[0]
+    # Plusieurs modèles configurés → on agrège
+    return MultiMic(watchers)

@@ -116,6 +116,27 @@ class App:
         # #---------------------------MICRO----------------------------
         # Initialize the microphone
         self.mic = Micro(loop=self.loop, app=self.current_mode, call_back=self.update)
+
+        # Lance l'auto-découverte / auto-recréation du micro
+        async def _mic_autodiscovery():
+            # fréquence rapide seulement si aucun watcher n'existe
+            while not getattr(self, "shutting_down", False):
+                need_scan = (self.mic is None)
+                if need_scan:
+                    print("[AutoMic] scan…")
+                    try:
+                        new_mic = Micro(loop=self.loop, app=self.current_mode, call_back=self.update)
+                        if new_mic:
+                            self.mic = new_mic
+                            # update visuelle quand on vient d’en trouver un
+                            UI_QUEUE.put(self.update)
+                    except Exception as e:
+                        print(f"Auto-découverte micro: {e}")
+                await asyncio.sleep(2 if need_scan else 10)
+
+        # planifie la coroutine sur la boucle asyncio dédiée
+        asyncio.run_coroutine_threadsafe(_mic_autodiscovery(), self.loop)
+
         self.info()
 
     def get_vt_server_url(self) -> str:
@@ -314,9 +335,6 @@ class App:
 
             self.console_debug.append_status_with_format("Fichier des insertions : ", font_style="italic")
             self.console_debug.append_status_with_format(f"{get_config_path(self.config.insertions)}\n", color="green")
-
-            self.console_debug.append_status_with_format("Nb répétitions : ", font_style="italic")
-            self.console_debug.append_status_with_format(f"{self.config.nb_repeat}", color="green")
 
     def change_shortcut(self) -> None:
         """Permet à l'utilisateur de modifier les raccourcis clavier."""
