@@ -1,3 +1,4 @@
+import collections
 import json
 import os
 import pywinusb.hid as hid
@@ -103,6 +104,14 @@ class BaseMic:
         self.settle_ms = int(settle_ms)          # durée d’attente après (re)connexion
         self._settle_until = 0.0                 # timestamp (monotonic) fin d’attente
 
+        # --- Détection de rafale HID (reprise/initialisation) ---
+        self.resume_burst_window_ms = 500     # élargit un peu la fenêtre
+        self.resume_burst_min_frames = 4      # seuil total plus bas
+        self.resume_burst_codes = {6, 7, 5, 4, 1, 3, 14, 15, 10, 11, 12, 255, 85, 3200, 13113, 83, 0, 8}
+        self.resume_quick_pair_ms = 80        # ⚠️ nouveau : 2 suspects ≤ 80ms => settle immédiat
+        self._burst_times = collections.deque(maxlen=64)
+        self._last_suspect_ts = 0.0           # ⚠️ nouveau
+
         # Choix de la fonction de hash selon le modèle
         if hash == 2:
             self.hash_function = hash_code2  # nouvelle méthode
@@ -111,6 +120,56 @@ class BaseMic:
 
         # Démarre la coroutine monitor dans une tâche
         asyncio.run_coroutine_threadsafe(self.monitor(), self.loop)
+
+    def _maybe_resume_burst(self, int_code: int, now: float) -> bool:
+        """
+        Détecte une rafale HID (reprise/réinit). Retourne True si on arme settle
+        et qu'on doit ignorer la trame courante.
+        Règles:
+        - si 2 trames 'suspectes' arrivent à <= resume_quick_pair_ms -> settle immédiat
+        - sinon, si >= resume_burst_min_frames trames dans resume_burst_window_ms -> settle
+        - si trame 'saine' (non suspecte), on purge le tampon (sortie du mode rafale).
+        """
+        # 1) 'suspect' = code de la liste OU code inconnu (non mappé)
+        suspect = (int_code in self.resume_burst_codes) or (str(int_code) not in self.actions)
+
+        if suspect:
+            # (a) Quick-pair: 2 suspects très rapprochés => settle immédiat
+            if self._last_suspect_ts and ((now - self._last_suspect_ts) * 1000.0 <= self.resume_quick_pair_ms):
+                self._settle_until = time.monotonic() + (self.settle_ms / 1000.0)
+                self.prev_data = None
+                self._burst_times.clear()
+                self._last_suspect_ts = 0.0
+                print(f"{self.micro_name} → rafale HID détectée (pair), stabilisation ~{self.settle_ms} ms")
+                return True
+
+            # (b) Sinon on accumule dans la fenêtre
+            self._last_suspect_ts = now
+            self._burst_times.append(now)
+
+            win_start = now - (self.resume_burst_window_ms / 1000.0)
+            # compte rapide dans la fenêtre
+            n = 0
+            for t in reversed(self._burst_times):
+                if t < win_start:
+                    break
+                n += 1
+
+            if n >= self.resume_burst_min_frames:
+                self._settle_until = time.monotonic() + (self.settle_ms / 1000.0)
+                self.prev_data = None
+                self._burst_times.clear()
+                self._last_suspect_ts = 0.0
+                print(f"{self.micro_name} → rafale HID détectée, stabilisation ~{self.settle_ms} ms")
+                return True
+
+            # sinon, on reste en observation (on ne bloque pas encore)
+            return False
+
+        # 2) Trame 'saine' → on sort du mode rafale
+        self._burst_times.clear()
+        self._last_suspect_ts = 0.0
+        return False
 
     def _safe_ui(self, fn: Callable[[], None]) -> None:
         """Poste une fonction UI dans la file pour exécution dans le thread Tk."""
@@ -272,7 +331,15 @@ class BaseMic:
             return
         self.prev_data = data
 
-        # 4) Envoi au résolveur d'actions
+        # 4) -> DÉTECTION DE RAFALE HID
+        try:
+            int_code = self.hash_function(data)
+        except Exception:
+            return
+        if self._maybe_resume_burst(int_code, time.monotonic()):
+            return  # on vient d’armer settle : on ne traite pas cette trame
+
+        # 5) Envoi au résolveur d'actions
         self.handle_data(data)
 
     def handle_data(self, data: list[int]) -> None:
@@ -300,7 +367,7 @@ class BaseMic:
             return
 
         action = ActionClass(self.app)
-        # print(f"Execution de {ActionClass.__name__}")
+        print(f"[{int_code}]-Execution de {ActionClass.__name__}")
         if ActionClass.__name__ == 'NoAction':
             action.execute(int_code)
         elif "arg" in action_info:
