@@ -1,7 +1,7 @@
 import tkinter as tk
 import tkinter.font as tkFont
 from Mode import Mode
-from utils_window import create_buttons
+from utils_window import create_buttons, update_status_bar
 from menus import create_menus
 from info import DIRECT
 from utils_keyboard import Simulator
@@ -79,12 +79,23 @@ class Mode_Direct(Mode):
         try:
             self.vt.start()
             self.app.recording = True
-            self.text_box.config(state=tk.NORMAL)
-            self.status_bar.config(text="* Enregistrement… *", bg="red", fg="darkblue", anchor=tk.CENTER)
-            self._update_rec_circle()
-            self._update_image_button()
+
+            def _ui_ok():
+                self.text_box.config(state=tk.NORMAL)
+                self.status_bar.config(text="* Enregistrement… *", bg="red", fg="darkblue", anchor=tk.CENTER)
+                self._update_rec_circle()
+                self._update_image_button()
+
+            self.add_to_ui_queue(_ui_ok)
+
         except Exception as e:
-            self.status_bar.config(text=f"Erreur start micro: {e}", bg="lightblue", fg="darkblue", anchor=tk.W)
+            def _ui_err(e):
+                self.status_bar.config(
+                    text=f"Erreur start micro: {e}",
+                    bg="lightblue", fg="darkblue", anchor=tk.W
+                )
+
+            self.add_to_ui_queue(_ui_err, e)
 
     def pause(self):
         if not self.app.recording and not self.vt.is_recording:
@@ -92,8 +103,8 @@ class Mode_Direct(Mode):
         try:
             texte = self.vt.stop()  # transcription finale d’un seul tenant
         except Exception as e:
-            self.status_bar.config(text=f"Erreur stop/transcription: {e}",
-                                   bg="lightblue", fg="darkblue", anchor=tk.W)
+            update_status_bar(status_bar=self.status_bar, text=f"Erreur stop/transcription: {e}",
+                              bg="lightblue", fg="darkblue", anchor=tk.W)
             texte = ""
         finally:
             self.app.recording = False
@@ -103,8 +114,8 @@ class Mode_Direct(Mode):
             self.trash_button.config(state=tk.NORMAL)
         self._update_rec_circle()
         self._update_image_button()
-        self.status_bar.config(text="Segment ajouté",
-                               bg='lightblue', fg='darkblue', anchor=tk.W)
+        update_status_bar(status_bar=self.status_bar, text="Segment ajouté",
+                          bg='lightblue', fg='darkblue', anchor=tk.W)
 
     def stop(self) -> None:
         # Si on utilise VT et qu’on enregistre, faire une pause (récupère et insère)
@@ -115,8 +126,8 @@ class Mode_Direct(Mode):
     def on_record_start(self):
         # UI rouge pendant l’enregistrement
         self.text_box.config(state=tk.NORMAL)
-        self.status_bar.config(text="* Enregistrement… *",
-                               bg="red", fg="darkblue", anchor=tk.CENTER)
+        update_status_bar(status_bar=self.status_bar, text="* Enregistrement… *",
+                          bg='red', fg='darkblue', anchor=tk.CENTER)
 
     def handle_final_text(self, text: str):
         # Post-traitements habituels
