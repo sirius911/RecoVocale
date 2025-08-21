@@ -6,7 +6,7 @@ from utils_window import create_buttons, update_status_bar
 from menus import create_menus
 from info import REDUIT, VERSION
 from utils_keyboard import Simulator
-from Correcteur import intercept, corrige_ponctuation, corriger_texte
+from Correcteur import intercept, corrige_ponctuation
 
 
 class Mode_Reduit(Mode):
@@ -87,11 +87,22 @@ class Mode_Reduit(Mode):
                           bg="red", fg="darkblue", anchor=tk.CENTER)
 
     def handle_final_text(self, text: str):
+        from mydict_corrector import correct_with_dict
+        # --- NOUVEAU : correction via my.dic AVANT intercept() ---
+        try:
+            if self.app.config.dictionnaire:
+                text = correct_with_dict(text)
+        except Exception as e:
+            # on reste robuste : en cas d'erreur, on n'interrompt pas le flux
+            print(f"[mydict_corrector] erreur: {e}")
+
         # Post-traitements
-        txt, _ = intercept(text, self.app.insertions.get())
+        txt, inter = intercept(text, self.app.insertions.get())
+        while inter:
+            txt, inter = intercept(text, self.app.insertions.get())
         txt = corrige_ponctuation(txt)
-        if self.app.config.dictionnaire:
-            txt = corriger_texte(txt)
+        # if self.app.config.dictionnaire:
+        #     txt = corriger_texte(txt)
 
         to_copy = f" {txt}" if self.app.config.word_space else f"{txt} "
 

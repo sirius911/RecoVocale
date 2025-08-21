@@ -1,0 +1,38 @@
+{
+  "lang": "fr_FR",
+  "entries": [
+    {
+      "word": "méthylprednisolone",
+      "from": ["methylprednisolone", "méthyl-prédisolone"],
+      "phonemes": ["m e t i l p ʁ ɛ d n i z ɔ l ɔ n"],
+      "weight": 1.8,
+      "tags": ["médical", "cyrille"]
+    },
+    {
+      "word": "Zyvox",
+      "from": ["zivox", "zivot"],
+      "phonemes": ["z i v ɔ k s"],
+      "weight": 1.5,
+      "tags": ["médical"]
+    },
+    {
+      "word": "Sancare",
+      "from": ["senncaire", "sencaire", "sanker", "sun care", "san care", "suncare"],
+      "phonemes": ["s ɑ̃ k a ʁ"],
+      "weight": 2.0,
+      "tags": ["entreprise", "cyrille"]
+    },
+    {
+      "word": "Dordogne",
+      "from": ["d'orgogne"],
+      "weight": 2.0,
+      "tags": ["general", "cyrille"]
+    },
+    {
+      "word": "Maincare",
+      "from": ["main care", "mencare"],
+      "weight": 2.0,
+      "tags": ["entreprise", "cyrille"]
+    }
+  ]
+}

@@ -1,0 +1,477 @@
+# mydict_editor.py
+from __future__ import annotations
+import json
+import tkinter as tk
+from tkinter import ttk, messagebox
+from typing import List, Dict, Any
+from utils_window import get_config_path
+from mydict_corrector import invalidate_dict_cache
+import unicodedata
+import os
+import sys
+import subprocess
+import shutil
+
+
+# --- phonemizer optionnel ---
+try:
+    from phonemizer import phonemize
+    _HAS_PHONEMIZER = True
+except Exception:
+    _HAS_PHONEMIZER = False
+
+MYDIC_PATH = get_config_path("my.dic")
+# Emplacements standard espeak-ng (MSI Windows)
+ESPEAK_DIR_DEFAULT = r"C:\Program Files\eSpeak NG"
+ESPEAK_EXE_DEFAULT = os.path.join(ESPEAK_DIR_DEFAULT, "espeak-ng.exe")
+ESPEAK_DLL_DEFAULT = os.path.join(ESPEAK_DIR_DEFAULT, "libespeak-ng.dll")
+
+
+def ensure_espeak_env() -> None:
+    """
+    Renseigne les variables d'environnement utiles à phonemizer
+    si espeak-ng est installé dans l'emplacement standard.
+    N'écrase pas ce qui serait déjà défini.
+    """
+    if not os.path.isdir(ESPEAK_DIR_DEFAULT):
+        return
+    os.environ.setdefault("PHONEMIZER_ESPEAK_PATH", ESPEAK_DIR_DEFAULT)   # répertoire OK
+    if os.path.isfile(ESPEAK_DLL_DEFAULT):
+        os.environ.setdefault("PHONEMIZER_ESPEAK_LIBRARY", ESPEAK_DLL_DEFAULT)
+    if os.path.isfile(ESPEAK_EXE_DEFAULT):
+        os.environ.setdefault("ESPEAK_PATH", ESPEAK_EXE_DEFAULT)
+
+
+def _run(cmd: list[str]) -> tuple[int, str]:
+    try:
+        out = subprocess.check_output(cmd, stderr=subprocess.STDOUT, text=True, shell=False)
+        return 0, out.strip()
+    except subprocess.CalledProcessError as e:
+        return e.returncode, (e.output or "").strip()
+    except Exception as e:
+        return -1, str(e)
+
+
+def phonemizer_is_ok(sample: str = "Sancare") -> tuple[bool, str]:
+    """
+    Teste l'appel phonemize() avec backend espeak.
+    Retourne (ok, message).
+    """
+    if not _HAS_PHONEMIZER:
+        return False, "Module phonemizer non installé (pip install phonemizer)."
+    try:
+        res = phonemize(sample, language="fr-fr", backend="espeak", strip=True)
+        return True, f"OK: {res}"
+    except Exception as e:
+        return False, f"KO: {e}"
+
+
+def build_phon_diag() -> str:
+    """
+    Construit un diagnostic texte détaillé : env, détections, versions, test.
+    """
+    lines = []
+    lines.append("=== Diagnostic phonémisation ===")
+    lines.append(f"Python : {sys.version.split()[0]}  ({sys.executable})")
+    lines.append(f"phonemizer installé : {_HAS_PHONEMIZER}")
+    lines.append("")
+    # Variables d'env
+    lines.append("[ENV]")
+    lines.append(f"PHONEMIZER_ESPEAK_PATH   = {os.environ.get('PHONEMIZER_ESPEAK_PATH')}")
+    lines.append(f"PHONEMIZER_ESPEAK_LIBRARY= {os.environ.get('PHONEMIZER_ESPEAK_LIBRARY')}")
+    lines.append(f"ESPEAK_PATH              = {os.environ.get('ESPEAK_PATH')}")
+    lines.append(f"PATH contains eSpeak NG? = {('eSpeak NG' in (os.environ.get('PATH') or ''))}")
+    lines.append("")
+    # which
+    lines.append("[which]")
+    lines.append(f"which('espeak')    = {shutil.which('espeak')}")
+    lines.append(f"which('espeak-ng') = {shutil.which('espeak-ng')}")
+    lines.append("")
+    # versions CLI
+    rc, out = _run(["espeak-ng", "--version"])
+    lines.append("[espeak-ng --version]")
+    lines.append(out or f"(rc={rc})")
+    lines.append("")
+    rc2, out2 = _run(["espeak", "--version"])
+    lines.append("[espeak --version]")
+    lines.append(out2 or f"(rc={rc2})")
+    lines.append("")
+    # test phonemizer
+    ok, msg = phonemizer_is_ok("Sancare")
+    lines.append("[phonemizer test]")
+    lines.append(msg)
+    lines.append("===============================")
+    return "\n".join(lines)
+
+
+def _load_dic() -> Dict[str, Any]:
+    try:
+        with open(MYDIC_PATH, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        data.setdefault("lang", "fr_FR")
+        data.setdefault("entries", [])
+        return data
+    except FileNotFoundError:
+        return {"lang": "fr_FR", "entries": []}
+    except Exception as e:
+        messagebox.showerror("my.dic", f"Erreur lecture {MYDIC_PATH} : {e}")
+        return {"lang": "fr_FR", "entries": []}
+
+
+def _save_dic(data: Dict[str, Any]) -> None:
+    try:
+        with open(MYDIC_PATH, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        # --- NOTIF hot‑reload : invalider le cache du correcteur
+        try:
+            from mydict_corrector import invalidate_dict_cache
+            invalidate_dict_cache()
+        except Exception:
+            pass
+    except Exception as e:
+        messagebox.showerror("my.dic", f"Erreur écriture {MYDIC_PATH} : {e}")
+
+
+def _to_csv(v: Any) -> str:
+    if v is None:
+        return ""
+    if isinstance(v, list):
+        return ", ".join(str(x) for x in v)
+    return str(v)
+
+
+def _from_csv(s: str) -> List[str]:
+    if not s or not s.strip():
+        return []
+    return [x.strip() for x in s.split(",") if x.strip()]
+
+
+def _strip_accents(s: str) -> str:
+    return "".join(c for c in unicodedata.normalize("NFD", s)
+                   if unicodedata.category(c) != "Mn")
+
+
+def _fallback_phonemize_fr(word: str) -> str:
+    """
+    Fallback ultra-léger si phonemizer n'est pas installé.
+    NE PRÉTEND PAS être exact, juste 'pas vide'.
+    """
+    w = _strip_accents(word.lower())
+    # très grossier : encode les nasales et quelques sons courants
+    repl = (
+        ("tion", "sjɔ̃"),
+        ("sion", "zjɔ̃"),
+        ("ain", "ɛ̃"),
+        ("ein", "ɛ̃"),
+        ("ien", "jɛ̃"),
+        ("ienn", "jɛn"),
+        ("an", "ɑ̃"),
+        ("en", "ɑ̃"),
+        ("on", "ɔ̃"),
+        ("in", "ɛ̃"),
+        ("un", "œ̃"),
+        ("gn", "ɲ"),
+        ("ch", "ʃ"),
+        ("ph", "f"),
+        ("th", "t"),
+        ("qu", "k"),
+        ("c", "k"),
+    )
+    for a, b in repl:
+        w = w.replace(a, b)
+    return w
+
+
+def _phonemize_fr_list(items: List[str]) -> List[str]:
+    items = [s.strip() for s in items if s and s.strip()]
+    if not items:
+        return []
+    if _HAS_PHONEMIZER:
+        try:
+            ph = phonemize(items, language="fr-fr", strip=True, njobs=1, backend="espeak")
+            # phonemize() peut renvoyer soit str soit list selon version
+            if isinstance(ph, str):
+                # quand input est list, certaines versions renvoient une string jointe par espaces/nouvelles lignes.
+                # On re-split prudemment par '\n' d'abord, sinon par ' | ' si configuré différemment.
+                parts = [p.strip() for p in ph.split("\n") if p.strip()]
+            else:
+                parts = [p.strip() for p in ph]
+            return parts
+        except Exception as e:
+            print(f"Erreur dans _phonemize_fr_list({items}) : {e}")
+            pass
+    # fallback
+    print("fallback")
+    return [_fallback_phonemize_fr(x) for x in items]
+
+
+class FenetreMyDict(tk.Toplevel):
+    def __init__(self, master: tk.Misc, app=None):
+        super().__init__(master)
+        self.app = app
+        self.title("Dictionnaire personnalisé (my.dic)")
+        self.geometry("780x520")
+        self.resizable(True, True)
+
+        # Désactive le correcteur tant que la fenêtre est ouverte
+        # et sauvegarde l'etat actuel
+        if self.app and hasattr(self.app, "config"):
+            self.ancien_etat_dictionnaire = self.app.config.dictionnaire
+            self.app.config.dictionnaire = False
+            self._set_status("Correction my.dic désactivée (édition du dictionnaire)")
+
+        # --- Auto-setup espeak-ng pour la session (si présent à l'emplacement standard)
+        ensure_espeak_env()
+
+        # Données
+        self.data = _load_dic()
+        self.entries: List[Dict[str, Any]] = self.data.get("entries", [])
+
+        # Flag pour suspendre l'auto-phonémisation pendant les chargements programmatiques
+        self._suspend_auto_phon = False
+
+        # UI
+        self._build_ui()
+        self._load_table()
+
+        # Fermeture propre
+        self.protocol("WM_DELETE_WINDOW", self._on_close)
+
+    def _build_ui(self):
+        # Tableau
+        columns = ("word", "from", "phonemes", "weight", "tags")
+        self.tree = ttk.Treeview(self, columns=columns, show="headings", height=12)
+        self.tree.heading("word", text="word")
+        self.tree.heading("from", text="from (liste)")
+        self.tree.heading("phonemes", text="phonemes (liste)")
+        self.tree.heading("weight", text="weight")
+        self.tree.heading("tags", text="tags (liste)")
+        self.tree.column("word", width=160)
+        self.tree.column("from", width=210)
+        self.tree.column("phonemes", width=170)
+        self.tree.column("weight", width=70, anchor="center")
+        self.tree.column("tags", width=120)
+        self.tree.bind("<<TreeviewSelect>>", self._on_select)
+        self.tree.pack(fill="both", expand=True, padx=8, pady=(8, 4))
+
+        # Form
+        form = ttk.Frame(self)
+        form.pack(fill="x", padx=8, pady=4)
+
+        ttk.Label(form, text="word").grid(row=0, column=0, sticky="w")
+        self.word_var = tk.StringVar()
+        ttk.Entry(form, textvariable=self.word_var, width=30).grid(row=0, column=1, sticky="ew", padx=(6, 16))
+
+        ttk.Label(form, text="from (a,b,c)").grid(row=0, column=2, sticky="w")
+        self.from_var = tk.StringVar()
+        ttk.Entry(form, textvariable=self.from_var, width=30).grid(row=0, column=3, sticky="ew", padx=(6, 16))
+
+        # --- TRACE: auto-maj des phonèmes dès que 'from' change ---
+        def _on_from_changed(*_):
+            if self._suspend_auto_phon:
+                return
+            items = _from_csv(self.from_var.get())
+            ph = _phonemize_fr_list(items)
+            # place la liste de phonèmes alignée (même taille/ordre que 'from')
+            self.phonemes_var.set(", ".join(ph))
+        self.from_var.trace_add("write", _on_from_changed)
+
+        ttk.Label(form, text="phonemes (a,b,c)").grid(row=1, column=0, sticky="w")
+        self.phonemes_var = tk.StringVar()
+        ttk.Entry(form, textvariable=self.phonemes_var, width=30).grid(row=1, column=1, sticky="ew", padx=(6, 16))
+
+        ttk.Label(form, text="weight").grid(row=1, column=2, sticky="w")
+        self.weight_var = tk.StringVar(value="1.0")
+        ttk.Entry(form, textvariable=self.weight_var, width=10).grid(row=1, column=3, sticky="w", padx=(6, 16))
+
+        ttk.Label(form, text="tags (a,b)").grid(row=2, column=0, sticky="w")
+        self.tags_var = tk.StringVar()
+        ttk.Entry(form, textvariable=self.tags_var, width=30).grid(row=2, column=1, sticky="ew", padx=(6, 16))
+
+        for i in range(4):
+            form.grid_columnconfigure(i, weight=1)
+
+        # Boutons
+        btns = ttk.Frame(self)
+        btns.pack(fill="x", padx=8, pady=(4, 8))
+        ttk.Button(btns, text="Ajouter", command=self._add).pack(side="left")
+        ttk.Button(btns, text="Mettre à jour", command=self._update).pack(side="left", padx=6)
+        ttk.Button(btns, text="Supprimer", command=self._delete).pack(side="left")
+        ttk.Button(btns, text="Dupliquer", command=self._duplicate).pack(side="left", padx=6)
+        ttk.Button(btns, text="Enregistrer", command=self._save).pack(side="right")
+        # --- Diagnostic phonémisation
+        ttk.Button(btns, text="Diagnostic phonémisation…",
+                   command=self._open_phon_diag).pack(side="right", padx=(6, 0))
+        ttk.Button(btns, text="Recharger maintenant",
+                   command=lambda: (invalidate_dict_cache(), messagebox.showinfo("my.dic", "Dictionnaire rechargé"))
+                   ).pack(side="right", padx=(6, 0))
+
+        # Label chemin
+        ttk.Label(self, text=f"Fichier : {MYDIC_PATH}").pack(anchor="w", padx=8, pady=(0, 8))
+
+    def _open_phon_diag(self):
+        """Affiche une fenêtre modale avec le diagnostic détaille et un bouton 'Copier'."""
+        txt = build_phon_diag()
+
+        win = tk.Toplevel(self)
+        win.title("Diagnostic phonémisation")
+        win.geometry("800x500")
+        win.transient(self)
+        win.grab_set()
+
+        frm = ttk.Frame(win)
+        frm.pack(fill="both", expand=True, padx=8, pady=8)
+
+        textw = tk.Text(frm, wrap="word")
+        textw.insert("1.0", txt)
+        textw.configure(state="disabled")
+        textw.pack(fill="both", expand=True)
+
+        btns = ttk.Frame(win)
+        btns.pack(fill="x", padx=8, pady=(6, 0))
+        
+        def _copy():
+            try:
+                self.clipboard_clear()
+                self.clipboard_append(txt)
+                messagebox.showinfo("Diagnostic", "Copié dans le presse-papiers ✅")
+            except Exception as e:
+                messagebox.showerror("Diagnostic", f"Impossible de copier : {e}")
+        ttk.Button(btns, text="Copier", command=_copy).pack(side="left")
+        ttk.Button(btns, text="Fermer", command=win.destroy).pack(side="right")
+
+    def _set_status(self, msg: str):
+        try:
+            mode = getattr(self.app, "current_mode", None)
+            if mode and hasattr(mode, "status_bar"):
+                from utils_window import update_status_bar
+                update_status_bar(mode.status_bar, text=msg, bg="lightblue", fg="darkblue", anchor="w")
+        except Exception:
+            pass
+
+    def _load_table(self):
+        for i in self.tree.get_children():
+            self.tree.delete(i)
+        for idx, e in enumerate(self.entries):
+            self.tree.insert(
+                "", "end", iid=str(idx),
+                values=(
+                    e.get("word", ""),
+                    _to_csv(e.get("from") or e.get("aliases") or []),
+                    _to_csv(e.get("phonemes", [])),
+                    e.get("weight", 1.0),
+                    _to_csv(e.get("tags", [])),
+                )
+            )
+
+    def _on_select(self, _evt=None):
+        sel = self.tree.selection()
+        if not sel:
+            return
+        i = int(sel[0])
+        e = self.entries[i]
+        self._suspend_auto_phon = True
+        try:
+            self.word_var.set(e.get("word", ""))
+            self.from_var.set(_to_csv(e.get("from") or e.get("aliases") or []))
+            self.phonemes_var.set(_to_csv(e.get("phonemes", [])))
+            self.weight_var.set(str(e.get("weight", 1.0)))
+            self.tags_var.set(_to_csv(e.get("tags", [])))
+        finally:
+            self._suspend_auto_phon = False
+
+    def _current_entry_from_form(self) -> Dict[str, Any]:
+        word = self.word_var.get().strip()
+        if not word:
+            raise ValueError("Le champ 'word' est obligatoire.")
+        try:
+            weight = float(self.weight_var.get().strip() or "1.0")
+        except ValueError:
+            raise ValueError("Le champ 'weight' doit être un nombre.")
+        from_list = _from_csv(self.from_var.get())
+        ph_list = _from_csv(self.phonemes_var.get())
+
+        # Si tailles différentes ou phonèmes vides -> recalcule pour aligner
+        if len(ph_list) != len(from_list) or (not ph_list and from_list):
+            ph_list = _phonemize_fr_list(from_list)
+            # reflète à l'écran pour transparence
+            self.phonemes_var.set(", ".join(ph_list))
+
+        return {
+            "word": word,
+            "from": from_list,
+            "phonemes": ph_list,
+            "weight": weight,
+            "tags": _from_csv(self.tags_var.get()),
+        }
+
+    def _add(self):
+        try:
+            e = self._current_entry_from_form()
+        except Exception as e:
+            messagebox.showerror("Ajout", str(e))
+            return
+        self.entries.append(e)
+        self._load_table()
+        self._select_last()
+
+    def _update(self):
+        sel = self.tree.selection()
+        if not sel:
+            messagebox.showwarning("Modification", "Sélectionne une entrée.")
+            return
+        i = int(sel[0])
+        try:
+            e = self._current_entry_from_form()
+        except Exception as ex:
+            messagebox.showerror("Modification", str(ex))
+            return
+        self.entries[i] = e
+        self._load_table()
+        self.tree.selection_set(str(i))
+
+    def _delete(self):
+        sel = self.tree.selection()
+        if not sel:
+            return
+        i = int(sel[0])
+        if messagebox.askyesno("Suppression", "Supprimer l'entrée sélectionnée ?"):
+            del self.entries[i]
+            self._load_table()
+            self.word_var.set("")
+            self.from_var.set("")
+            self.phonemes_var.set("")
+            self.weight_var.set("1.0")
+            self.tags_var.set("")
+
+    def _duplicate(self):
+        sel = self.tree.selection()
+        if not sel:
+            return
+        i = int(sel[0])
+        e = dict(self.entries[i])
+        e["word"] = e.get("word", "") + "_copy"
+        self.entries.append(e)
+        self._load_table()
+        self._select_last()
+
+    def _select_last(self):
+        if not self.entries:
+            return
+        last = len(self.entries) - 1
+        self.tree.selection_set(str(last))
+        self.tree.see(str(last))
+
+    def _save(self):
+        self.data["entries"] = self.entries
+        _save_dic(self.data)
+        messagebox.showinfo("my.dic", "Enregistré")
+
+    def _on_close(self):
+        if messagebox.askyesno("Fermer", "Enregistrer les modifications avant de fermer ?"):
+            self._save()
+        if self.app and hasattr(self.app, "config"):
+            self.app.config.dictionnaire = self.ancien_etat_dictionnaire
+            self._set_status("Correction my.dic réactivée" if self.app.config.dictionnaire
+                             else "Correction my.dic désactivée")
+        self.destroy()

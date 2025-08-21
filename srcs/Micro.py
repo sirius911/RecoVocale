@@ -384,7 +384,7 @@ class BaseMic:
             try:
                 await self.check_connection()
             except Exception as e:
-                print(f"[monitor] erreur: {e}")   
+                print(f"[monitor] erreur: {e}")
             await asyncio.sleep(1 if not self.connected else 5)
 
 

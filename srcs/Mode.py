@@ -282,6 +282,23 @@ class Mode:
         if hasattr(self, "text_box") and self.text_box.winfo_exists():
             self.verification_dico()
 
+    def toggle_mydict_corrector(self) -> None:
+        """
+        Active/désactive le correcteur personnalisé (my.dic).
+        """
+        # Par défaut True si l'attribut n'existe pas
+        enabled = bool(self.mydict_var.get())
+        self.app.config.dictionnaire = enabled
+        # setattr(self.app.config, "mydict_enabled", enabled)
+
+    def ouvrir_mydict_editor(self) -> None:
+        """
+        Ouvre la fenêtre d'édition du dictionnaire personnalisé (my.dic).
+        """
+        from mydict_editor import FenetreMyDict
+        # S'assure que l'ouverture se fait dans le thread UI
+        self.add_to_ui_queue(lambda: FenetreMyDict(self.root, app=self.app))
+
     def lance_vlc(self):
         """Ouvre une boîte de dialogue pour choisir un média, puis lance VLC déjà
         configuré pour sortir sur le pipe et commence la lecture."""
