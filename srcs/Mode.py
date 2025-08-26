@@ -3,11 +3,12 @@ import enchant
 import tkinter as tk
 import pygame
 from info import REDUIT, VERSION
-from insertions import FenetreGestion
+from Insertions_editor import FenetreInsertions
 from loger import envoyer_log
 from queue_manager import UI_QUEUE
 from utils_window import update_status_bar, show_messagebox
 from mydict_editor import FenetreMyDict
+from menus import toggle_menu_gestion_fenetre
 
 
 class Mode:
@@ -292,11 +293,13 @@ class Mode:
         Ouvre la fenêtre d'édition du dictionnaire personnalisé (my.dic).
         """
         # S'assure que l'ouverture se fait dans le thread UI
-        def _spawn():
-            self.fenetre_mydict = FenetreMyDict(self.root, app=self.app, termine=self.fermer_mydict_editor)
-            self.fenetre_gestion_ouverte = True
+        if not self.fenetre_gestion_ouverte:
+            def _spawn():
+                self.fenetre_mydict = FenetreMyDict(self.root, app=self.app, termine=self.fermer_mydict_editor)
+                self.fenetre_gestion_ouverte = True
 
-        self.add_to_ui_queue(_spawn)
+            self.add_to_ui_queue(_spawn)
+            toggle_menu_gestion_fenetre(self, tk.DISABLED)
 
     def fermer_mydict_editor(self) -> None:
         """Callback appelé par FenetreMyDict à la fermeture."""
@@ -310,6 +313,7 @@ class Mode:
         finally:
             self.fenetre_mydict = None
             self.fenetre_gestion_ouverte = False
+            toggle_menu_gestion_fenetre(self, tk.NORMAL)
 
     def lance_vlc(self):
         """Ouvre une boîte de dialogue pour choisir un média, puis lance VLC déjà
@@ -354,18 +358,27 @@ class Mode:
         """
 
         if not self.fenetre_gestion_ouverte:
-            self.fenetre_gestion = FenetreGestion(self.root, self.app.insertions, self.fermer_gestion_insertions)
-            self.fenetre_gestion.protocol("WM_DELETE_WINDOW", self.fermer_gestion_insertions)
-            self.fenetre_gestion_ouverte = True
+            def _spawn():
+                self.fenetre_gestion = FenetreInsertions(self.root, insertions_xml=self.app.config.insertions,
+                                                         termine=self.fermer_gestion_insertions)
+                self.fenetre_gestion_ouverte = True
+            self.add_to_ui_queue(_spawn)
+            toggle_menu_gestion_fenetre(self, tk.DISABLED)
 
     def fermer_gestion_insertions(self) -> None:
         """
-        Ferme la fenêtre de gestion des insertions et met à jour son état.
+        Callback appelé par fenetre_gestion.
         """
-
-        if self.fenetre_gestion:
-            self.fenetre_gestion.destroy()
-        self.fenetre_gestion_ouverte = False
+        try:
+            if getattr(self, "fenetre_gestion", None):
+                try:
+                    self.fenetre_gestion.destroy()
+                except Exception as e:
+                    print(f"erreur {e}")
+        finally:
+            self.fenetre_gestion = None
+            self.fenetre_gestion_ouverte = False
+            toggle_menu_gestion_fenetre(self, tk.NORMAL)
 
     def save_text_box(self) -> None:
         pass

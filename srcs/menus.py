@@ -3,6 +3,13 @@ from tkinter import BooleanVar
 from info import DIRECT, REDUIT, APPRENTI, FICHIER
 
 
+def toggle_menu_gestion_fenetre(self, state):
+    def _maj():
+        self.settings_menu.entryconfig("Gestion des Insertions", state=state)
+        self.dico_menu.entryconfig("Gérer le dictionnaire personnalisé…", state=state)
+    self.add_to_ui_queue(_maj)
+
+
 def create_menus(self) -> None:
     """
     Crée la barre de menus principale.

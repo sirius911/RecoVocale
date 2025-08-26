@@ -542,7 +542,7 @@ class FenetreMyDict(tk.Toplevel):
                              else "Correction my.dic désactivée")
         if self.fonction_termine:
             try:
-                self.after(0, self.fonction_termine)
+                self.master.after(0, self.fonction_termine)
             except Exception:
                 pass
 
