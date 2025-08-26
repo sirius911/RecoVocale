@@ -232,11 +232,30 @@ class VoiceTranscriber:
 
         return (out.get("text") or "").strip()
 
-    def transcribe_file(self, file_path: str, language: str = "fr") -> str:
+    def transcribe_file(self, file_path: str, language: str = "fr", max_duration: int = 180) -> str:
         """
         Envoie un fichier audio au serveur et retourne la transcription texte.
         Bloquant : à appeler dans un thread pour ne pas geler l'UI.
+
+        Args:
+            file_path (str): chemin du fichier audio.
+            language (str): langue de transcription.
+            max_duration (int): durée max en secondes autorisée.
+        Raises:
+            ValueError: si le fichier audio est plus long que max_duration.
         """
+        # --- Vérification durée ---
+        try:
+            with wave.open(file_path, "rb") as wf:
+                frames = wf.getnframes()
+                rate = wf.getframerate()
+                duration = frames / float(rate)
+                if duration > max_duration:
+                    raise ValueError(f"Durée fichier {int(duration)}s > limite {max_duration}s")
+        except wave.Error:
+            # si ce n'est pas un wav, ignorer la vérif (ou utiliser pydub pour tous les formats)
+            pass
+
         url = f"{self.server_url}/audio/transcriptions"  # ex: http://ip:port/v1/audio/transcriptions
         filename = os.path.basename(file_path)
         # Déduis un mimetype simple ; le serveur s’en fiche souvent, mais ça aide

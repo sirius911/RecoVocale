@@ -418,13 +418,18 @@ class Mode:
         def worker():
             try:
                 texte = self.vt.transcribe_file(file_path, language="fr")
-            except Exception as e:
-                def _fail(e):
-                    update_status_bar(self.status_bar,
-                                      text=f"Erreur transcription fichier: {e}",
-                                      bg="lightblue", fg="darkblue", anchor=tk.W)
-                self.add_to_ui_queue(_fail, e)
+
+            except ValueError as e:
+                show_messagebox(message_type="warning",
+                                title="Audio trop long !",
+                                message=f"{e}")
                 return
+            except Exception as e:
+                update_status_bar(self.status_bar,
+                                  text=f"Erreur transcription fichier: {e}",
+                                  bg="lightblue", fg="darkblue", anchor=tk.W)
+                return
+
             finally:
                 self.transcription_en_cours = False
                 self.file_source = None
