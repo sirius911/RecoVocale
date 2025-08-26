@@ -1,5 +1,3 @@
-import re
-import string
 import threading
 import enchant
 import tkinter as tk
@@ -9,6 +7,7 @@ from insertions import FenetreGestion
 from loger import envoyer_log
 from queue_manager import UI_QUEUE
 from utils_window import update_status_bar, show_messagebox
+from mydict_editor import FenetreMyDict
 
 
 class Mode:
@@ -279,8 +278,6 @@ class Mode:
 
         # maj de la variable config
         self.app.config.dictionnaire = self.dico_var.get()
-        if hasattr(self, "text_box") and self.text_box.winfo_exists():
-            self.verification_dico()
 
     def toggle_mydict_corrector(self) -> None:
         """
@@ -289,15 +286,30 @@ class Mode:
         # Par défaut True si l'attribut n'existe pas
         enabled = bool(self.mydict_var.get())
         self.app.config.dictionnaire = enabled
-        # setattr(self.app.config, "mydict_enabled", enabled)
 
     def ouvrir_mydict_editor(self) -> None:
         """
         Ouvre la fenêtre d'édition du dictionnaire personnalisé (my.dic).
         """
-        from mydict_editor import FenetreMyDict
         # S'assure que l'ouverture se fait dans le thread UI
-        self.add_to_ui_queue(lambda: FenetreMyDict(self.root, app=self.app))
+        def _spawn():
+            self.fenetre_mydict = FenetreMyDict(self.root, app=self.app, termine=self.fermer_mydict_editor)
+            self.fenetre_gestion_ouverte = True
+
+        self.add_to_ui_queue(_spawn)
+
+    def fermer_mydict_editor(self) -> None:
+        """Callback appelé par FenetreMyDict à la fermeture."""
+        try:
+            # si la fenêtre existe encore (fermeture programmée), on la détruit proprement
+            if getattr(self, "fenetre_mydict", None):
+                try:
+                    self.fenetre_mydict.destroy()
+                except Exception:
+                    pass
+        finally:
+            self.fenetre_mydict = None
+            self.fenetre_gestion_ouverte = False
 
     def lance_vlc(self):
         """Ouvre une boîte de dialogue pour choisir un média, puis lance VLC déjà
@@ -357,144 +369,6 @@ class Mode:
 
     def save_text_box(self) -> None:
         pass
-
-    def verification_dico(self, auto: bool = False) -> None:
-        """
-        Vérifie chaque mot du texte via le dictionnaire et marque les erreurs.
-
-        Args:
-            auto (bool): Si True, remplace automatiquement les mots mal orthographiés
-            quand une seule suggestion est trouvée.
-        """
-        def verify():
-            # efface les marquages précédents
-            self.text_box.tag_remove("incorrect", "1.0", tk.END)
-            if not self.app.config.dictionnaire:
-                return
-
-            contenu = self.text_box.get("1.0", tk.END)
-            # Séparer le contenu en mots
-            # mots = contenu.split()
-            mots = re.findall(r'\b[\w-]+\b', contenu)  # permet de ne pas couper si mot composé (-)
-
-            for mot in mots:
-                # Nettoyer le mot de la ponctuation en début et fin, sans modifier l'original
-                mot_nettoye = mot.strip(string.punctuation)
-                # Vérifier chaque mot
-                if mot_nettoye and not self.dico.check(mot_nettoye):
-                    # Obtenir les suggestions
-                    suggestions = self.dico.suggest(mot_nettoye)
-
-                    # Si une seule suggestion est disponible, remplacer automatiquement le mot
-                    if len(suggestions) == 1 and auto:
-                        correct_mot = suggestions[0]
-                        self.save_text_box()
-                        # Trouver la position exacte du mot dans le Text widget
-                        start_idx = self.text_box.search(mot, "1.0", tk.END)
-                        if not start_idx:
-                            continue
-                        end_idx = f"{start_idx} + {len(mot)}c"
-                        # Remplacer le mot incorrect par le mot correct
-                        self.text_box.delete(start_idx, end_idx)
-                        self.text_box.insert(start_idx, correct_mot)
-                    else:
-                        # Marquer le mot comme incorrect s'il n'y a pas une seule suggestion
-                        start_idx = self.text_box.search(mot, "1.0", tk.END)
-                        if not start_idx:
-                            continue
-                        end_idx = f"{start_idx} + {len(mot)}c"
-                        # print(start_idx, end_idx)
-                        self.text_box.tag_add("incorrect", start_idx, end_idx)
-        self.add_to_ui_queue(verify)
-
-    def show_context_menu(self, event) -> None:
-        """
-        Affiche un menu contextuel de suggestions orthographiques sur clic droit.
-
-        Args:
-            event: Événement de clic droit Tkinter.
-        """
-        def show_menu():
-            # Obtenir la position du clic droit dans le widget Text
-            index = self.text_box.index(f"@{event.x},{event.y}")
-
-            # Obtenir la ligne complète où le clic droit a eu lieu
-            line_start = f"{index.split('.')[0]}.0"
-            line_end = f"{index.split('.')[0]}.end"
-            line_text = self.text_box.get(line_start, line_end)
-
-            # Obtenir la position relative du curseur dans la ligne
-            cursor_pos_in_line = int(index.split('.')[1])
-
-            # Utiliser une regex pour trouver le mot avec un trait d'union sous le curseur
-            # Recherche de mots contenant des lettres, chiffres et traits d'union
-            for match in re.finditer(r'\b[\w-]+\b', line_text):
-                start, end = match.span()
-                if start <= cursor_pos_in_line <= end:
-                    incorrect_word = match.group(0)
-                    word_start = f"{line_start} + {start}c"
-                    word_end = f"{line_start} + {end}c"
-                    break
-            else:
-                return  # Aucun mot trouvé sous le curseur
-
-            # Vérifier si le mot est incorrect et obtenir des suggestions
-            if not self.dico.check(incorrect_word):
-                suggestions = self.dico.suggest(incorrect_word)
-
-                personnalise_suggestions = [
-                    s for s in suggestions if s in self.mots_personnels
-                ]
-                autres_suggestions = [
-                    s for s in suggestions if s not in self.mots_personnels
-                ]
-                suggestions = personnalise_suggestions + autres_suggestions
-
-                # Effacer le menu précédent et ajouter les nouvelles suggestions
-                self.context_menu.delete(0, tk.END)
-                for suggestion in suggestions:
-                    self.context_menu.add_command(
-                        label=suggestion,
-                        command=lambda s=suggestion, ws=word_start, we=word_end: self.replace_word(s, ws, we)
-                    )
-                self.context_menu.add_separator()
-                self.context_menu.add_command(
-                    label="Ajouter au dictionnaire",
-                    command=lambda: self.ajouter_mot_personnalise(incorrect_word)
-                )
-                self.context_menu.post(event.x_root, event.y_root)
-        self.add_to_ui_queue(show_menu)
-
-    def replace_word(self, suggestion: str, word_start: str, word_end: str) -> None:
-        """
-        Remplace un mot dans la textbox par une suggestion.
-
-        Args:
-            suggestion (str): Mot proposé.
-            word_start (str): Position de début dans le widget Text.
-            word_end (str): Position de fin.
-        """
-        def replace():
-            self.save_text_box()
-            # Remplacer le mot dans la text box
-            self.text_box.delete(word_start, word_end)
-            self.text_box.insert(word_start, suggestion)
-            # Retirer le marquage incorrect
-            self.text_box.tag_remove("incorrect", word_start, word_end)
-
-        self.add_to_ui_queue(replace)
-
-    def ajouter_mot_personnalise(self, mot: str) -> None:
-        """
-        Ajoute un mot au dictionnaire personnalisé et relance la vérification.
-
-        Args:
-            mot (str): Le mot à ajouter.
-        """
-
-        self.mots_personnels.add(mot)
-        self.dico.add(mot)
-        self.verification_dico()
 
     def is_ouverte(self) -> bool:
         """

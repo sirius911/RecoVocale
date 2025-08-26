@@ -49,8 +49,8 @@ class App:
             loop (asyncio.AbstractEventLoop): La boucle asyncio utilisée par l'application.
         """
         self.config = UserConfig()
-        self.insertions = GestionnaireInsertion(self.config.insertions)
         self.console_debug = DebugWindow(root)
+        self.insertions = GestionnaireInsertion(self.config.insertions)
         self.debug_window_id = self.console_debug.debug_window.winfo_id()
 
         if self.config.debug:

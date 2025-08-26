@@ -11,14 +11,18 @@ import os
 import sys
 import subprocess
 import shutil
+import struct
 
 
 # --- phonemizer optionnel ---
 try:
     from phonemizer import phonemize
     _HAS_PHONEMIZER = True
-except Exception:
+    _PHONEMIZER_IMPORT_ERR = ""
+except Exception as e:
+    import traceback
     _HAS_PHONEMIZER = False
+    _PHONEMIZER_IMPORT_ERR = "".join(traceback.format_exception_only(type(e), e)).strip()
 
 MYDIC_PATH = get_config_path("my.dic")
 # Emplacements standard espeak-ng (MSI Windows)
@@ -27,19 +31,49 @@ ESPEAK_EXE_DEFAULT = os.path.join(ESPEAK_DIR_DEFAULT, "espeak-ng.exe")
 ESPEAK_DLL_DEFAULT = os.path.join(ESPEAK_DIR_DEFAULT, "libespeak-ng.dll")
 
 
-def ensure_espeak_env() -> None:
+def ensure_espeak_env():
+    r"""
+    Renseigne les variables d'environnement utiles à phonemizer.
+    Priorité :
+      1) espeak-ng livré avec RecoVocale (dans {app}\espeak-ng)
+      2) Installation système (Program Files\eSpeak NG)
     """
-    Renseigne les variables d'environnement utiles à phonemizer
-    si espeak-ng est installé dans l'emplacement standard.
-    N'écrase pas ce qui serait déjà défini.
-    """
-    if not os.path.isdir(ESPEAK_DIR_DEFAULT):
+    base_dir = os.path.dirname(sys.executable) if getattr(sys, "frozen", False) else os.path.dirname(__file__)
+    local_dir = os.path.join(base_dir, "espeak-ng")
+    local_exe = os.path.join(local_dir, "espeak-ng.exe")
+    local_dll = os.path.join(local_dir, "libespeak-ng.dll")
+    local_data = os.path.join(local_dir, "espeak-ng-data")
+
+    if os.path.exists(local_exe) and os.path.exists(local_dll):
+        # --- très important pour Windows 64-bit : aider le loader à trouver les dépendances ---
+        try:
+            os.add_dll_directory(local_dir)  # Python 3.8+
+        except Exception as e:
+            print(f"Erreur dans os.add_dll_directory({local_dir}) : {e}")
+            pass
+
+        os.environ.setdefault("PHONEMIZER_ESPEAK_PATH", local_dir)
+        os.environ.setdefault("PHONEMIZER_ESPEAK_LIBRARY", local_dll)
+        os.environ.setdefault("ESPEAK_PATH", local_exe)
+        if os.path.isdir(local_data):
+            os.environ.setdefault("ESPEAK_DATA_PATH", local_data)
         return
-    os.environ.setdefault("PHONEMIZER_ESPEAK_PATH", ESPEAK_DIR_DEFAULT)   # répertoire OK
-    if os.path.isfile(ESPEAK_DLL_DEFAULT):
-        os.environ.setdefault("PHONEMIZER_ESPEAK_LIBRARY", ESPEAK_DLL_DEFAULT)
-    if os.path.isfile(ESPEAK_EXE_DEFAULT):
-        os.environ.setdefault("ESPEAK_PATH", ESPEAK_EXE_DEFAULT)
+
+    # fallback MSI 64-bit
+    system_dir = r"C:\Program Files\eSpeak NG"
+    exe = os.path.join(system_dir, "espeak-ng.exe")
+    dll = os.path.join(system_dir, "libespeak-ng.dll")
+    data = os.path.join(system_dir, "espeak-ng-data")
+    if os.path.exists(exe) and os.path.exists(dll):
+        try:
+            os.add_dll_directory(system_dir)
+        except Exception:
+            pass
+        os.environ.setdefault("PHONEMIZER_ESPEAK_PATH", system_dir)
+        os.environ.setdefault("PHONEMIZER_ESPEAK_LIBRARY", dll)
+        os.environ.setdefault("ESPEAK_PATH", exe)
+        if os.path.isdir(data):
+            os.environ.setdefault("ESPEAK_DATA_PATH", data)
 
 
 def _run(cmd: list[str]) -> tuple[int, str]:
@@ -70,10 +104,16 @@ def build_phon_diag() -> str:
     """
     Construit un diagnostic texte détaillé : env, détections, versions, test.
     """
+
     lines = []
+    lines.append(f"Process arch : {'64-bit' if struct.calcsize('P') == 8 else '32-bit'}")
+    dllp = os.environ.get('PHONEMIZER_ESPEAK_LIBRARY') or ''
+    lines.append(f"libespeak-ng.dll : {dllp} (exists={os.path.isfile(dllp)})")
     lines.append("=== Diagnostic phonémisation ===")
     lines.append(f"Python : {sys.version.split()[0]}  ({sys.executable})")
     lines.append(f"phonemizer installé : {_HAS_PHONEMIZER}")
+    if not _HAS_PHONEMIZER and _PHONEMIZER_IMPORT_ERR:
+        lines.append(f"phonemizer import error : {_PHONEMIZER_IMPORT_ERR}")
     lines.append("")
     # Variables d'env
     lines.append("[ENV]")
@@ -206,9 +246,10 @@ def _phonemize_fr_list(items: List[str]) -> List[str]:
 
 
 class FenetreMyDict(tk.Toplevel):
-    def __init__(self, master: tk.Misc, app=None):
+    def __init__(self, master: tk.Misc, app=None, termine=None):
         super().__init__(master)
         self.app = app
+        self.fonction_termine = termine
         self.title("Dictionnaire personnalisé (my.dic)")
         self.geometry("780x520")
         self.resizable(True, True)
@@ -236,15 +277,16 @@ class FenetreMyDict(tk.Toplevel):
 
         # Fermeture propre
         self.protocol("WM_DELETE_WINDOW", self._on_close)
+        self.modif = False
 
     def _build_ui(self):
         # Tableau
         columns = ("word", "from", "phonemes", "weight", "tags")
         self.tree = ttk.Treeview(self, columns=columns, show="headings", height=12)
-        self.tree.heading("word", text="word")
-        self.tree.heading("from", text="from (liste)")
-        self.tree.heading("phonemes", text="phonemes (liste)")
-        self.tree.heading("weight", text="weight")
+        self.tree.heading("word", text="Mot")
+        self.tree.heading("from", text="Approximations (liste)")
+        self.tree.heading("phonemes", text="phonèmes (liste)")
+        self.tree.heading("weight", text="Poids")
         self.tree.heading("tags", text="tags (liste)")
         self.tree.column("word", width=160)
         self.tree.column("from", width=210)
@@ -258,11 +300,12 @@ class FenetreMyDict(tk.Toplevel):
         form = ttk.Frame(self)
         form.pack(fill="x", padx=8, pady=4)
 
-        ttk.Label(form, text="word").grid(row=0, column=0, sticky="w")
+        ttk.Label(form, text="Mot").grid(row=0, column=0, sticky="w")
         self.word_var = tk.StringVar()
+        self.word_var.trace_add("write", lambda *_: self._mark_modified())
         ttk.Entry(form, textvariable=self.word_var, width=30).grid(row=0, column=1, sticky="ew", padx=(6, 16))
 
-        ttk.Label(form, text="from (a,b,c)").grid(row=0, column=2, sticky="w")
+        ttk.Label(form, text="Approximations (a,b,c)").grid(row=0, column=2, sticky="w")
         self.from_var = tk.StringVar()
         ttk.Entry(form, textvariable=self.from_var, width=30).grid(row=0, column=3, sticky="ew", padx=(6, 16))
 
@@ -274,18 +317,22 @@ class FenetreMyDict(tk.Toplevel):
             ph = _phonemize_fr_list(items)
             # place la liste de phonèmes alignée (même taille/ordre que 'from')
             self.phonemes_var.set(", ".join(ph))
+            self._mark_modified()
         self.from_var.trace_add("write", _on_from_changed)
 
-        ttk.Label(form, text="phonemes (a,b,c)").grid(row=1, column=0, sticky="w")
+        ttk.Label(form, text="phonèmes (a,b,c)").grid(row=1, column=0, sticky="w")
         self.phonemes_var = tk.StringVar()
-        ttk.Entry(form, textvariable=self.phonemes_var, width=30).grid(row=1, column=1, sticky="ew", padx=(6, 16))
+        ttk.Entry(form, textvariable=self.phonemes_var, width=30, state="readonly")\
+            .grid(row=1, column=1, sticky="ew", padx=(6, 16))
 
-        ttk.Label(form, text="weight").grid(row=1, column=2, sticky="w")
+        ttk.Label(form, text="Poids").grid(row=1, column=2, sticky="w")
         self.weight_var = tk.StringVar(value="1.0")
+        self.weight_var.trace_add("write", lambda *_: self._mark_modified())
         ttk.Entry(form, textvariable=self.weight_var, width=10).grid(row=1, column=3, sticky="w", padx=(6, 16))
 
         ttk.Label(form, text="tags (a,b)").grid(row=2, column=0, sticky="w")
         self.tags_var = tk.StringVar()
+        self.tags_var.trace_add("write", lambda *_: self._mark_modified())
         ttk.Entry(form, textvariable=self.tags_var, width=30).grid(row=2, column=1, sticky="ew", padx=(6, 16))
 
         for i in range(4):
@@ -329,7 +376,7 @@ class FenetreMyDict(tk.Toplevel):
 
         btns = ttk.Frame(win)
         btns.pack(fill="x", padx=8, pady=(6, 0))
-        
+
         def _copy():
             try:
                 self.clipboard_clear()
@@ -414,6 +461,7 @@ class FenetreMyDict(tk.Toplevel):
         self.entries.append(e)
         self._load_table()
         self._select_last()
+        self._mark_modified()
 
     def _update(self):
         sel = self.tree.selection()
@@ -429,6 +477,16 @@ class FenetreMyDict(tk.Toplevel):
         self.entries[i] = e
         self._load_table()
         self.tree.selection_set(str(i))
+        self._mark_modified()
+
+    def _mark_modified(self):
+        if getattr(self, "_suspend_auto_phon", False):
+            return
+        self.modif = True
+        try:
+            self.title("Dictionnaire personnalisé (my.dic) *")  # petit indicateur visuel
+        except Exception:
+            pass
 
     def _delete(self):
         sel = self.tree.selection()
@@ -443,6 +501,7 @@ class FenetreMyDict(tk.Toplevel):
             self.phonemes_var.set("")
             self.weight_var.set("1.0")
             self.tags_var.set("")
+            self._mark_modified()
 
     def _duplicate(self):
         sel = self.tree.selection()
@@ -454,6 +513,7 @@ class FenetreMyDict(tk.Toplevel):
         self.entries.append(e)
         self._load_table()
         self._select_last()
+        self._mark_modified()
 
     def _select_last(self):
         if not self.entries:
@@ -466,12 +526,24 @@ class FenetreMyDict(tk.Toplevel):
         self.data["entries"] = self.entries
         _save_dic(self.data)
         messagebox.showinfo("my.dic", "Enregistré")
+        self.modif = False
+        try:
+            self.title("Dictionnaire personnalisé (my.dic)")
+        except Exception:
+            pass
 
     def _on_close(self):
-        if messagebox.askyesno("Fermer", "Enregistrer les modifications avant de fermer ?"):
-            self._save()
+        if self.modif:
+            if messagebox.askyesno("Fermer", "Enregistrer les modifications avant de fermer ?"):
+                self._save()
         if self.app and hasattr(self.app, "config"):
             self.app.config.dictionnaire = self.ancien_etat_dictionnaire
             self._set_status("Correction my.dic réactivée" if self.app.config.dictionnaire
                              else "Correction my.dic désactivée")
+        if self.fonction_termine:
+            try:
+                self.after(0, self.fonction_termine)
+            except Exception:
+                pass
+
         self.destroy()

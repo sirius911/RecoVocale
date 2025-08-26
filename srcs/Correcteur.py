@@ -1,10 +1,13 @@
 import re
 from datetime import datetime
-import string
-
-import enchant
-
 from unite import convertir_unites
+from mydict_corrector import correct_with_dict
+
+PATTERN_INSERER = (
+    r"\bins[éèêe]r(?:é|er|ez|ée|ées|és)\b"   # flexions d'« Insérer » (non capturant)
+    r"\s*:?\s*"                              # espaces / « : » optionnel
+    r"(?P<contenu>[^\n]*)"                   # contenu jusqu'au saut de ligne
+)
 
 
 def int_to_roman(number: int) -> str:
@@ -99,105 +102,52 @@ def remplacement_special(text: str):
     return retour, _insertion
 
 
-# def remplacement_special(text: str):
-#     """
-#     Traite les commandes spéciales comme "date" ou "chiffre romain".
-
-#     Args:
-#         text (str): Le texte après "insérer".
-
-#     Returns:
-#         str | None: Le remplacement à effectuer, ou None si aucun remplacement.
-#     """
-#     retour = None
-#     if text.lower() == "date":
-#         print("[Insérer][DATE]")
-#         return datetime.now().strftime("%d/%m/%Y"), True
-#     retour, _insertion = detecter_chiffre_roman(text)
-#     return retour, _insertion
-
-
-def remplacer_avec_dictionnaire(texte: str, pattern: str, dico_insertion: dict[str, str]) -> str:
-    """
-    Remplace les expressions dans le texte selon un pattern et un dictionnaire d'insertions.
-
-    Args:
-        texte (str): Le texte source contenant les expressions à remplacer.
-        pattern (str): Le motif regex pour détecter les expressions de type "insérer X".
-        dico_insertion (dict[str, str]): Un dictionnaire contenant des expressions regex comme clés
-        et leurs remplacements.
-
-    Returns:
-        str: Le texte modifié avec les remplacements effectués.
-    """
+def remplacer_avec_dictionnaire(
+    texte: str, pattern: str, dico_insertion: dict[str, str]
+) -> tuple[str, bool]:
     insertion = False
 
     def remplacement(match: re.Match) -> str:
-        """
-        Fonction interne utilisée pour remplacer les occurrences trouvées par le pattern.
+        nonlocal insertion
+        # ⚠️ On lit le groupe NOMMÉ
+        contenu = match.group("contenu").rstrip("\r").strip()
+        print(f"[Insérer] [{contenu}]", end="")
 
-        Args:
-            match (re.Match): L'objet regex contenant l'expression "insérer X".
-
-        Returns:
-            str: Le texte remplacé ou original si rien ne correspond.
-            insertion: bool True si une insertion a eu lieu
-        """
-        nonlocal insertion  # Permet de modifier la variable `insertion` dans la fonction englobante
-        # Capture le texte après "insérer" (ce qui inclut plusieurs mots possibles)
-        texte_suivant = match.group(2).strip()
-        print(f"[Insérer] [{texte_suivant}]", end="")
-        retour, insertion = remplacement_special(texte_suivant)
-        if retour is not None:
+        # Commandes spéciales d'abord (ex: date, chiffre romain…)
+        retour, a_fait = remplacement_special(contenu)
+        if retour is not None and a_fait:
             insertion = True
+            print(f" -> spécial [{retour}]")
             return retour
-        # Vérifie chaque regex du dictionnaire pour voir si elle correspond à une partie du texte suivant
-        for regex, remplacement in dico_insertion.items():
-            if re.search(regex, texte_suivant, flags=re.IGNORECASE):
-                print(f" -> trouvé [{remplacement}]")
-                insertion = True
-                return remplacement
 
-        # Si aucune correspondance, on laisse tel quel
+        # Puis dictionnaire (regex -> remplacement)
+        for regex, subst in dico_insertion.items():
+            if re.search(regex, contenu, flags=re.IGNORECASE):
+                print(f" -> trouvé [{subst}]")
+                insertion = True
+                return subst
+
+        # Rien trouvé : on laisse tel quel
         print(" -> non trouvé")
         return match.group(0)
-    # Utilise re.sub pour remplacer les occurrences du pattern
-    return re.sub(pattern, remplacement, texte, flags=re.IGNORECASE), insertion
+
+    nouveau = re.sub(pattern, remplacement, texte, flags=re.IGNORECASE | re.MULTILINE)
+    return nouveau, insertion
 
 
-def insertion(phrase: str, dico_insertion: dict[str, str]) -> str | bool:
-    """
-    Applique la logique d'insertion vocale à une phrase.
-
-    Args:
-        phrase (str): La phrase à analyser.
-        dico_insertion (dict[str, str]): Le dictionnaire d'insertions vocales à utiliser.
-
-    Returns:
-        str: La phrase modifiée après traitement.
-        _insertion: bool True si une insertion a eu lieu.
-    """
-    # pattern = r"\bins[éèêe]r(é|ez|er|ée|ées|és)[,. ]+([\w\s]+)"
-    pattern = (
-        r"\bins[éèêe]r(é|er|ez|ée|ées|és)\b"   # ← parenthèses CAPTURANTES
-        r"\s*:?\s*"
-        r"([^\n]*?)"                           # 2ᵉ groupe = texte à insérer
-        r"(?=\bins[éèêe]r(?:é|er|ez|ée|ées|és)\b|$)"
-    )
-
+def insertion(phrase: str, dico_insertion: dict[str, str]) -> tuple[str, bool]:
     insertion_effectuee = False
 
     while True:
-        texte_apres, a_change = remplacer_avec_dictionnaire(phrase, pattern, dico_insertion)
+        texte_apres, a_change = remplacer_avec_dictionnaire(
+            phrase, PATTERN_INSERER, dico_insertion
+        )
         insertion_effectuee = insertion_effectuee or a_change
-        if not a_change:          # plus aucune nouvelle insertion : on s’arrête
+        if not a_change:
             break
-        phrase = texte_apres       # on continue de traiter la nouvelle phrase
+        phrase = texte_apres
 
     return texte_apres, insertion_effectuee
-    # nouveau_texte, _insertion = remplacer_avec_dictionnaire(phrase, pattern, dico_insertion)
-    # # print(f"nouvelle phrase = {nouveau_texte}")
-    # return nouveau_texte, _insertion
 
 
 def proteger_points_speciaux(phrases: str) -> str:
@@ -348,50 +298,6 @@ def intercept(phrases: str, dico_insertion: dict[str, str]):
     return resultat, _insertion
 
 
-def corriger_texte(texte: str) -> str:
-    """
-    Corrige automatiquement les mots mal orthographiés si une seule suggestion est trouvée.
-
-    Args:
-        texte (str): Texte à corriger.
-
-    Returns:
-        str: Texte corrigé.
-    """
-
-    dico = enchant.Dict("fr_FR")
-    # Séparer le contenu en mots
-    mots = re.findall(r'\b[\w-]+\b', texte)  # Prend en compte les mots composés avec des traits d'union
-
-    texte_corrige = texte  # Crée une copie du texte original pour les corrections
-    offset = 0  # Utilisé pour ajuster les indices après chaque correction
-
-    for mot in mots:
-        # Nettoyer le mot de la ponctuation en début et fin, sans modifier l'original
-        mot_nettoye = mot.strip(string.punctuation)
-
-        # Vérifier chaque mot
-        if mot_nettoye and not dico.check(mot_nettoye):
-            # Obtenir les suggestions
-            suggestions = dico.suggest(mot_nettoye)
-
-            # Si une seule suggestion est disponible et l'option auto est activée, remplacer automatiquement le mot
-            if len(suggestions) == 1:
-                correct_mot = suggestions[0]
-
-                # Calculer les positions dans le texte corrigé en utilisant l'offset
-                start_idx = texte_corrige.find(mot, offset)
-                end_idx = start_idx + len(mot)
-
-                # Remplacer le mot incorrect par le mot correct
-                texte_corrige = texte_corrige[:start_idx] + correct_mot + texte_corrige[end_idx:]
-
-                # Ajuster l'offset pour prendre en compte la différence de longueur
-                offset += len(correct_mot) - len(mot)
-
-    return texte_corrige
-
-
 if __name__ == "__main__":
     dico_insertion = {
         r"\bheure\b": datetime.now().strftime("%H:%M"),
@@ -426,7 +332,7 @@ if __name__ == "__main__":
             case 1:
                 phrase_corrigee, interception = intercept(phrase, dico_insertion)
             case 2:
-                phrase_corrigee = corriger_texte(phrase)
+                phrase_corrigee = correct_with_dict(phrase)
             case 3:
                 phrase_corrigee = corrige_ponctuation(phrase)
             case 4:

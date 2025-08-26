@@ -98,8 +98,37 @@ if (-not (Test-Path $distBin)) {
 
 # 🔁 Copie ffmpeg.exe et la DLL Rust manuellement
 Copy-Item -Path ".\srcs\bin\ffmpeg.exe" -Destination "$distBin\" -Force
-# Copy-Item -Path ".\srcs\bin\recovocale_engine.dll" -Destination "$distBin\" -Force
-Write-Host "✅ Copie manuelle de ffmpeg.exe et de la DLL dans dist/bin/"
+Write-Host "✅ Copie manuelle de ffmpeg.exe dans dist/bin/"
 
+# --- Stage espeak-ng ultra-min (FR only, 64-bit) ---
+$Src   = "C:\Program Files\eSpeak NG"   # <- 64-bit
+$Stage = "dist\espeak-ng-ultra"
+
+if (Test-Path $Stage) { Remove-Item -Recurse -Force $Stage }
+New-Item -ItemType Directory -Force -Path "$Stage\espeak-ng-data\lang\roa" | Out-Null
+
+# Binaires essentiels
+Copy-Item "$Src\espeak-ng.exe"    -Destination "$Stage\" -Force
+Copy-Item "$Src\libespeak-ng.dll" -Destination "$Stage\" -Force
+
+# *** DLL dépendantes fréquentes (copier si présentes) ***
+@("libgcc_s_seh-1.dll","libstdc++-6.dll","libwinpthread-1.dll") | ForEach-Object {
+  if (Test-Path (Join-Path $Src $_)) {
+    Copy-Item (Join-Path $Src $_) -Destination "$Stage\" -Force
+  }
+}
+
+# Données essentielles FR uniquement
+$DataSrc = Join-Path $Src "espeak-ng-data"
+Copy-Item (Join-Path $DataSrc "phondata")           -Destination "$Stage\espeak-ng-data\" -Force
+Copy-Item (Join-Path $DataSrc "phondata-manifest")  -Destination "$Stage\espeak-ng-data\" -Force
+Copy-Item (Join-Path $DataSrc "phontab")            -Destination "$Stage\espeak-ng-data\" -Force
+Copy-Item (Join-Path $DataSrc "phonindex")          -Destination "$Stage\espeak-ng-data\" -Force
+Copy-Item (Join-Path $DataSrc "fr_dict")            -Destination "$Stage\espeak-ng-data\" -Force
+Copy-Item (Join-Path $DataSrc "lang\roa\fr")        -Destination "$Stage\espeak-ng-data\lang\roa\" -Force
+Copy-Item (Join-Path $DataSrc "intonations")        -Destination "$Stage\espeak-ng-data\" -Force
+Get-ChildItem "$Stage" | Where-Object { $_.Name -match '^(libgcc_s_seh-1|libstdc\+\+-6|libwinpthread-1)\.dll$' } | Format-Table Name,Length
+
+Write-Host "Espeak-ng ultra-min 64-bit prêt: $Stage"
 
 Write-Host "✅ Build terminé pour la version $version"

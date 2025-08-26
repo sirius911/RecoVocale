@@ -58,14 +58,6 @@ def create_menus(self) -> None:
     self.dico_menu = tk.Menu(self.settings_menu, tearoff=0)
     self.settings_menu.add_cascade(label="Dictionnaire", menu=self.dico_menu)
 
-    # Vérification orthographique (enchant)
-    # self.dico_var = BooleanVar(value=self.app.config.dictionnaire)
-    # self.dico_menu.add_checkbutton(
-    #     label="Vérification orthographique (enchant)",
-    #     variable=self.dico_var,
-    #     command=self.toggle_dictionnaire
-    # )
-
     # Correcteur personnalisé (my.dic)
     self.mydict_var = BooleanVar(value=self.app.config.dictionnaire)
     self.dico_menu.add_checkbutton(

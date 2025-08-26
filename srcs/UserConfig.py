@@ -33,8 +33,6 @@ class UserConfig:
         print(f"init avec {self.config_file}")
         # Valeurs par défaut
         self.server_ip = "10.1.147.251"
-        # self.tensorRT_ip = "10.1.147.252"
-        # self.faster_ip = "10.1.147.251"
         self._port = "30000"
         self._service = "Tous"
         self._shortcut = "F3"

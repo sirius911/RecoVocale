@@ -6,7 +6,8 @@ from menus import create_menus
 from info import DIRECT
 from utils_keyboard import Simulator
 from pynput.keyboard import Key
-from Correcteur import intercept, corrige_ponctuation, corriger_texte
+from Correcteur import intercept, corrige_ponctuation
+from mydict_corrector import correct_with_dict
 
 
 class Mode_Direct(Mode):
@@ -65,9 +66,9 @@ class Mode_Direct(Mode):
         # Attacher l'événement à la Text box
         self.text_box.bind("<Key>", self.on_text_change)
 
-        self.text_box.bind("<Button-3>", self.show_context_menu)
-        # Création du menu contextuel
-        self.context_menu = tk.Menu(self.root, tearoff=0)
+        # self.text_box.bind("<Button-3>", self.show_context_menu)
+        # # Création du menu contextuel
+        # self.context_menu = tk.Menu(self.root, tearoff=0)
 
         # Create the status bar at the bottom of the window
         self.status_bar = tk.Label(self.root, text="Bienvenue dans l'application", bd=1, relief=tk.SUNKEN, anchor=tk.W)
@@ -130,34 +131,44 @@ class Mode_Direct(Mode):
                           bg='red', fg='darkblue', anchor=tk.CENTER)
 
     def handle_final_text(self, text: str):
-        # Post-traitements habituels
-        txt, _ = intercept(text, self.app.insertions.get())
-        txt = corrige_ponctuation(txt)
-        if self.app.config.dictionnaire:
-            txt = corriger_texte(txt)
+        # --- NOUVEAU : correction via my.dic AVANT intercept() ---
+        try:
+            if self.app.config.dictionnaire:
+                text = correct_with_dict(text)
+        except Exception as e:
+            # on reste robuste : en cas d'erreur, on n'interrompt pas le flux
+            print(f"[mydict_corrector] erreur: {e}")
 
-        # Undo snapshot si tu as une pile d’undo
-        if hasattr(self, "save_text_box"):
-            self.save_text_box()
+        if self.fenetre_gestion_ouverte:
+            # Si une fenetre de gestion est ouverte (insertions, dictionnaire)
+            def _copy_and_paste():
+                # 1) maj presse-papier (thread UI garanti)
+                self.root.clipboard_clear()
+                self.root.clipboard_append(text)
+                self.root.update_idletasks()
+                # 2) petit after pour laisser Windows “committer” le clipboard
+                self.root.after(0, lambda: Simulator([Key.ctrl, 'v']))
 
-        # Insérer au curseur (remplacer la sélection si présente)
-        def _insert_final(t=txt):
-            if self.text_box.tag_ranges("sel"):
-                self.text_box.delete(tk.SEL_FIRST, tk.SEL_LAST)
-            self.text_box.insert("insert", t + " ")
-            self.text_box.see("insert")
-            self.root.update_idletasks()
-
-        # Utilise ta file UI si elle existe, sinon appelle direct
-        if hasattr(self, "add_to_ui_queue"):
-            self.add_to_ui_queue(_insert_final)
-            # relancer la vérif dico si tu l’as
-            if hasattr(self, "verification_dico"):
-                self.add_to_ui_queue(self.verification_dico)
+            self.add_to_ui_queue(_copy_and_paste)
         else:
-            _insert_final()
-            if hasattr(self, "verification_dico"):
-                self.verification_dico()
+
+            # Post-traitements habituels
+            txt, _ = intercept(text, self.app.insertions.get())
+            txt = corrige_ponctuation(txt)
+
+            if hasattr(self, "save_text_box"):
+                self.save_text_box()
+
+            # Insérer au curseur (remplacer la sélection si présente)
+            def _insert_final(t=txt):
+                if self.text_box.tag_ranges("sel"):
+                    self.text_box.delete(tk.SEL_FIRST, tk.SEL_LAST)
+                self.text_box.insert("insert", t + " ")
+                self.text_box.see("insert")
+                self.root.update_idletasks()
+
+            self.add_to_ui_queue(_insert_final)
+
         self.log(text)
 
     def save_text_box(self) -> None:
@@ -304,7 +315,6 @@ class Mode_Direct(Mode):
         def apply_changes():
             self.trash_button.config(state=tk.NORMAL)
             self.save_text_box()
-            self.verification_dico()
 
         self.add_to_ui_queue(apply_changes)
 

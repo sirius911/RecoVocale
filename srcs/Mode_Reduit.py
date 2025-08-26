@@ -7,6 +7,7 @@ from menus import create_menus
 from info import REDUIT, VERSION
 from utils_keyboard import Simulator
 from Correcteur import intercept, corrige_ponctuation
+from mydict_corrector import correct_with_dict
 
 
 class Mode_Reduit(Mode):
@@ -87,7 +88,6 @@ class Mode_Reduit(Mode):
                           bg="red", fg="darkblue", anchor=tk.CENTER)
 
     def handle_final_text(self, text: str):
-        from mydict_corrector import correct_with_dict
         # --- NOUVEAU : correction via my.dic AVANT intercept() ---
         try:
             if self.app.config.dictionnaire:
@@ -97,12 +97,8 @@ class Mode_Reduit(Mode):
             print(f"[mydict_corrector] erreur: {e}")
 
         # Post-traitements
-        txt, inter = intercept(text, self.app.insertions.get())
-        while inter:
-            txt, inter = intercept(text, self.app.insertions.get())
+        txt, _ = intercept(text, self.app.insertions.get())
         txt = corrige_ponctuation(txt)
-        # if self.app.config.dictionnaire:
-        #     txt = corriger_texte(txt)
 
         to_copy = f" {txt}" if self.app.config.word_space else f"{txt} "
 
