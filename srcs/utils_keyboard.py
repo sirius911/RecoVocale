@@ -135,16 +135,58 @@ class Simulator:
 
     def _type_character(self, char: str):
         """
-        Tape un caractère unique, ou simule une touche spéciale (Enter, Tab, etc.).
-
-        Args:
-            char (str): Le caractère ou la commande à taper.
+        Tape un caractère ou une chaîne de texte.
+        Si c'est une touche spéciale mappée, on envoie la Key correspondante.
+        Sinon, si la chaîne a plusieurs caractères, on la tape lettre par lettre.
         """
+        key = self.special_keys_mapping.get(char, None)
 
-        key = self.special_keys_mapping.get(char, char)
-        if isinstance(key, Key) and key in hold_key:
-            self.keyboard.press(key)  # On reste appuyé
-            self.pressed_key.append(key)
-            # print(f"push2 [{key}]")
+        # touche spéciale via mapping (ex: '\n', '\t', ...)
+        if key is not None:
+            if key in hold_key:
+                self.keyboard.press(key)
+                self.pressed_key.append(key)
+            else:
+                self.keyboard.tap(key)
+            return
+
+        # ici 'char' est du texte ordinaire
+        if len(char) == 1:
+            self.keyboard.tap(char)
         else:
-            self.keyboard.tap(key)  # On 'tape' la touche
+            for ch in char:
+                self.keyboard.tap(ch)
+                time.sleep(TIME_WRITE)
+
+    @staticmethod
+    def parse_keys(seq):
+        """
+        Transforme une liste de chaînes (JSON) en objets Key/str.
+        Exemples d'entrées: ["{TAB}", "Hello", " ", "{ENTER}", "{CTRL}", "v"]
+        """
+        mapping = {
+            "{ENTER}": Key.enter,
+            "{TAB}": Key.tab,
+            "{ESC}": Key.esc,
+            "{DEL}": Key.delete,
+            "{DELETE}": Key.delete,
+            "{BACKSPACE}": Key.backspace,
+            "{UP}": Key.up,
+            "{DOWN}": Key.down,
+            "{LEFT}": Key.left,
+            "{RIGHT}": Key.right,
+            "{CTRL}": Key.ctrl,
+            "{ALT}": Key.alt,
+            "{SHIFT}": Key.shift,
+            "{SPACE}": " ",
+        }
+        out = []
+        for item in seq:
+            if isinstance(item, Key):
+                out.append(item)
+            elif isinstance(item, str):
+                tok = mapping.get(item.upper())
+                out.append(tok if tok is not None else item)
+            else:
+                out.append(str(item))
+        return out

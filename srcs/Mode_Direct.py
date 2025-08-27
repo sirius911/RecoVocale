@@ -153,7 +153,7 @@ class Mode_Direct(Mode):
         else:
 
             # Post-traitements habituels
-            txt, _ = intercept(text, self.app.insertions.get())
+            txt, _ = intercept(text, dico_insertion=self.app.insertions.get(), executor=self.app.pp_executor)
             txt = corrige_ponctuation(txt)
 
             if hasattr(self, "save_text_box"):

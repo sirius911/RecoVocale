@@ -1,4 +1,3 @@
-import ctypes
 import time
 import tkinter as tk
 import subprocess
@@ -128,10 +127,6 @@ class Attendre(Action):
 Partie pour le lancement de commande par des mots clés
 Non implémenté dans les interceptions
 '''
-# Constantes pour les options de fenêtre
-SW_SHOWNORMAL = 1
-SW_SHOWMINIMIZED = 2
-SW_SHOWMAXIMIZED = 3
 
 
 class Run(Action):
@@ -151,25 +146,20 @@ class Run(Action):
         self.window_mode = window_mode  # "normal", "maximized", "minimized"
 
     def execute(self):
-        try:
-            # Crée la commande avec l'exécutable et les arguments
-            command = [self.executable] + self.arguments
-            print(f"Exécution de : {' '.join(command)}")
 
-            # Crée un processus pour ouvrir l'application sans console supplémentaire
-            process = subprocess.Popen(command)
+        SW_SHOWNORMAL = 1
+        SW_SHOWMINIMIZED = 2
+        SW_SHOWMAXIMIZED = 3
+        show_map = {
+            "normal": SW_SHOWNORMAL,
+            "minimized": SW_SHOWMINIMIZED,
+            "maximized": SW_SHOWMAXIMIZED,
+        }
+        command = [self.executable] + list(self.arguments or [])
 
-            # Utilise ctypes pour ajuster l'état de la fenêtre
-            if self.window_mode == "normal":
-                ctypes.windll.user32.ShowWindow(process._handle, SW_SHOWNORMAL)
-            elif self.window_mode == "maximized":
-                ctypes.windll.user32.ShowWindow(process._handle, SW_SHOWMAXIMIZED)
-            elif self.window_mode == "minimized":
-                ctypes.windll.user32.ShowWindow(process._handle, SW_SHOWMINIMIZED)
-            else:
-                raise ValueError("Mode de fenêtre non valide")
+        si = subprocess.STARTUPINFO()
+        si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+        si.wShowWindow = show_map.get(self.window_mode, SW_SHOWNORMAL)
 
-        except subprocess.CalledProcessError as e:
-            # Si une erreur se produit lors de l'exécution, affiche un message d'erreur
-            print(f"Erreur lors de l'exécution de : {self.executable}")
-            print(e)
+        # pas besoin de shell=True si on passe une liste
+        subprocess.Popen(command, startupinfo=si)

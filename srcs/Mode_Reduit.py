@@ -97,7 +97,7 @@ class Mode_Reduit(Mode):
             print(f"[mydict_corrector] erreur: {e}")
 
         # Post-traitements
-        txt, _ = intercept(text, self.app.insertions.get())
+        txt, _ = intercept(text, dico_insertion=self.app.insertions.get(), executor=self.app.pp_executor)
         txt = corrige_ponctuation(txt)
 
         to_copy = f" {txt}" if self.app.config.word_space else f"{txt} "

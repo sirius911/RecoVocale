@@ -30,6 +30,7 @@ from loger import envoyer_log
 from queue_manager import UI_QUEUE
 import queue
 from VoiceTranscriber import VoiceTranscriber
+from pas_a_pas import load_registry_from_json, Executor
 
 # Envoi d'un log "stop" à la fermeture du programme
 atexit.register(lambda: envoyer_log("stop"))
@@ -51,6 +52,7 @@ class App:
         self.config = UserConfig()
         self.console_debug = DebugWindow(root)
         self.insertions = GestionnaireInsertion(self.config.insertions)
+
         self.debug_window_id = self.console_debug.debug_window.winfo_id()
 
         if self.config.debug:
@@ -92,6 +94,9 @@ class App:
             self.current_mode = Mode_Reduit(self)
         else:  # Default to DIRECT mode
             self.current_mode = Mode_Direct(self)
+
+        self.pp_registry = load_registry_from_json(self.config.pas_a_pas)
+        self.pp_executor = Executor(self.current_mode, self.pp_registry)
 
         # ---- Touches de racourcis
         self.shortcut_manager = ShortcutManager(

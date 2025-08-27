@@ -274,7 +274,7 @@ def corrige_ponctuation(phrases: str) -> str:
     return phrases_finale
 
 
-def intercept(phrases: str, dico_insertion: dict[str, str]):
+def intercept(phrases: str, dico_insertion: dict[str, str], executor=None):
     """
     Intercepte des expressions vocales spécifiques dans une phrase et applique les conversions définies,
     notamment les insertions et les unités.
@@ -292,6 +292,10 @@ def intercept(phrases: str, dico_insertion: dict[str, str]):
         retrenvoi la phrase corrigée et un flag  indiquand si on doit terminé la transcription
         insertion: bool True si une insertion a eu lieu
     '''
+    if executor is not None:
+        if executor.run_by_spoken(phrases):
+            return "", False
+
     _insertion = False
     phrase_interceptee, _insertion = insertion(phrases, dico_insertion)
     resultat = convertir_unites(phrase_interceptee)
