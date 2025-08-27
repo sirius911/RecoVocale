@@ -359,18 +359,25 @@ class Mode:
 
         if not self.fenetre_gestion_ouverte:
             def _spawn():
-                self.fenetre_gestion = FenetreInsertions(self.root, insertions_xml=self.app.config.insertions,
+                self.fenetre_gestion = FenetreInsertions(self.root, insertions_xml=self.app.insertions.fichier_xml,
                                                          termine=self.fermer_gestion_insertions)
                 self.fenetre_gestion_ouverte = True
             self.add_to_ui_queue(_spawn)
             toggle_menu_gestion_fenetre(self, tk.DISABLED)
 
-    def fermer_gestion_insertions(self) -> None:
+    def fermer_gestion_insertions(self, new_path: str | None = None) -> None:
         """
         Callback appelé par fenetre_gestion.
         """
         try:
             if getattr(self, "fenetre_gestion", None):
+                # si le callback n'a pas passé le chemin, on le lit depuis la fenêtre
+                if new_path is not None:
+                    try:
+                        from insertions import GestionnaireInsertion
+                        self.app.insertions = GestionnaireInsertion(new_path)
+                    except Exception as e:
+                        print(f"Erreur : {e}")
                 try:
                     self.fenetre_gestion.destroy()
                 except Exception as e:
