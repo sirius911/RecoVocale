@@ -29,7 +29,6 @@ Source: "dist\RecoVocale.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "C:\Users\lorcyr\RecoVocale\srcs\config\user_config.ini"; DestDir: "{localappdata}\RecoVocale"; Flags: ignoreversion
 Source: "C:\Users\lorcyr\RecoVocale\srcs\config\my.dic"; DestDir: "{localappdata}\RecoVocale"; Flags: onlyifdoesntexist
 Source: "C:\Users\lorcyr\RecoVocale\srcs\config\micro_actions_config.json"; DestDir: "{localappdata}\RecoVocale"; Flags: ignoreversion
-
 Source: "C:\Users\lorcyr\RecoVocale\srcs\config\insertions.xml"; DestDir: "{localappdata}\RecoVocale"; Flags: onlyifdoesntexist
 Source: "dist\bin\ffmpeg.exe"; DestDir: "{app}\bin"; Flags: onlyifdoesntexist
 

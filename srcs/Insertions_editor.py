@@ -1,10 +1,9 @@
 from __future__ import annotations
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk, messagebox, filedialog
 from typing import Optional
 
 # RecoVocale utils
-from utils_window import get_config_path
 from insertions import GestionnaireInsertion
 
 
@@ -22,13 +21,15 @@ class FenetreInsertions(tk.Toplevel):
     def __init__(self, master: tk.Misc, insertions_xml: str = "", termine=None) -> None:
         super().__init__(master)
         self.fonction_termine = termine
-        self.title("Insertions")
+        self.title(insertions_xml)
         self.geometry("1200x650")
         self.resizable(True, True)
 
         # Données
-        self.fichier_xml = get_config_path(insertions_xml)
+        self.fichier_xml = insertions_xml
         self.gestionnaire = GestionnaireInsertion(self.fichier_xml)
+        self._initial_xml = self.fichier_xml
+        self._file_changed = False            # flag si l'utilisateur bascule de fichier
         self.data: dict[str, dict] = dict(self.gestionnaire.data)  # {spoken: {name, description, body}}
 
         # État
@@ -50,8 +51,12 @@ class FenetreInsertions(tk.Toplevel):
         main = ttk.Frame(self)
         main.pack(fill="both", expand=True, padx=8, pady=8)
 
-        # Tableau à gauche
-        left = ttk.Frame(main)
+        # Zone centrale (tableau + formulaire)
+        content = ttk.Frame(main)
+        content.pack(side="top", fill="both", expand=True)
+
+        # --- Tableau à gauche ---
+        left = ttk.Frame(content)
         left.pack(side="left", fill="y")
 
         columns = ("name", "spoken", "description")
@@ -69,8 +74,8 @@ class FenetreInsertions(tk.Toplevel):
         yscroll.pack(side="left", fill="y")
         self.tree.configure(yscrollcommand=yscroll.set)
 
-        # Formulaire à droite
-        form = ttk.Frame(main)
+        # --- Formulaire à droite ---
+        form = ttk.Frame(content)
         form.pack(side="left", fill="both", expand=True, padx=(12, 0))
 
         ttk.Label(form, text="Nom *").grid(row=0, column=0, sticky="w")
@@ -97,24 +102,52 @@ class FenetreInsertions(tk.Toplevel):
         form.grid_columnconfigure(1, weight=1)
         form.grid_rowconfigure(3, weight=1)
 
-        # Boutons
-        btns = ttk.Frame(form)
-        btns.grid(row=4, column=0, columnspan=2, sticky="ew", pady=(8, 0))
-        ttk.Button(btns, text="Ajouter", command=self._add).pack(side="left")
-        ttk.Button(btns, text="Mettre à jour", command=self._update).pack(side="left", padx=6)
-        ttk.Button(btns, text="Supprimer", command=self._delete).pack(side="left")
-        # ttk.Button(btns, text="Dupliquer", command=self._duplicate).pack(side="left", padx=6)
-        ttk.Button(btns, text="Enregistrer", command=self._save).pack(side="right")
+        # --- Séparateur + pied de page (tout en bas) ---
+        ttk.Separator(main, orient="horizontal").pack(fill="x", pady=(6, 4))
 
-        ttk.Label(form, text=f"Fichier : {self.fichier_xml}").grid(row=5,
-                                                                   column=0,
-                                                                   columnspan=2,
-                                                                   sticky="w",
-                                                                   pady=(8, 0))
+        footer = ttk.Frame(main)
+        footer.pack(side="bottom", fill="x")
 
-        # Détection des modifs
+        # À gauche : chemin du fichier
+        self.lbl_file = ttk.Label(footer, text=f"Fichier : {self.fichier_xml}")
+        self.lbl_file.pack(side="left")
+
+        # À côté : actions fichier
+        file_actions = ttk.Frame(footer)
+        file_actions.pack(side="left", padx=12)
+        ttk.Button(file_actions, text="Charger…", command=self._action_load_file).pack(side="left")
+        ttk.Button(file_actions, text="Enregistrer sous…", command=self._action_save_as).pack(side="left", padx=6)
+
+        # Espace extensible
+        ttk.Frame(footer).pack(side="left", expand=True)
+
+        # À droite : actions d'édition
+        btns = ttk.Frame(footer)
+        btns.pack(side="right")
+
+        self.btn_add = ttk.Button(btns, text="Ajouter", command=self._add)
+        self.btn_add.pack(side="left")
+
+        self.btn_update = ttk.Button(btns, text="Mettre à jour",
+                                     command=self._update, state=tk.DISABLED)
+        self.btn_update.pack(side="left", padx=6)
+
+        self.btn_delete = ttk.Button(btns, text="Supprimer", command=self._delete)
+        self.btn_delete.pack(side="left")
+
+        self.btn_save = ttk.Button(btns, text="Enregistrer",
+                                   command=self._save, state=tk.DISABLED)
+        self.btn_save.pack(side="left", padx=(12, 0))
+
+        self.btn_close = ttk.Button(btns, text="Fermer", command=self._on_close)
+        self.btn_close.pack(side="left", padx=(6, 0))
+
+        # Détection des modifs (active _dirty)
         for v in (self.var_name, self.var_desc, self.var_spoken):
             v.trace_add("write", lambda *_: self._mark_dirty())
+
+        # Initialiser l'état des boutons
+        self._refresh_buttons()
 
     # ------------------ Data <-> UI ------------------
     def _load_table(self) -> None:
@@ -124,6 +157,12 @@ class FenetreInsertions(tk.Toplevel):
             iid = f"{idx}"
             self.tree.insert("", "end", iid=iid, values=(e.get("name", ""), spoken, e.get("description", "")))
         self._current_iid = None
+
+    def _refresh_buttons(self) -> None:
+        # En 'edit' ou 'new' → activer Enregistrer/Mettre à jour seulement si _dirty
+        enable = (self._mode in ("edit", "new")) and self._dirty
+        self.btn_update.configure(state=(tk.NORMAL if enable else tk.DISABLED))
+        self.btn_save.configure(state=(tk.NORMAL if enable else tk.DISABLED))
 
     def _fill_form(self, *, name: str = "", desc: str = "", spoken: str = "", body: str = "") -> None:
         self._suspend_events = True
@@ -161,6 +200,7 @@ class FenetreInsertions(tk.Toplevel):
             self.e_desc.configure(state="normal")
             self.e_spoken.configure(state="normal")
             self.txt_body.configure(state="normal")
+        self._refresh_buttons()
 
     def _disable_all(self) -> None:
         self.e_name.configure(state="disabled")
@@ -181,6 +221,7 @@ class FenetreInsertions(tk.Toplevel):
         if self._suspend_events:
             return
         self._dirty = True
+        self._refresh_buttons()
         try:
             self.title("Insertions *")
         except Exception:
@@ -188,6 +229,7 @@ class FenetreInsertions(tk.Toplevel):
 
     def _clear_dirty(self) -> None:
         self._dirty = False
+        self._refresh_buttons()
         try:
             self.title("Insertions")
         except Exception:
@@ -323,6 +365,66 @@ class FenetreInsertions(tk.Toplevel):
         self._clear_dirty()
         messagebox.showinfo("Insertions", "Enregistré", parent=self)
 
+    # ------------------ Fichier externe ------------------
+    def _update_file_label(self) -> None:
+        try:
+            self.lbl_file.configure(text=f"Fichier : {self.fichier_xml}")
+        except Exception:
+            pass
+
+    def _switch_file(self, path: str) -> None:
+        """Bascule l'éditeur sur un autre fichier d'insertions (lecture)."""
+        try:
+            new_mgr = GestionnaireInsertion(path)
+            self.gestionnaire = new_mgr
+            self.fichier_xml = self.gestionnaire.fichier_xml
+            self._file_changed = True
+            self.data = dict(self.gestionnaire.data)
+            self._load_table()
+            self._set_mode("view", clear_form=True)
+            self._clear_dirty()
+            self._update_file_label()
+            self.title(self.fichier_xml)
+        except Exception as e:
+            messagebox.showerror("Ouverture", f"Impossible de charger le fichier:\n{e}", parent=self)
+
+    def _action_load_file(self) -> None:
+        # Proposer d'enregistrer les modifs en cours
+        if self._has_unsaved_changes():
+            res = messagebox.askyesnocancel("Enregistrer ?",
+                                            "Enregistrer les modifications avant d'ouvrir un autre fichier ?",
+                                            parent=self)
+            if res is None:
+                return
+            if res:
+                snap = self._form_snapshot()
+                spoken = self._apply_snapshot_and_save(snap, self._selected_spoken())
+                if spoken is None:
+                    return
+        path = filedialog.askopenfilename(parent=self, title="Ouvrir un fichier d'insertions",
+                                          filetypes=[("XML", "*.xml"), ("Tous fichiers", "*.*")])
+        if not path:
+            return
+        self._switch_file(path)
+
+    def _action_save_as(self) -> None:
+        path = filedialog.asksaveasfilename(parent=self, title="Enregistrer sous",
+                                            defaultextension=".xml",
+                                            filetypes=[("XML", "*.xml"), ("Tous fichiers", "*.*")])
+        if not path:
+            return
+        # Met à jour la cible et sauvegarde
+        self.fichier_xml = path
+        self.gestionnaire.fichier_xml = path
+        self.title(self.fichier_xml)
+        try:
+            self._save_to_disk()
+            self._update_file_label()
+            messagebox.showinfo("Enregistrer sous", "Fichier enregistré.", parent=self)
+            self._file_changed = True
+        except Exception as e:
+            messagebox.showerror("Enregistrer sous", f"Erreur à l'enregistrement:\n{e}", parent=self)
+
     # ------------------ Persist ------------------
     def _save_to_disk(self) -> None:
         self.gestionnaire.data = dict(self.data)
@@ -350,8 +452,12 @@ class FenetreInsertions(tk.Toplevel):
                 if spoken is None:
                     return
         if self.fonction_termine:
+            # On transmet le chemin effectivement utilisé (config ou perso)
             try:
-                self.master.after(0, self.fonction_termine)
+                if self._file_changed:
+                    self.master.after(0, self.fonction_termine(self.fichier_xml))
+                else:
+                    self.master.after(0, self.fonction_termine)
             except Exception:
                 pass
         self.destroy()

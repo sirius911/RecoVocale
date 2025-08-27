@@ -25,7 +25,6 @@ from Micro import Micro
 from info import VERSION, DIRECT, REDUIT, APPRENTI, FICHIER
 from fenetre_debug import DebugWindow
 from insertions import GestionnaireInsertion
-from utils_window import get_config_path
 from loger import envoyer_log
 from queue_manager import UI_QUEUE
 import queue
@@ -339,7 +338,7 @@ class App:
             self.console_debug.append_status_with_format(f"{self.root.winfo_y()}\n", color="green")
 
             self.console_debug.append_status_with_format("Fichier des insertions : ", font_style="italic")
-            self.console_debug.append_status_with_format(f"{get_config_path(self.config.insertions)}\n", color="green")
+            self.console_debug.append_status_with_format(f"{self.insertions.fichier_xml}\n", color="green")
 
     def change_shortcut(self) -> None:
         """Permet à l'utilisateur de modifier les raccourcis clavier."""

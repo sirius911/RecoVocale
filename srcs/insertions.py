@@ -32,7 +32,10 @@ class GestionnaireInsertion:
             fichier_xml (str): Chemin vers le fichier XML des insertions.
         """
 
-        self.fichier_xml = get_config_path(fichier_xml)
+        if os.path.isabs(fichier_xml) or os.path.exists(fichier_xml):
+            self.fichier_xml = fichier_xml
+        else:
+            self.fichier_xml = get_config_path(fichier_xml)
         print(f"Chargement du fichier des insertions -> {self.fichier_xml}")
 
         # Vérifier si le fichier existe
