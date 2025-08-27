@@ -153,6 +153,7 @@ def _load_dic(path: str) -> Dict[str, Any]:
         data.setdefault("entries", [])
         return data
     except FileNotFoundError:
+        messagebox.showerror("my.dic", f"Fichier introuvable : {path}")
         return {"lang": "fr_FR", "entries": []}
     except Exception as e:
         messagebox.showerror("my.dic", f"Erreur lecture {path} : {e}")
