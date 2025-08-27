@@ -2,10 +2,9 @@
 from __future__ import annotations
 import json
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk, messagebox, filedialog
 from typing import List, Dict, Any
 from utils_window import get_config_path
-from mydict_corrector import invalidate_dict_cache
 import unicodedata
 import os
 import sys
@@ -24,7 +23,7 @@ except Exception as e:
     _HAS_PHONEMIZER = False
     _PHONEMIZER_IMPORT_ERR = "".join(traceback.format_exception_only(type(e), e)).strip()
 
-MYDIC_PATH = get_config_path("my.dic")
+# MYDIC_PATH = get_config_path("my.dic")
 # Emplacements standard espeak-ng (MSI Windows)
 ESPEAK_DIR_DEFAULT = r"C:\Program Files\eSpeak NG"
 ESPEAK_EXE_DEFAULT = os.path.join(ESPEAK_DIR_DEFAULT, "espeak-ng.exe")
@@ -144,9 +143,11 @@ def build_phon_diag() -> str:
     return "\n".join(lines)
 
 
-def _load_dic() -> Dict[str, Any]:
+def _load_dic(path: str) -> Dict[str, Any]:
+    if not os.path.isabs(path) and not os.path.exists(path):
+        path = get_config_path(path)
     try:
-        with open(MYDIC_PATH, "r", encoding="utf-8") as f:
+        with open(path, "r", encoding="utf-8") as f:
             data = json.load(f)
         data.setdefault("lang", "fr_FR")
         data.setdefault("entries", [])
@@ -154,13 +155,13 @@ def _load_dic() -> Dict[str, Any]:
     except FileNotFoundError:
         return {"lang": "fr_FR", "entries": []}
     except Exception as e:
-        messagebox.showerror("my.dic", f"Erreur lecture {MYDIC_PATH} : {e}")
+        messagebox.showerror("my.dic", f"Erreur lecture {path} : {e}")
         return {"lang": "fr_FR", "entries": []}
 
 
-def _save_dic(data: Dict[str, Any]) -> None:
+def _save_dic(data: Dict[str, Any], path: str) -> None:
     try:
-        with open(MYDIC_PATH, "w", encoding="utf-8") as f:
+        with open(path, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
         # --- NOTIF hot‑reload : invalider le cache du correcteur
         try:
@@ -169,7 +170,7 @@ def _save_dic(data: Dict[str, Any]) -> None:
         except Exception:
             pass
     except Exception as e:
-        messagebox.showerror("my.dic", f"Erreur écriture {MYDIC_PATH} : {e}")
+        messagebox.showerror("my.dic", f"Erreur écriture {path} : {e}")
 
 
 def _to_csv(v: Any) -> str:
@@ -246,12 +247,18 @@ def _phonemize_fr_list(items: List[str]) -> List[str]:
 
 
 class FenetreMyDict(tk.Toplevel):
-    def __init__(self, master: tk.Misc, app=None, termine=None):
+    def __init__(self, master: tk.Misc, app=None, termine=None, path_dico: str = ""):
         super().__init__(master)
+        self.modif = False
         self.app = app
+        if os.path.isabs(path_dico) or os.path.exists(path_dico):
+            self.path_dico = path_dico
+        else:
+            self.path_dico = get_config_path(self.app.config.dico)
         self.fonction_termine = termine
-        self.title("Dictionnaire personnalisé (my.dic)")
+        self.title(f"Dictionnaire ({self.path_dico})")
         self.geometry("780x520")
+        self._file_changed = False
         self.resizable(True, True)
 
         # Désactive le correcteur tant que la fenêtre est ouverte
@@ -265,7 +272,7 @@ class FenetreMyDict(tk.Toplevel):
         ensure_espeak_env()
 
         # Données
-        self.data = _load_dic()
+        self.data = _load_dic(self.path_dico)
         self.entries: List[Dict[str, Any]] = self.data.get("entries", [])
 
         # Flag pour suspendre l'auto-phonémisation pendant les chargements programmatiques
@@ -277,10 +284,22 @@ class FenetreMyDict(tk.Toplevel):
 
         # Fermeture propre
         self.protocol("WM_DELETE_WINDOW", self._on_close)
-        self.modif = False
 
     def _build_ui(self):
-        # Tableau
+        # === Barre de menus ===
+        menubar = tk.Menu(self)
+        # Fichier
+        menu_fichier = tk.Menu(menubar, tearoff=False)
+        menu_fichier.add_command(label="Charger…", command=self._action_load_file)
+        menu_fichier.add_command(label="Enregistrer sous…", command=self._action_save_as)
+        menubar.add_cascade(label="Fichier", menu=menu_fichier)
+        # Diagnostique
+        menu_diag = tk.Menu(menubar, tearoff=False)
+        menu_diag.add_command(label="Diagnostic phonémisation…", command=self._open_phon_diag)
+        menubar.add_cascade(label="Diagnostique", menu=menu_diag)
+        self.config(menu=menubar)
+
+        # === Tableau ===
         columns = ("word", "from", "phonemes", "weight", "tags")
         self.tree = ttk.Treeview(self, columns=columns, show="headings", height=12)
         self.tree.heading("word", text="Mot")
@@ -296,65 +315,161 @@ class FenetreMyDict(tk.Toplevel):
         self.tree.bind("<<TreeviewSelect>>", self._on_select)
         self.tree.pack(fill="both", expand=True, padx=8, pady=(8, 4))
 
-        # Form
+        # === Formulaire ===
         form = ttk.Frame(self)
         form.pack(fill="x", padx=8, pady=4)
 
         ttk.Label(form, text="Mot").grid(row=0, column=0, sticky="w")
         self.word_var = tk.StringVar()
-        self.word_var.trace_add("write", lambda *_: self._mark_modified())
+        self.word_var.trace_add("write", lambda *_: (self._mark_modified(), self._refresh_buttons()))
         ttk.Entry(form, textvariable=self.word_var, width=30).grid(row=0, column=1, sticky="ew", padx=(6, 16))
 
         ttk.Label(form, text="Approximations (a,b,c)").grid(row=0, column=2, sticky="w")
         self.from_var = tk.StringVar()
         ttk.Entry(form, textvariable=self.from_var, width=30).grid(row=0, column=3, sticky="ew", padx=(6, 16))
 
-        # --- TRACE: auto-maj des phonèmes dès que 'from' change ---
+        # Auto-maj phonèmes lorsque 'from' change
         def _on_from_changed(*_):
-            if self._suspend_auto_phon:
+            if getattr(self, "_suspend_auto_phon", False):
                 return
             items = _from_csv(self.from_var.get())
             ph = _phonemize_fr_list(items)
-            # place la liste de phonèmes alignée (même taille/ordre que 'from')
             self.phonemes_var.set(", ".join(ph))
             self._mark_modified()
+            self._refresh_buttons()
         self.from_var.trace_add("write", _on_from_changed)
 
         ttk.Label(form, text="phonèmes (a,b,c)").grid(row=1, column=0, sticky="w")
         self.phonemes_var = tk.StringVar()
-        ttk.Entry(form, textvariable=self.phonemes_var, width=30, state="readonly")\
-            .grid(row=1, column=1, sticky="ew", padx=(6, 16))
+        ttk.Entry(form, textvariable=self.phonemes_var, width=30, state="readonly").grid(row=1, column=1, sticky="ew",
+                                                                                         padx=(6, 16))
 
         ttk.Label(form, text="Poids").grid(row=1, column=2, sticky="w")
         self.weight_var = tk.StringVar(value="1.0")
-        self.weight_var.trace_add("write", lambda *_: self._mark_modified())
+        self.weight_var.trace_add("write", lambda *_: (self._mark_modified(), self._refresh_buttons()))
         ttk.Entry(form, textvariable=self.weight_var, width=10).grid(row=1, column=3, sticky="w", padx=(6, 16))
 
         ttk.Label(form, text="tags (a,b)").grid(row=2, column=0, sticky="w")
         self.tags_var = tk.StringVar()
-        self.tags_var.trace_add("write", lambda *_: self._mark_modified())
+        self.tags_var.trace_add("write", lambda *_: (self._mark_modified(), self._refresh_buttons()))
         ttk.Entry(form, textvariable=self.tags_var, width=30).grid(row=2, column=1, sticky="ew", padx=(6, 16))
 
         for i in range(4):
             form.grid_columnconfigure(i, weight=1)
 
-        # Boutons
+        # === Boutons pied de page ===
         btns = ttk.Frame(self)
         btns.pack(fill="x", padx=8, pady=(4, 8))
-        ttk.Button(btns, text="Ajouter", command=self._add).pack(side="left")
-        ttk.Button(btns, text="Mettre à jour", command=self._update).pack(side="left", padx=6)
-        ttk.Button(btns, text="Supprimer", command=self._delete).pack(side="left")
-        ttk.Button(btns, text="Dupliquer", command=self._duplicate).pack(side="left", padx=6)
-        ttk.Button(btns, text="Enregistrer", command=self._save).pack(side="right")
-        # --- Diagnostic phonémisation
-        ttk.Button(btns, text="Diagnostic phonémisation…",
-                   command=self._open_phon_diag).pack(side="right", padx=(6, 0))
-        ttk.Button(btns, text="Recharger maintenant",
-                   command=lambda: (invalidate_dict_cache(), messagebox.showinfo("my.dic", "Dictionnaire rechargé"))
-                   ).pack(side="right", padx=(6, 0))
 
-        # Label chemin
-        ttk.Label(self, text=f"Fichier : {MYDIC_PATH}").pack(anchor="w", padx=8, pady=(0, 8))
+        # gauche
+        self.btn_add = ttk.Button(btns, text="Ajouter", command=self._add)
+        self.btn_add.pack(side="left")
+
+        self.btn_duplicate = ttk.Button(btns, text="Dupliquer", command=self._duplicate, state=tk.DISABLED)
+        self.btn_duplicate.pack(side="left", padx=6)
+
+        self.btn_delete = ttk.Button(btns, text="Supprimer", command=self._delete, state=tk.DISABLED)
+        self.btn_delete.pack(side="left", padx=6)
+
+        self.btn_update = ttk.Button(btns, text="Mettre à jour", command=self._update, state=tk.DISABLED)
+        self.btn_update.pack(side="left", padx=6)
+
+        # droite
+        self.btn_save = ttk.Button(btns, text="Enregistrer", command=self._save, state=tk.DISABLED)
+        self.btn_save.pack(side="right")
+
+        self.btn_close = ttk.Button(btns, text="Fermer", command=self._on_close)
+        self.btn_close.pack(side="right", padx=(6, 0))
+
+        # Etiquette chemin
+        ttk.Label(self, text=f"Fichier : {self.path_dico}").pack(anchor="w", padx=8, pady=(0, 8))
+
+        # Init états
+        self._refresh_buttons()
+
+    def _refresh_buttons(self) -> None:
+        has_sel = bool(self.tree.selection())
+        # Update/Save : seulement si de vraies modifs (self.modif)
+        self.btn_save.configure(state=(tk.NORMAL if self.modif else tk.DISABLED))
+        # Mettre à jour a besoin d'une sélection + modifs
+        self.btn_update.configure(state=(tk.NORMAL if (self.modif and has_sel) else tk.DISABLED))
+        # Supprimer & Dupliquer : accessibles uniquement si une ligne est sélectionnée
+        self.btn_delete.configure(state=(tk.NORMAL if has_sel else tk.DISABLED))
+        self.btn_duplicate.configure(state=(tk.NORMAL if has_sel else tk.DISABLED))
+
+    def _update_file_label(self) -> None:
+        """Met à jour l’étiquette du chemin courant + le titre de la fenêtre."""
+        try:
+            self.lbl_file.configure(text=f"Fichier : {self.path_dico}")
+            self.title(f"Dictionnaire ({self.path_dico})")
+        except Exception:
+            pass
+
+    def _switch_file(self, path: str) -> None:
+        """
+        Bascule l’éditeur sur un autre fichier my.dic (lecture).
+        Conserve self.entries et recharge la table. Marque _file_changed.
+        """
+        try:
+            # Recharge
+            self.path_dico = path if (os.path.isabs(path) or os.path.exists(path)) else get_config_path(path)
+            self.data = _load_dic(self.path_dico)
+            self.entries = self.data.get("entries", [])
+            self._file_changed = True
+
+            # UI
+            self._load_table()
+            # reset du formulaire
+            self._suspend_auto_phon = True
+            try:
+                self.word_var.set("")
+                self.from_var.set("")
+                self.phonemes_var.set("")
+                self.weight_var.set("1.0")
+                self.tags_var.set("")
+            finally:
+                self._suspend_auto_phon = False
+
+            # statut/visuel
+            self._update_file_label()
+            self.modif = False
+        except Exception as e:
+            messagebox.showerror("Ouverture", f"Impossible de charger le fichier :\n{e}", parent=self)
+
+    def _action_load_file(self) -> None:
+        """Menu Fichier > Charger…  (propose d’enregistrer si modif)"""
+        if self.modif:
+            res = messagebox.askyesnocancel("Enregistrer ?",
+                                            "Enregistrer les modifications avant d'ouvrir un autre fichier ?",
+                                            parent=self)
+            if res is None:
+                return
+            if res:
+                self._save()
+
+        path = filedialog.askopenfilename(parent=self,
+                                          title="Ouvrir un dictionnaire",
+                                          filetypes=[("Dictionnaire JSON", "*.dic;*.json"),
+                                                     ("Tous fichiers", "*.*")])
+        if not path:
+            return
+        self._switch_file(path)
+
+    def _action_save_as(self) -> None:
+        """Menu Fichier > Enregistrer sous…  (change la cible puis sauvegarde)"""
+        path = filedialog.asksaveasfilename(parent=self,
+                                            title="Enregistrer le dictionnaire sous",
+                                            defaultextension=".dic",
+                                            filetypes=[("Dictionnaire JSON", "*.dic"),
+                                                       ("JSON", "*.json"),
+                                                       ("Tous fichiers", "*.*")])
+        if not path:
+            return
+        self.path_dico = path
+        self._update_file_label()
+        # Sauvegarde via la méthode existante (gère invalidation cache)
+        self._save()
+        self._file_changed = True
 
     def _open_phon_diag(self):
         """Affiche une fenêtre modale avec le diagnostic détaille et un bouton 'Copier'."""
@@ -410,6 +525,7 @@ class FenetreMyDict(tk.Toplevel):
                     _to_csv(e.get("tags", [])),
                 )
             )
+        self._refresh_buttons()
 
     def _on_select(self, _evt=None):
         sel = self.tree.selection()
@@ -426,6 +542,7 @@ class FenetreMyDict(tk.Toplevel):
             self.tags_var.set(_to_csv(e.get("tags", [])))
         finally:
             self._suspend_auto_phon = False
+            self._refresh_buttons()
 
     def _current_entry_from_form(self) -> Dict[str, Any]:
         word = self.word_var.get().strip()
@@ -484,9 +601,10 @@ class FenetreMyDict(tk.Toplevel):
             return
         self.modif = True
         try:
-            self.title("Dictionnaire personnalisé (my.dic) *")  # petit indicateur visuel
+            self.title(f"Dictionnaire ({self.path_dico}) *")  # petit indicateur visuel
         except Exception:
             pass
+        self._refresh_buttons()
 
     def _delete(self):
         sel = self.tree.selection()
@@ -524,11 +642,11 @@ class FenetreMyDict(tk.Toplevel):
 
     def _save(self):
         self.data["entries"] = self.entries
-        _save_dic(self.data)
-        messagebox.showinfo("my.dic", "Enregistré")
+        _save_dic(self.data, self.path_dico)
+        messagebox.showinfo(f"{self.path_dico}", "Enregistré")
         self.modif = False
         try:
-            self.title("Dictionnaire personnalisé (my.dic)")
+            self.title(f"Dictionnaire ({self.path_dico})")
         except Exception:
             pass
 
@@ -542,7 +660,10 @@ class FenetreMyDict(tk.Toplevel):
                              else "Correction my.dic désactivée")
         if self.fonction_termine:
             try:
-                self.master.after(0, self.fonction_termine)
+                if self._file_changed:
+                    self.master.after(0, self.fonction_termine(self.path_dico))
+                else:
+                    self.master.after(0, self.fonction_termine)
             except Exception:
                 pass
 

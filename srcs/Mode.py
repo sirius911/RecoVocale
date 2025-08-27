@@ -295,17 +295,22 @@ class Mode:
         # S'assure que l'ouverture se fait dans le thread UI
         if not self.fenetre_gestion_ouverte:
             def _spawn():
-                self.fenetre_mydict = FenetreMyDict(self.root, app=self.app, termine=self.fermer_mydict_editor)
+                self.fenetre_mydict = FenetreMyDict(self.root,
+                                                    app=self.app,
+                                                    termine=self.fermer_mydict_editor,
+                                                    path_dico=self.app.dico)
                 self.fenetre_gestion_ouverte = True
 
             self.add_to_ui_queue(_spawn)
             toggle_menu_gestion_fenetre(self, tk.DISABLED)
 
-    def fermer_mydict_editor(self) -> None:
+    def fermer_mydict_editor(self, new_path: str | None = None) -> None:
         """Callback appelé par FenetreMyDict à la fermeture."""
         try:
             # si la fenêtre existe encore (fermeture programmée), on la détruit proprement
             if getattr(self, "fenetre_mydict", None):
+                if new_path is not None:
+                    self.app.dico = new_path
                 try:
                     self.fenetre_mydict.destroy()
                 except Exception:

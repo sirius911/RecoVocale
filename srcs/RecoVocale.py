@@ -51,7 +51,7 @@ class App:
         self.config = UserConfig()
         self.console_debug = DebugWindow(root)
         self.insertions = GestionnaireInsertion(self.config.insertions)
-
+        self.dico = self.config.dico
         self.debug_window_id = self.console_debug.debug_window.winfo_id()
 
         if self.config.debug:

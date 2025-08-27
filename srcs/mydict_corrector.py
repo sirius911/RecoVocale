@@ -8,7 +8,7 @@ from typing import Any, Dict, List
 from utils_window import get_config_path
 
 # --- Chemin config ---
-DICT_FILENAME = get_config_path("my.dic")
+# DICT_FILENAME = get_config_path("my.dic")
 
 # Seuil global pour déclencher une correction (0..1)
 THRESHOLD = 0.82
@@ -135,10 +135,12 @@ def _preserve_case(src: str, repl: str) -> str:
 
 
 # -------- Chargement du dictionnaire --------
-def _load_dict() -> Dict[str, Any]:
+def _load_dict(path: str) -> Dict[str, Any]:
     """Charge le JSON si nécessaire, sinon rend le cache (hot‑reload par mtime)."""
     global _DICT_CACHE, _DICT_MTIME
-    path = DICT_FILENAME
+
+    if not os.path.isabs(path) and not os.path.exists(path):
+        path = get_config_path(path)
 
     # 1) si le fichier existe, regarde son mtime
     current_mtime = None
@@ -179,13 +181,13 @@ def _best_alias(e: Dict[str, Any]) -> List[str]:
 
 
 # -------- Correction principale --------
-def correct_with_dict(text: str) -> str:
+def correct_with_dict(text: str, path_dico: str = "my.dic") -> str:
     """
     Corrige les mots du texte si une entrée du dico est suffisamment similaire.
     POC : matching orthographique + 'phonétique' léger (squelette consonantique).
     """
     # print(f"correct_with_dict de '{text}' -> ", end='')
-    dic = _load_dict()
+    dic = _load_dict(path_dico)
     entries = dic.get("entries", [])
     if not entries or not text or not text.strip():
         return text

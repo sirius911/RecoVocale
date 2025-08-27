@@ -28,7 +28,6 @@ class FenetreInsertions(tk.Toplevel):
         # Données
         self.fichier_xml = insertions_xml
         self.gestionnaire = GestionnaireInsertion(self.fichier_xml)
-        self._initial_xml = self.fichier_xml
         self._file_changed = False            # flag si l'utilisateur bascule de fichier
         self.data: dict[str, dict] = dict(self.gestionnaire.data)  # {spoken: {name, description, body}}
 

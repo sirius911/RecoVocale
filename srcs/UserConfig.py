@@ -44,6 +44,7 @@ class UserConfig:
         self.debug = False
         self.insertions = "insertions.xml"
         self.pas_a_pas = "pas_a_pas.json"
+        self.dico = "my.dic"
         self.dictionnaire = False
         self._service_port_map = {
             "Tous": "30000",
@@ -85,6 +86,7 @@ class UserConfig:
         self.debug = (config.get('SETTINGS', 'DEBUG', fallback=self.debug) == 'True')
         self.insertions = config.get('SETTINGS', 'INSERTIONS', fallback=self.insertions)
         self.pas_a_pas = config.get('SETTINGS', 'PAS_A_PAS', fallback=self.pas_a_pas)
+        self.dico = config.get('SETTINGS', 'DICO', fallback=self.dico)
         self.dictionnaire = (config.get('SETTINGS', 'DICTIONNAIRE', fallback=self.dictionnaire) == 'True')
         self._play_audio = (config.get('SETTINGS', 'PLAY_AUDIO', fallback=self._play_audio) == 'True')
         self._word_space = (config.get('SETTINGS', 'WORD_SPACE', fallback=self._word_space) == 'True')
@@ -113,6 +115,7 @@ class UserConfig:
             'DEBUG': 'True' if self.debug else 'False',
             'INSERTIONS': self.insertions,
             'PAS_A_PAS': self.pas_a_pas,
+            'DICO': self.dico,
             'DICTIONNAIRE': self.dictionnaire,
             'PLAY_AUDIO': self._play_audio,
             'WORD_SPACE': self._word_space,

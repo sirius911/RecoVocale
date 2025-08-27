@@ -91,7 +91,7 @@ class Mode_Reduit(Mode):
         # --- NOUVEAU : correction via my.dic AVANT intercept() ---
         try:
             if self.app.config.dictionnaire:
-                text = correct_with_dict(text)
+                text = correct_with_dict(text=text, path_dico=self.app.dico)
         except Exception as e:
             # on reste robuste : en cas d'erreur, on n'interrompt pas le flux
             print(f"[mydict_corrector] erreur: {e}")
