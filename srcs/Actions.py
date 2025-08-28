@@ -4,7 +4,8 @@ import subprocess
 from abc import ABC, abstractmethod
 from pynput.keyboard import Key
 from typing import Optional, List, Union
-
+import os
+import ctypes
 from utils_keyboard import Simulator, key_display_names
 
 
@@ -139,13 +140,17 @@ class Run(Action):
         arguments (list[str] | None): Arguments de la ligne de commande.
         window_mode (str): Mode d'affichage de la fenêtre ('normal', 'maximized', 'minimized').
     """
-    def __init__(self, app, executable, arguments=None, window_mode="normal"):
+    def __init__(self, app, executable, arguments=None, window_mode="normal", verb="open"):
         super().__init__(app)
         self.executable = executable
         self.arguments = arguments if arguments else []
         self.window_mode = window_mode  # "normal", "maximized", "minimized"
+        self.verb = verb
 
     def execute(self):
+
+        target = self.executable
+        args = self.arguments or []
 
         SW_SHOWNORMAL = 1
         SW_SHOWMINIMIZED = 2
@@ -155,11 +160,26 @@ class Run(Action):
             "minimized": SW_SHOWMINIMIZED,
             "maximized": SW_SHOWMAXIMIZED,
         }
-        command = [self.executable] + list(self.arguments or [])
+        show_cmd = show_map.get(self.window_mode, SW_SHOWNORMAL)
 
-        si = subprocess.STARTUPINFO()
-        si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-        si.wShowWindow = show_map.get(self.window_mode, SW_SHOWNORMAL)
+        ext = os.path.splitext(target)[1].lower()
+        is_exe = ext in (".exe", ".com", ".bat", ".cmd")
 
-        # pas besoin de shell=True si on passe une liste
-        subprocess.Popen(command, startupinfo=si)
+        if is_exe:
+            # Lancement classique (avec gestion du show window)
+            si = subprocess.STARTUPINFO()
+            si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+            si.wShowWindow = show_cmd
+            command = [target] + list(args)
+            subprocess.Popen(command, startupinfo=si)
+            return
+
+        # Sinon : utiliser ShellExecute (assoc. de fichiers)
+        ShellExecuteW = ctypes.windll.Shell32.ShellExecuteW
+        verb = self.verb or "open"
+        # paramètres passés sous forme de chaîne (peu d'applis de fichier en ont besoin)
+        params = " ".join(map(str, args)) if args else None
+        # uDir = None (répertoire courant)
+        ret = ShellExecuteW(None, verb, target, params, None, show_cmd)
+        if ret <= 32:
+            raise OSError(f"ShellExecute failed (code {ret}) for {verb} {target!r}")

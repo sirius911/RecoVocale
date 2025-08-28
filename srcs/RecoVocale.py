@@ -29,7 +29,7 @@ from loger import envoyer_log
 from queue_manager import UI_QUEUE
 import queue
 from VoiceTranscriber import VoiceTranscriber
-from pas_a_pas import load_registry_from_json, Executor
+from pas_a_pas import Executor
 
 # Envoi d'un log "stop" à la fermeture du programme
 atexit.register(lambda: envoyer_log("stop"))
@@ -94,8 +94,8 @@ class App:
         else:  # Default to DIRECT mode
             self.current_mode = Mode_Direct(self)
 
-        self.pp_registry = load_registry_from_json(self.config.pas_a_pas)
-        self.pp_executor = Executor(self.current_mode, self.pp_registry)
+        # ------------- COMMANDES Pas à Pas -------------------
+        self.pp_executor = Executor(app=self.current_mode, path_json=self.config.pas_a_pas)
 
         # ---- Touches de racourcis
         self.shortcut_manager = ShortcutManager(
@@ -339,6 +339,24 @@ class App:
 
             self.console_debug.append_status_with_format("Fichier des insertions : ", font_style="italic")
             self.console_debug.append_status_with_format(f"{self.insertions.fichier_xml}\n", color="green")
+
+            self.console_debug.append_status_with_format("Fichier du dictionaire : ", font_style="italic")
+            self.console_debug.append_status_with_format(f"{self.dico} - ", color="green")
+            self.console_debug.append_status_with_format(f"{'' if self.config.dictionnaire else 'non'} utilisé\n",
+                                                         color=("blue" if self.config.dictionnaire else "red"))
+
+            self.console_debug.append_status_with_format("Fichier des commandes : ", font_style="italic")
+            self.console_debug.append_status_with_format(f"{self.config.pas_a_pas} - ", color="green")
+            self.console_debug.append_status_with_format(f"{'' if self.config.commandes else 'non'} utilisé\n",
+                                                         color=("blue" if self.config.commandes else "red"))
+
+            self.console_debug.append_status_with_format("Espace avant : ", font_style="italic")
+            self.console_debug.append_status_with_format(f"{self.config.word_space}\n",
+                                                         color=("green" if self.config.word_space else "blue"))
+
+            self.console_debug.append_status_with_format("Majuscule : ", font_style="italic")
+            self.console_debug.append_status_with_format(f"{self.config.majuscule}\n",
+                                                         color=("green" if self.config.majuscule else "blue"))
 
     def change_shortcut(self) -> None:
         """Permet à l'utilisateur de modifier les raccourcis clavier."""

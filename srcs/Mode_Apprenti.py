@@ -69,7 +69,6 @@ class Mode_Apprenti(Mode_Direct):
         # Attacher l'événement à la Text box
         self.text_box.bind("<Key>", self.on_text_change)
 
-        self.text_box.bind("<Button-3>", self.show_context_menu)
         # Création du menu contextuel
         self.context_menu = tk.Menu(self.root, tearoff=0)
 
@@ -122,27 +121,32 @@ class Mode_Apprenti(Mode_Direct):
                                    bg="lightblue", fg="darkblue", anchor=tk.W)
 
     def pause(self) -> None:
-        if not self.app.recording and not self.vt.is_recording:
-            return
-        try:
-            texte = self.vt.stop()
-        except Exception as e:
-            self.status_bar.config(text=f"Erreur stop/transcription: {e}",
-                                   bg="lightblue", fg="darkblue", anchor=tk.W)
-            texte = ""
-        finally:
-            self.app.recording = False
+        super().pause()
+        # if not self.app.recording and not self.vt.is_recording:
+        #     return
+        # try:
+        #     texte = self.vt.stop()
+        # except Exception as e:
+        #     self.status_bar.config(text=f"Erreur stop/transcription: {e}",
+        #                            bg="lightblue", fg="darkblue", anchor=tk.W)
+        #     texte = ""
+        # finally:
+        #     self.app.recording = False
 
-        if texte.strip():
-            self.handle_final_text(texte)
+        # if texte.strip():
+        #     self.handle_final_text(texte)
 
         self.ready_to_learn = True
-        self.text_box.config(state=tk.NORMAL)
-        self.rec_button.config(state=tk.DISABLED)
-        self.learning_button.config(state=tk.NORMAL)
-        self.play_button.config(state=tk.NORMAL)
-        self.trash_button.config(state=tk.NORMAL)
-        self.status_bar.config(text="Lecture/Validation prêtes.")
+
+        def _maj():
+            self.text_box.config(state=tk.NORMAL)
+            self.learning_button.config(state=tk.NORMAL)
+            self.play_button.config(state=tk.NORMAL)
+            self.trash_button.config(state=tk.NORMAL)
+
+        self.add_to_ui_queue(_maj)
+        update_status_bar(status_bar=self.status_bar, text="Lecture/Validation prêtes.",
+                          bg='lightblue', fg='darkblue', anchor=tk.W)
 
     def handle_final_text(self, text: str):
         """Insère le texte tel quel (brut), sans intercept ni corrections."""
@@ -154,10 +158,8 @@ class Mode_Apprenti(Mode_Direct):
             self.text_box.insert("insert", text)
             self.text_box.see("insert")
             # En mode apprentissage, on laisse editable pour correction
-        if hasattr(self, "add_to_ui_queue"):
-            self.add_to_ui_queue(_insert_raw)
-        else:
-            _insert_raw()
+
+        self.add_to_ui_queue(_insert_raw)
 
     def stop_client(self) -> None:
         # Stopper lecture audio si en cours

@@ -161,32 +161,36 @@ class Simulator:
     @staticmethod
     def parse_keys(seq):
         """
-        Transforme une liste de chaînes (JSON) en objets Key/str.
-        Exemples d'entrées: ["{TAB}", "Hello", " ", "{ENTER}", "{CTRL}", "v"]
+        Transforme une liste en séquence Key/str.
+        Accepte:
+          ["{TAB}", "{ENTER}"]
+          ["{TAB}{ENTER}"]
+          ["Salut{ENTER}", "{CTRL}", "v"]
         """
+        import re
         mapping = {
-            "{ENTER}": Key.enter,
-            "{TAB}": Key.tab,
-            "{ESC}": Key.esc,
-            "{DEL}": Key.delete,
-            "{DELETE}": Key.delete,
-            "{BACKSPACE}": Key.backspace,
-            "{UP}": Key.up,
-            "{DOWN}": Key.down,
-            "{LEFT}": Key.left,
-            "{RIGHT}": Key.right,
-            "{CTRL}": Key.ctrl,
-            "{ALT}": Key.alt,
-            "{SHIFT}": Key.shift,
-            "{SPACE}": " ",
+            "{ENTER}": Key.enter, "{TAB}": Key.tab, "{ESC}": Key.esc,
+            "{DEL}": Key.delete, "{DELETE}": Key.delete, "{BACKSPACE}": Key.backspace,
+            "{UP}": Key.up, "{DOWN}": Key.down, "{LEFT}": Key.left, "{RIGHT}": Key.right,
+            "{CTRL}": Key.ctrl, "{ALT}": Key.alt, "{SHIFT}": Key.shift, "{SPACE}": " ",
         }
+        token_re = re.compile(r"\{[A-Za-z_]+\}")
+
         out = []
         for item in seq:
             if isinstance(item, Key):
                 out.append(item)
-            elif isinstance(item, str):
-                tok = mapping.get(item.upper())
-                out.append(tok if tok is not None else item)
-            else:
-                out.append(str(item))
+                continue
+            s = str(item)
+            pos = 0
+            for m in token_re.finditer(s):
+                # texte avant le token
+                if m.start() > pos:
+                    out.append(s[pos:m.start()])
+                tok = m.group().upper()
+                out.append(mapping.get(tok, tok))  # inconnu => on tape le texte "{...}"
+                pos = m.end()
+            # suffixe après le dernier token
+            if pos < len(s):
+                out.append(s[pos:])
         return out

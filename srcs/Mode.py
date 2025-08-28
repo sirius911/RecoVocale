@@ -3,12 +3,18 @@ import enchant
 import tkinter as tk
 import pygame
 from info import REDUIT, VERSION
-from Insertions_editor import FenetreInsertions
 from loger import envoyer_log
 from queue_manager import UI_QUEUE
 from utils_window import update_status_bar, show_messagebox
+from Insertions_editor import FenetreInsertions
+from pasapas_editor import FenetrePasAPas
 from mydict_editor import FenetreMyDict
 from menus import toggle_menu_gestion_fenetre
+from pas_a_pas import Executor
+from Correcteur import intercept, corrige_ponctuation
+from mydict_corrector import correct_with_dict
+from utils_keyboard import Simulator
+from pynput.keyboard import Key
 
 
 class Mode:
@@ -132,8 +138,35 @@ class Mode:
         self.update()
         pass
 
-    def handle_final_text(self, text: str):
-        pass
+    def handle_final_text(self, text: str) -> str:
+        # --- NOUVEAU : correction via my.dic AVANT intercept() ---
+        try:
+            if self.app.config.dictionnaire:
+                text = correct_with_dict(text=text, path_dico=self.app.dico)
+        except Exception as e:
+            # on reste robuste : en cas d'erreur, on n'interrompt pas le flux
+            print(f"[mydict_corrector] erreur: {e}")
+
+        executor = self.app.pp_executor if (self.app.config.commandes and not self.is_ouverte()) else None
+        txt, _ = intercept(text, dico_insertion=self.app.insertions.get(), executor=executor)
+        txt = corrige_ponctuation(txt)
+
+        # --- majuscule si activée ---
+        if self.app.config.majuscule and txt:
+            txt = txt[0].upper() + txt[1:]
+
+        if self.fenetre_gestion_ouverte:
+            def _copy_and_paste():
+                # 1) maj presse-papier (thread UI garanti)
+                self.root.clipboard_clear()
+                self.root.clipboard_append(text)
+                self.root.update_idletasks()
+                # 2) petit after pour laisser Windows “committer” le clipboard
+                self.root.after(0, lambda: Simulator([Key.ctrl, 'v']))
+
+            self.add_to_ui_queue(_copy_and_paste)
+
+        return txt
 
     def exit_app(self) -> None:
         """Compat : ne fait que déléguer au nettoyage local, sans rappeler l'app."""
@@ -288,6 +321,14 @@ class Mode:
         enabled = bool(self.mydict_var.get())
         self.app.config.dictionnaire = enabled
 
+    def toggle_commandes(self) -> None:
+        """
+        Active/désactive l'interception des commandes.
+        """
+        # Par défaut True si l'attribut n'existe pas
+        enabled = bool(self.commandes_var.get())
+        self.app.config.commandes = enabled
+
     def ouvrir_mydict_editor(self) -> None:
         """
         Ouvre la fenêtre d'édition du dictionnaire personnalisé (my.dic).
@@ -317,6 +358,38 @@ class Mode:
                     pass
         finally:
             self.fenetre_mydict = None
+            self.fenetre_gestion_ouverte = False
+            toggle_menu_gestion_fenetre(self, tk.NORMAL)
+
+    def ouvrir_commandes_editor(self) -> None:
+        """
+        Ouvre la fenêtre d'édition des commandes pas à pas
+        """
+        if not self.fenetre_gestion_ouverte:
+            def _spawn():
+                self.fenetre_commandes = FenetrePasAPas(self.root,
+                                                        app=self.app,
+                                                        termine=self.fermer_commandes_editor,
+                                                        path_json=self.app.pp_executor.path_json)
+                self.fenetre_gestion_ouverte = True
+
+            self.add_to_ui_queue(_spawn)
+            toggle_menu_gestion_fenetre(self, tk.DISABLED)
+
+    def fermer_commandes_editor(self, new_path: str | None = None) -> None:
+        """
+        Callback appelé par FenetrePasAPas à la fermeture
+        """
+        try:
+            if getattr(self, "fenetre_commandes", None):
+                if new_path is not None:
+                    self.app.pp_executor = Executor(self, new_path)
+                try:
+                    self.fenetre_commandes.destroy()
+                except Exception:
+                    pass
+        finally:
+            self.fenetre_commandes = None
             self.fenetre_gestion_ouverte = False
             toggle_menu_gestion_fenetre(self, tk.NORMAL)
 
@@ -414,6 +487,10 @@ class Mode:
         """
 
         self.app.config.play_audio = self.play_audio_var.get()
+
+    def toggle_majuscule(self) -> None:
+        """Mettre à jour l'option Majuscule"""
+        self.app.config.majuscule = self.majuscule_var.get()
 
     def handle_dropped_file(self, file_path: str) -> None:
         """

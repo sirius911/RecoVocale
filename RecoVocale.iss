@@ -6,13 +6,13 @@ ArchitecturesInstallIn64BitMode=x64
 
 ; Nom du fichier installateur
 OutputDir=install
-OutputBaseFilename=install_2.04
+OutputBaseFilename=install_2.05
 SetupIconFile=reco.ico
 
 ; Nom de l'application
 AppName=RecoVocale
 ; Version de l'application
-AppVersion=2.04
+AppVersion=2.05
 ; Répertoire par défaut d'installation
 AppVerName={#SetupSetting("AppName")} {#SetupSetting("AppVersion")}
 DefaultDirName={pf64}\RecoVocale
@@ -30,6 +30,7 @@ Source: "C:\Users\lorcyr\RecoVocale\srcs\config\user_config.ini"; DestDir: "{loc
 Source: "C:\Users\lorcyr\RecoVocale\srcs\config\my.dic"; DestDir: "{localappdata}\RecoVocale"; Flags: onlyifdoesntexist
 Source: "C:\Users\lorcyr\RecoVocale\srcs\config\micro_actions_config.json"; DestDir: "{localappdata}\RecoVocale"; Flags: ignoreversion
 Source: "C:\Users\lorcyr\RecoVocale\srcs\config\insertions.xml"; DestDir: "{localappdata}\RecoVocale"; Flags: onlyifdoesntexist
+Source: "C:\Users\lorcyr\RecoVocale\srcs\config\pas_a_pas.json"; DestDir: "{localappdata}\RecoVocale"; Flags: onlyifdoesntexist
 Source: "dist\bin\ffmpeg.exe"; DestDir: "{app}\bin"; Flags: onlyifdoesntexist
 
 ; --- espeak-ng embarqué (ultra-min) ---

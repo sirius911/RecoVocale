@@ -6,8 +6,8 @@ from utils_window import create_buttons, update_status_bar
 from menus import create_menus
 from info import REDUIT, VERSION
 from utils_keyboard import Simulator
-from Correcteur import intercept, corrige_ponctuation
-from mydict_corrector import correct_with_dict
+# from Correcteur import intercept, corrige_ponctuation
+# from mydict_corrector import correct_with_dict
 
 
 class Mode_Reduit(Mode):
@@ -88,17 +88,22 @@ class Mode_Reduit(Mode):
                           bg="red", fg="darkblue", anchor=tk.CENTER)
 
     def handle_final_text(self, text: str):
+        txt = super().handle_final_text(text)
         # --- NOUVEAU : correction via my.dic AVANT intercept() ---
-        try:
-            if self.app.config.dictionnaire:
-                text = correct_with_dict(text=text, path_dico=self.app.dico)
-        except Exception as e:
-            # on reste robuste : en cas d'erreur, on n'interrompt pas le flux
-            print(f"[mydict_corrector] erreur: {e}")
+        # try:
+        #     if self.app.config.dictionnaire:
+        #         text = correct_with_dict(text=text, path_dico=self.app.dico)
+        # except Exception as e:
+        #     # on reste robuste : en cas d'erreur, on n'interrompt pas le flux
+        #     print(f"[mydict_corrector] erreur: {e}")
 
-        # Post-traitements
-        txt, _ = intercept(text, dico_insertion=self.app.insertions.get(), executor=self.app.pp_executor)
-        txt = corrige_ponctuation(txt)
+        # executor = self.app.pp_executor if self.app.config.commandes else None
+        # txt, _ = intercept(text, dico_insertion=self.app.insertions.get(), executor=executor)
+        # txt = corrige_ponctuation(txt)
+
+        # --- majuscule si activée ---
+        # if self.app.config.majuscule and txt:
+        #     txt = txt[0].upper() + txt[1:]
 
         to_copy = f" {txt}" if self.app.config.word_space else f"{txt} "
 
@@ -111,8 +116,8 @@ class Mode_Reduit(Mode):
             self.root.after(0, lambda: Simulator([Key.ctrl, 'v']))
             # 3) log une fois que c’est parti
             self.log(text)
-
-        self.add_to_ui_queue(_copy_and_paste)
+        if not self.is_ouverte():
+            self.add_to_ui_queue(_copy_and_paste)
 
     def copy_to_clipboard(self, text: str) -> None:
         pass

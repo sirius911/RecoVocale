@@ -113,6 +113,7 @@ def wait_for_window(
     timeout_ms: int = 10000,
     require_visible: bool = True,
     activate: bool = False,
+    maximize: bool = False,
 ) -> bool:
     """Attend qu'une fenêtre correspondant aux critères apparaisse."""
     deadline = time.time() + (timeout_ms / 1000.0)
@@ -141,9 +142,13 @@ def wait_for_window(
     while time.time() < deadline:
         user32.EnumWindows(EnumWindowsProc(enum_cb), 0)
         if found_hwnd:
-            if activate:
-                SW_RESTORE = 9
+            SW_RESTORE = 9
+            SW_MAXIMIZE = 3
+            if maximize:
+                user32.ShowWindow(found_hwnd, SW_MAXIMIZE)
+            elif activate:
                 user32.ShowWindow(found_hwnd, SW_RESTORE)
+            if activate:
                 user32.SetForegroundWindow(found_hwnd)
             return True
         time.sleep(0.1)
@@ -161,9 +166,10 @@ def _parse_args(args: Any) -> List[str]:
 
 
 class Executor:
-    def __init__(self, app, registry: CommandRegistry) -> None:
+    def __init__(self, app, path_json: str = "pas_a_pas.json") -> None:
         self.app = app
-        self.registry = registry
+        self.path_json = path_json
+        self.registry = load_registry_from_json(path_json)
 
     def run_by_spoken(self, spoken_text: str) -> bool:
         """Retourne True si une commande a été trouvée et lancée en thread."""
@@ -175,8 +181,12 @@ class Executor:
 
     # --- interne ---
     def _run(self, cmd: Command) -> None:
-        for step in cmd.steps:
-            self._exec_step(step)
+        for i, step in enumerate(cmd.steps, start=1):
+            try:
+                self._exec_step(step)
+            except Exception as e:
+                self._report_error(f"Échec à l’étape {i} ({step.type}): {e}")
+                break  # on arrête la commande
 
     def _exec_step(self, step: Step) -> None:
         t = step.type
@@ -186,7 +196,8 @@ class Executor:
             target = p["target"]                      # ex: r"C:\...\iexplore.exe"
             args = _parse_args(p.get("args", ""))     # ex: "https://..." ou liste
             mode = p.get("window", "normal")          # "normal" | "maximized" | "minimized"
-            RunAction(self.app, target, args, window_mode=mode).execute()
+            verb = p.get("verb", "open")              # <-- support du verb optionnel
+            RunAction(self.app, target, args, window_mode=mode, verb=verb).execute()
 
         elif t == StepType.WAIT:
             ms = int(p.get("ms", 0))
@@ -194,11 +205,13 @@ class Executor:
 
         elif t == StepType.SEND_KEYS:
             raw = p.get("keys", [])
+            if not raw:
+                raise ValueError("SEND_KEYS: liste 'keys' vide")
             try:
                 keys = Simulator.parse_keys(raw)
             except Exception:
                 keys = raw  # fallback
-            KeyboardAction(self.app, keys).execute()
+            KeyboardAction(self.app, keys=keys, status_bar=False).execute()
 
         elif t == StepType.EXECUTE_COMMAND:
             name = p["name"]
@@ -215,9 +228,10 @@ class Executor:
                 timeout_ms=int(p.get("timeout_ms", 10000)),
                 require_visible=bool(p.get("require_visible", True)),
                 activate=bool(p.get("activate", True)),
+                maximize=bool(p.get("maximize", False)),   # <= nouveau
             )
             if not ok:
-                print("[PasÀPas] WAIT_WINDOW : timeout")
+                raise TimeoutError("WAIT_WINDOW: timeout (fenêtre non trouvée)")
 
         elif t == StepType.EXECUTE_COMMAND:
             name = p["name"]
@@ -229,3 +243,31 @@ class Executor:
 
         else:
             raise ValueError(f"Type d'étape inconnu: {t}")
+
+    def _report_error(self, message: str):
+        # Essaye la barre de statut (thread-safe) + messagebox si dispo
+        try:
+            from utils_window import update_status_bar, show_messagebox
+        except Exception:
+            update_status_bar = show_messagebox = None
+
+        # status bar si possible
+        sb = getattr(self.app, "status_bar", None)
+        if update_status_bar and sb:
+            try:
+                update_status_bar(sb, text=f"[Pas à pas] {message}", bg="lightblue", fg="darkblue", anchor="w")
+            except Exception:
+                pass
+
+        # messagebox si utilitaire thread-safe dispo
+        if show_messagebox:
+            try:
+                show_messagebox(message_type="error", title="Pas à pas - Erreur", message=message)
+            except Exception:
+                pass
+
+        # fallback console
+        try:
+            print("[Pas à pas][ERREUR]", message)
+        except Exception:
+            pass

@@ -7,6 +7,7 @@ def toggle_menu_gestion_fenetre(self, state):
     def _maj():
         self.settings_menu.entryconfig("Gestion des Insertions", state=state)
         self.dico_menu.entryconfig("Gérer le dictionnaire personnalisé…", state=state)
+        self.commandes_menu.entryconfig("Gérer les commandes pas à pas", state=state)
     self.add_to_ui_queue(_maj)
 
 
@@ -61,7 +62,6 @@ def create_menus(self) -> None:
                                        command=self.toggle_debug)
     self.dico_var = BooleanVar(value=self.app.config.dictionnaire)
 
-    # --- NOUVEAU : sous-menu Dictionnaire
     self.dico_menu = tk.Menu(self.settings_menu, tearoff=0)
     self.settings_menu.add_cascade(label="Dictionnaire", menu=self.dico_menu)
 
@@ -75,6 +75,21 @@ def create_menus(self) -> None:
     self.dico_menu.add_command(
         label="Gérer le dictionnaire personnalisé…",
         command=self.ouvrir_mydict_editor
+    )
+
+    # --- NOUVEAU : sous-menu Commandes
+    self.commandes_menu = tk.Menu(self.settings_menu, tearoff=0)
+    self.settings_menu.add_cascade(label="Commandes pas à pas", menu=self.commandes_menu)
+
+    self.commandes_var = BooleanVar(value=self.app.config.commandes)
+    self.commandes_menu.add_checkbutton(
+        label="Activer interception des commandes pas à pas",
+        variable=self.commandes_var,
+        command=self.toggle_commandes
+    )
+    self.commandes_menu.add_command(
+        label="Gérer les commandes pas à pas",
+        command=self.ouvrir_commandes_editor
     )
 
     self.settings_menu.add_separator()
@@ -105,10 +120,14 @@ def create_menus(self) -> None:
                                    command=self.clear_text_box)
 
     if self.mode == REDUIT:
-        self.edit_menu.add_separator
+        self.edit_menu.add_separator()
         self.word_space_var = BooleanVar(value=self.app.config.word_space)
         self.edit_menu.add_checkbutton(label="Espace avant ", variable=self.word_space_var,
                                        command=self.toggle_word_space)
+    self.edit_menu.add_separator()
+    self.majuscule_var = BooleanVar(value=self.app.config.majuscule)
+    self.edit_menu.add_checkbutton(label="Majuscule première lettre", variable=self.majuscule_var,
+                                   command=self.toggle_majuscule)
 
     # =========================
     # 3. Mode  (NOUVEAU menu racine)

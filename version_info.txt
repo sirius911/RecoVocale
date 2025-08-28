@@ -1,8 +1,8 @@
 ﻿# UTF-8
 VSVersionInfo(
   ffi=FixedFileInfo(
-    filevers=(2, 4, 0, 0),
-    prodvers=(2, 4, 0, 0),
+    filevers=(2, 5, 0, 0),
+    prodvers=(2, 5, 0, 0),
     mask=0x3f,
     flags=0x0,
     OS=0x4,
@@ -17,13 +17,13 @@ VSVersionInfo(
           u'040904B0',
           [
             StringStruct(u'CompanyName', u'CH-Perigueux'),
-            StringStruct(u'FileDescription', u'RecoVocale 2.04'),
-            StringStruct(u'FileVersion', u'2.04'),
+            StringStruct(u'FileDescription', u'RecoVocale 2.05'),
+            StringStruct(u'FileVersion', u'2.05'),
             StringStruct(u'InternalName', u'RecoVocale'),
             StringStruct(u'LegalCopyright', u'CH-Perigueux © 2025'),
             StringStruct(u'OriginalFilename', u'RecoVocale.exe'),
             StringStruct(u'ProductName', u'RecoVocale'),
-            StringStruct(u'ProductVersion', u'2.04')
+            StringStruct(u'ProductVersion', u'2.05')
           ]
         )
       ]

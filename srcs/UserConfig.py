@@ -45,7 +45,8 @@ class UserConfig:
         self.insertions = "insertions.xml"
         self.pas_a_pas = "pas_a_pas.json"
         self.dico = "my.dic"
-        self.dictionnaire = False
+        self.dictionnaire = True
+        self.commandes = False
         self._service_port_map = {
             "Tous": "30000",
             "Général": "30001",
@@ -55,6 +56,7 @@ class UserConfig:
             "Model RT": "30000"
         }
         self._word_space = False
+        self._majuscule = True
 
         # Lire la configuration si le fichier existe, sinon la créer
         if os.path.exists(self.config_file):
@@ -88,8 +90,10 @@ class UserConfig:
         self.pas_a_pas = config.get('SETTINGS', 'PAS_A_PAS', fallback=self.pas_a_pas)
         self.dico = config.get('SETTINGS', 'DICO', fallback=self.dico)
         self.dictionnaire = (config.get('SETTINGS', 'DICTIONNAIRE', fallback=self.dictionnaire) == 'True')
+        self.commandes = (config.get('SETTINGS', 'COMMANDES', fallback=self.commandes) == 'True')
         self._play_audio = (config.get('SETTINGS', 'PLAY_AUDIO', fallback=self._play_audio) == 'True')
         self._word_space = (config.get('SETTINGS', 'WORD_SPACE', fallback=self._word_space) == 'True')
+        self._majuscule = (config.get('SETTINGS', 'MAJUSCULE', fallback=self._majuscule) == 'True')
 
     def save_config(self, root) -> None:
         """
@@ -117,11 +121,12 @@ class UserConfig:
             'PAS_A_PAS': self.pas_a_pas,
             'DICO': self.dico,
             'DICTIONNAIRE': self.dictionnaire,
+            'COMMANDES': self.commandes,
             'PLAY_AUDIO': self._play_audio,
             'WORD_SPACE': self._word_space,
+            'MAJUSCULE': self._majuscule,
         }
         print(f"Sauvegarde {self.config_file} ...", end=' ')
-
         with open(self.config_file, 'w') as configfile:
             config.write(configfile)
         print("Ok")
@@ -209,3 +214,12 @@ class UserConfig:
     def word_space(self, value: bool) -> None:
         """Active ou désactive l'espace apres chaque segment en mode réduit."""
         self._word_space = value
+
+    @property
+    def majuscule(self) -> bool:
+        """Retourne l'état de l'option 'majuscule'."""
+        return self._majuscule
+
+    @majuscule.setter
+    def majuscule(self, value: bool) -> None:
+        self._majuscule = value
