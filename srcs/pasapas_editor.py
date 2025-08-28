@@ -453,6 +453,10 @@ class FenetrePasAPas(tk.Toplevel):
         self.var_desc = tk.StringVar()
         ttk.Entry(form, textvariable=self.var_desc).grid(row=1, column=1, columnspan=3, sticky="ew", padx=(6, 16))
 
+        # activer Enregistrer dès qu'on tape dans le formulaire
+        for _v in (self.var_name, self.var_spoken, self.var_desc):
+            _v.trace_add("write", lambda *_: self._mark_modified())
+
         for i in range(4):
             form.grid_columnconfigure(i, weight=1)
 
@@ -715,7 +719,27 @@ class FenetrePasAPas(tk.Toplevel):
         self._save()
         self.lbl_file.configure(text=f"Fichier : {self.path_json}")
 
+    def _sync_form_into_selected(self):
+        """Recopie les champs du formulaire (Nom/Spoken/Description)
+        dans la commande sélectionnée, sans afficher d'alerte.
+        Utilisé avant l'enregistrement pour éviter d'oublier 'Mettre à jour'.
+        """
+        idx = self._get_selected_cmd_idx()
+        if idx is None:
+            return
+        name = self.var_name.get().strip()
+        spoken = self.var_spoken.get().strip()
+        desc = self.var_desc.get().strip()
+        if name:  # on ne force pas si vide
+            self.commands[idx].update({"name": name, "spoken": spoken, "description": desc})
+            # rafraîchir la ligne correspondante dans la liste
+            try:
+                self.tree_cmd.item(str(idx), values=(name, spoken, desc))
+            except Exception:
+                pass
+
     def _save(self):
+        self._sync_form_into_selected()
         _save_pp(self.commands, self.path_json)
         self.modif = False
         self.title(f"Commandes Pas à pas ({self.path_json})")
