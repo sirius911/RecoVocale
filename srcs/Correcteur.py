@@ -2,6 +2,7 @@ import re
 from datetime import datetime
 from unite import convertir_unites
 from mydict_corrector import correct_with_dict
+from loger import envoyer_log
 
 PATTERN_INSERER = (
     r"\bins[éèêe]r(?:é|er|ez|ée|ées|és)\b"   # flexions d'« Insérer » (non capturant)
@@ -294,6 +295,8 @@ def intercept(phrases: str, dico_insertion: dict[str, str], executor=None):
     '''
     if executor is not None:
         if executor.run_by_spoken(phrases):
+            envoyer_log(event="transcription",
+                        texte=phrases,)
             return "", False
 
     _insertion = False
