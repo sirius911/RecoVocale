@@ -27,12 +27,6 @@
       "from": ["d'orgogne"],
       "weight": 2.0,
       "tags": ["general", "cyrille"]
-    },
-    {
-      "word": "Maincare",
-      "from": ["main care", "mencare"],
-      "weight": 2.0,
-      "tags": ["entreprise", "cyrille"]
     }
   ]
 }

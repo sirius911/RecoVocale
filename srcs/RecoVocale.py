@@ -14,7 +14,7 @@ from tkinter import messagebox
 from tkinterdnd2 import TkinterDnD
 from pynput.keyboard import Key
 from shortcut_manager import ShortcutManager
-from UserConfig import UserConfig
+from UserConfig import UserConfig, ensure_user_files
 from Mode_Direct import Mode_Direct
 from Mode_Apprenti import Mode_Apprenti
 from Mode_Reduit import Mode_Reduit
@@ -48,8 +48,12 @@ class App:
             root (tk.Tk): La fenêtre principale Tkinter.
             loop (asyncio.AbstractEventLoop): La boucle asyncio utilisée par l'application.
         """
-        self.config = UserConfig()
         self.console_debug = DebugWindow(root)
+        try:
+            ensure_user_files()
+        except Exception as e:
+            print(f"[INIT] ensure_user_files a échoué: {e}")
+        self.config = UserConfig()
         self.insertions = GestionnaireInsertion(self.config.insertions)
         self.dico = self.config.dico
         self.debug_window_id = self.console_debug.debug_window.winfo_id()
@@ -433,7 +437,6 @@ if __name__ == "__main__":
     else:
         envoyer_log("start")
     try:
-
         root = TkinterDnD.Tk()
 
         from threading import current_thread, main_thread
@@ -466,6 +469,7 @@ if __name__ == "__main__":
         threading.Thread(target=start_loop, args=(new_loop,), daemon=True).start()
 
         app = App(root, new_loop)  # Pass the new loop to the app
+
         # root.bind("<Configure>", on_resize)
 
         def on_file_drop(event):

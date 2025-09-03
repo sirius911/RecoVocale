@@ -1,5 +1,43 @@
 import os
 import configparser
+import shutil
+import sys
+
+
+def _appdata_dir():
+    return os.path.join(os.getenv("APPDATA"), "RecoVocale")
+
+
+def _defaults_dir():
+    return os.path.join(os.path.dirname(sys.argv[0]), "defaults")
+
+
+def ensure_user_files():
+    os.makedirs(_appdata_dir(), exist_ok=True)
+    defaults = {
+        "user_config.ini": True,   # True = copier seulement si absent
+        "micro_actions_config.json": True,
+        "insertions.xml":  True,
+        "pas_a_pas.json":  True,
+        "my.dic":          True,
+    }
+    for name, only_if_absent in defaults.items():
+        dst = os.path.join(_appdata_dir(), name)
+        if only_if_absent and os.path.exists(dst):
+            print(f"[init] modèle {dst} présent")
+            continue
+        src = os.path.join(_defaults_dir(), name)
+        if os.path.exists(src):
+            try:
+                if not os.path.exists(dst):
+                    shutil.copy2(src, dst)
+                    print(f"[init] modèle {dst} copié")
+                else:
+                    print(f"[init] modèle {dst} déjà présent")
+            except Exception as e:
+                print(f"[INIT] copie modèle {name} échouée: {e}")
+        else:
+            print(f"[INIT] fichier source {src} non présent")
 
 
 class UserConfig:

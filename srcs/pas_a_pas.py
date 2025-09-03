@@ -2,6 +2,7 @@ from __future__ import annotations
 import ctypes
 import time
 import re
+import os
 from ctypes import wintypes
 from dataclasses import dataclass, field
 from enum import Enum
@@ -58,11 +59,34 @@ class CommandRegistry:
 
 # ---------- Chargement JSON ----------
 def load_registry_from_json(path: str) -> CommandRegistry:
-    with open(get_config_path(path), "r", encoding="utf-8") as f:
-        raw = json.load(f)
+    full = get_config_path(path)
+
+    # 1) créer le dossier si besoin
+    os.makedirs(os.path.dirname(full), exist_ok=True)
+
+    # 2) si le fichier n'existe pas → le créer vide "[]"
+    if not os.path.exists(full):
+        with open(full, "w", encoding="utf-8") as f:
+            f.write("[]")
+        return CommandRegistry()  # registre vide (aucune commande)
+
+    # 3) lire en tolérant JSON vide/cassé
+    try:
+        with open(full, "r", encoding="utf-8") as f:
+            raw = f.read().strip()
+        if not raw:
+            raw = "[]"
+        data = json.loads(raw)
+        if not isinstance(data, list):
+            data = []
+    except Exception:
+        # fichier corrompu ou erreur  → on repart propre
+        data = []
+        with open(full, "w", encoding="utf-8") as f:
+            f.write("[]")
 
     reg = CommandRegistry()
-    for obj in raw:
+    for obj in data:
         steps = [Step(StepType(s["type"]), s.get("params", {})) for s in obj.get("steps", [])]
         reg.add(Command(
             name=obj["name"],
@@ -169,7 +193,11 @@ class Executor:
     def __init__(self, app, path_json: str = "pas_a_pas.json") -> None:
         self.app = app
         self.path_json = path_json
-        self.registry = load_registry_from_json(path_json)
+        try:
+            self.registry = load_registry_from_json(path_json)
+        except Exception as e:
+            print(f"[PasÀPas] registre indisponible: {e}")
+            self.registry = CommandRegistry()
 
     def run_by_spoken(self, spoken_text: str) -> bool:
         """Retourne True si une commande a été trouvée et lancée en thread."""

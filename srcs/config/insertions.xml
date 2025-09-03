@@ -139,10 +139,10 @@ Fermeture de la peau par des points séparés.
     </MetaDataDictionary>
     <SpokenPhrases>
       <SpokenPhrase>
-        <Phrase>insérer Signature</Phrase>
+        <Phrase>Signature</Phrase>
       </SpokenPhrase>
     </SpokenPhrases>
-    <Body>Dr Fabien Baudelle (remplaçant) RPPS : 10101664589</Body>
+    <Body>Monsieur/Madame/Docteur Nom Prénom\nnomprenom@ch-perigueux.fr</Body>
   </SpeechAutoText>
   <SpeechAutoText>
     <Format>1</Format>

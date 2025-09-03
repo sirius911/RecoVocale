@@ -6,13 +6,13 @@ ArchitecturesInstallIn64BitMode=x64
 
 ; Nom du fichier installateur
 OutputDir=install
-OutputBaseFilename=install_2.05
+OutputBaseFilename=install_2.07
 SetupIconFile=reco.ico
 
 ; Nom de l'application
 AppName=RecoVocale
 ; Version de l'application
-AppVersion=2.05
+AppVersion=2.07
 ; Répertoire par défaut d'installation
 AppVerName={#SetupSetting("AppName")} {#SetupSetting("AppVersion")}
 DefaultDirName={pf64}\RecoVocale
@@ -24,14 +24,18 @@ LicenseFile="C:\\Users\\lorcyr\\RecoVocale\\LICENSE.txt"
 
 [Files]
 ; Inclure le fichier exécutable et d'autres fichiers nécessaires
-; pour le Flags:ignoreversion / onlyifdoesntexist / promptifolder 
+; pour le Flags:ignoreversion / onlyifdoesntexist / promptifolder
+
+; binaire app
 Source: "dist\RecoVocale.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "C:\Users\lorcyr\RecoVocale\srcs\config\user_config.ini"; DestDir: "{localappdata}\RecoVocale"; Flags: ignoreversion
-Source: "C:\Users\lorcyr\RecoVocale\srcs\config\my.dic"; DestDir: "{localappdata}\RecoVocale"; Flags: onlyifdoesntexist
-Source: "C:\Users\lorcyr\RecoVocale\srcs\config\micro_actions_config.json"; DestDir: "{localappdata}\RecoVocale"; Flags: ignoreversion
-Source: "C:\Users\lorcyr\RecoVocale\srcs\config\insertions.xml"; DestDir: "{localappdata}\RecoVocale"; Flags: onlyifdoesntexist
-Source: "C:\Users\lorcyr\RecoVocale\srcs\config\pas_a_pas.json"; DestDir: "{localappdata}\RecoVocale"; Flags: onlyifdoesntexist
 Source: "dist\bin\ffmpeg.exe"; DestDir: "{app}\bin"; Flags: onlyifdoesntexist
+
+; modèles “read-only” communs à la machine
+Source: "srcs\config\insertions.xml";           DestDir: "{app}\defaults"; Flags: ignoreversion
+Source: "srcs\config\pas_a_pas.json";           DestDir: "{app}\defaults"; Flags: ignoreversion
+Source: "srcs\config\my.dic";                   DestDir: "{app}\defaults"; Flags: ignoreversion
+Source: "srcs\config\user_config.ini";          DestDir: "{app}\defaults"; Flags: ignoreversion
+Source: "srcs\config\micro_actions_config.json";DestDir: "{app}\defaults"; Flags: ignoreversion
 
 ; --- espeak-ng embarqué (ultra-min) ---
 Source: "dist\espeak-ng-ultra\espeak-ng.exe"; DestDir: "{app}\espeak-ng"; Flags: ignoreversion
