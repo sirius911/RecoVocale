@@ -28,7 +28,7 @@ class FenetreInsertions(tk.Toplevel):
         # Données
         self.fichier_xml = insertions_xml
         self.gestionnaire = GestionnaireInsertion(self.fichier_xml)
-        self._file_changed = False            # flag si l'utilisateur bascule de fichier
+        self._file_changed = False            # flag si l'utilisateur change les insertions
         self.data: dict[str, dict] = dict(self.gestionnaire.data)  # {spoken: {name, description, body}}
 
         # État
@@ -428,6 +428,7 @@ class FenetreInsertions(tk.Toplevel):
     def _save_to_disk(self) -> None:
         self.gestionnaire.data = dict(self.data)
         self.gestionnaire.sauvegarder_modifications()
+        self._file_changed = True
 
     # ------------------ Utils ------------------
     def _select_by_spoken(self, spoken: str) -> None:
