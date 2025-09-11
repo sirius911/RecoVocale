@@ -7,8 +7,6 @@ from info import DIRECT
 from utils_keyboard import Simulator
 from pynput.keyboard import Key
 from clipboard import set_clipboard
-# from Correcteur import intercept, corrige_ponctuation
-# from mydict_corrector import correct_with_dict
 
 
 class Mode_Direct(Mode):
@@ -272,8 +270,6 @@ class Mode_Direct(Mode):
         def copy():
             self.status_bar.config(text='- Copie -', bg='lightblue', fg='darkblue', anchor=tk.CENTER)
             set_clipboard(text=self.get_selected_text()[0])
-            # self.root.clipboard_clear()
-            # self.root.clipboard_append(self.get_selected_text()[0])
 
         self.add_to_ui_queue(copy)
 
