@@ -2,12 +2,49 @@
 import tkinter as tk
 from pynput.keyboard import Key
 from Mode import Mode
+# import threading
 from utils_window import create_buttons, update_status_bar
 from menus import create_menus
 from info import REDUIT, VERSION
 from utils_keyboard import Simulator
-# from Correcteur import intercept, corrige_ponctuation
-# from mydict_corrector import correct_with_dict
+# from utils import set_clipboard_plain
+# from keyboard_helper import paste_then_nudge_plaintext, sendinput_sequence, build_combo, VK_RETURN
+from clipboard import set_clipboard
+
+
+# _typing_lock = threading.Lock()
+
+
+# def paste_multiline_with_enters(text: str, soft_break: bool = False, delay: float = 0.01):
+#     """
+#     Firefox (éditeur Word-like) :
+#       - split exact en conservant les vides
+#       - lignes non vides: clipboard + Ctrl+Shift+V + nudge
+#       - lignes vides: juste le saut
+#     """
+#     from keyboard_helper import (
+#         paste_then_nudge_plaintext, sendinput_sequence, build_combo, VK_RETURN
+#     )
+
+#     # 1) ne PAS strip — on veut préserver les lignes vides en tête/fin
+#     # 2) normaliser pour splitter et conserver vides
+#     parts = text.replace('\r\n', '\n').replace('\r', '\n').split('\n')
+
+#     for i, line in enumerate(parts):
+#         is_last = (i == len(parts) - 1)
+
+#         if line:  # ligne non vide -> coller + nudge
+#             set_clipboard_plain(line)
+#             paste_then_nudge_plaintext(delay=delay)
+
+#         # Si ce n'est pas la dernière "part", on ajoute un saut (même si la ligne était vide)
+#         if not is_last:
+#             if soft_break:
+#                 # Shift+Enter (retour doux)
+#                 sendinput_sequence(build_combo(VK_RETURN, shift=True), delay=delay)
+#             else:
+#                 # Enter (paragraphe)
+#                 sendinput_sequence([(VK_RETURN, "tap")], delay=delay)
 
 
 class Mode_Reduit(Mode):
@@ -88,39 +125,22 @@ class Mode_Reduit(Mode):
                           bg="red", fg="darkblue", anchor=tk.CENTER)
 
     def handle_final_text(self, text: str):
+
         txt = super().handle_final_text(text)
-        # --- NOUVEAU : correction via my.dic AVANT intercept() ---
-        # try:
-        #     if self.app.config.dictionnaire:
-        #         text = correct_with_dict(text=text, path_dico=self.app.dico)
-        # except Exception as e:
-        #     # on reste robuste : en cas d'erreur, on n'interrompt pas le flux
-        #     print(f"[mydict_corrector] erreur: {e}")
-
-        # executor = self.app.pp_executor if self.app.config.commandes else None
-        # txt, _ = intercept(text, dico_insertion=self.app.insertions.get(), executor=executor)
-        # txt = corrige_ponctuation(txt)
-
-        # --- majuscule si activée ---
-        # if self.app.config.majuscule and txt:
-        #     txt = txt[0].upper() + txt[1:]
 
         to_copy = f" {txt}" if self.app.config.word_space else f"{txt} "
 
-        def _copy_and_paste():
-            # 1) maj presse-papier (thread UI garanti)
-            self.root.clipboard_clear()
-            self.root.clipboard_append(to_copy)
-            self.root.update_idletasks()
-            # 2) petit after pour laisser Windows “committer” le clipboard
-            self.root.after(0, lambda: Simulator([Key.ctrl, 'v']))
-            # 3) log une fois que c’est parti
-            self.log(text)
         if not self.is_ouverte():
-            self.add_to_ui_queue(_copy_and_paste)
+            set_clipboard(text=to_copy)
+            self.root.after(150, lambda: Simulator([Key.ctrl, 'v']))
 
-    def copy_to_clipboard(self, text: str) -> None:
-        pass
+    def copy_to_clipboard(self) -> None:
+        def _copy():
+            update_status_bar(status_bar=self.status_bar,
+                              text="- Ctrl+C -",
+                              bg='lightblue', fg='darkblue', anchor=tk.CENTER)
+            self.root.after(0, lambda: Simulator([Key.ctrl, 'c']))
+        self.add_to_ui_queue(_copy)
 
     def clear_text_box(self) -> None:
         """

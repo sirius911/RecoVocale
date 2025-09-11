@@ -149,10 +149,7 @@ class App:
 
     def get_vt_server_url(self) -> str:
         """URL de base pour VoiceTranscriber.
-        TODO : voir avec fichier configuration un truc du genre :
-                f"http://{self.config.tensorRT_ip}:{self.config.port}/v1"
         """
-        # base_url = "http://10.1.147.252:8000/v1"
         base_url = f"http://{self.config.server_ip}:{self.config.port}/v1"
         return base_url
 
@@ -450,8 +447,8 @@ if __name__ == "__main__":
                 return method(*a, **kw)
             return wrapper
 
-        tkinter.Misc.clipboard_append = guard(tkinter.Misc.clipboard_append)
-        tkinter.Misc.clipboard_clear = guard(tkinter.Misc.clipboard_clear)
+        # tkinter.Misc.clipboard_append = guard(tkinter.Misc.clipboard_append)
+        # tkinter.Misc.clipboard_clear = guard(tkinter.Misc.clipboard_clear)
 
         # Chemin vers l'icône (dans le répertoire de l'application installée)
         if getattr(sys, 'frozen', False):  # Mode exécutable compilé

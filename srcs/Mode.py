@@ -15,6 +15,7 @@ from Correcteur import intercept, corrige_ponctuation
 from mydict_corrector import correct_with_dict
 from utils_keyboard import Simulator
 from pynput.keyboard import Key
+from clipboard import set_clipboard
 
 
 class Mode:
@@ -99,9 +100,12 @@ class Mode:
         """
         Copie le contenu de la transcription dans le presse-papier système.
         """
+
         def copy():
-            self.root.clipboard_clear()
-            self.root.clipboard_append(self.transcription.get())
+            set_clipboard(text=self.transcription.get())
+            self.root.after(150, lambda: Simulator([Key.ctrl, 'v']))
+            # self.root.clipboard_clear()
+            # self.root.clipboard_append(self.transcription.get())
             update_status_bar(self.status_bar,
                               text='- Copie -', bg='lightblue', fg='darkblue', anchor=tk.CENTER)
         self.add_to_ui_queue(copy)
@@ -150,21 +154,13 @@ class Mode:
         executor = self.app.pp_executor if (self.app.config.commandes and not self.is_ouverte()) else None
         txt, _ = intercept(text, dico_insertion=self.app.insertions.get(), executor=executor)
         txt = corrige_ponctuation(txt)
-
         # --- majuscule si activée ---
         if self.app.config.majuscule and txt:
             txt = txt[0].upper() + txt[1:]
 
         if self.fenetre_gestion_ouverte:
-            def _copy_and_paste():
-                # 1) maj presse-papier (thread UI garanti)
-                self.root.clipboard_clear()
-                self.root.clipboard_append(text)
-                self.root.update_idletasks()
-                # 2) petit after pour laisser Windows “committer” le clipboard
-                self.root.after(0, lambda: Simulator([Key.ctrl, 'v']))
-
-            self.add_to_ui_queue(_copy_and_paste)
+            set_clipboard(text=txt)
+            self.root.after(150, lambda: Simulator([Key.ctrl, 'v']))
 
         return txt
 
@@ -491,6 +487,10 @@ class Mode:
     def toggle_majuscule(self) -> None:
         """Mettre à jour l'option Majuscule"""
         self.app.config.majuscule = self.majuscule_var.get()
+
+    # def toggle_firefox(self) -> None:
+    #     """Mettre à jour l'option Firefox"""
+    #     self.app.config.firefox = self.firefox_var.get()
 
     def handle_dropped_file(self, file_path: str) -> None:
         """

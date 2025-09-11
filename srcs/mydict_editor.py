@@ -11,6 +11,7 @@ import sys
 import subprocess
 import shutil
 import struct
+from clipboard import set_clipboard
 
 
 # --- phonemizer optionnel ---
@@ -495,8 +496,7 @@ class FenetreMyDict(tk.Toplevel):
 
         def _copy():
             try:
-                self.clipboard_clear()
-                self.clipboard_append(txt)
+                set_clipboard(text=txt)
                 messagebox.showinfo("Diagnostic", "Copié dans le presse-papiers ✅")
             except Exception as e:
                 messagebox.showerror("Diagnostic", f"Impossible de copier : {e}")

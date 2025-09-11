@@ -2,7 +2,6 @@ import time
 import tkinter as tk
 import subprocess
 from abc import ABC, abstractmethod
-from pynput.keyboard import Key
 from typing import Optional, List, Union
 import os
 import ctypes
@@ -110,9 +109,10 @@ class Copie_clipboard(Action):
 
 class CopierColler(Action):
     def execute(self) -> None:
+        from keyboard_helper import paste_then_nudge_plaintext
         self.app.copy_to_clipboard()
         time.sleep(0.5)
-        Simulator([Key.ctrl, 'v'])
+        paste_then_nudge_plaintext()
 
 
 class Attendre(Action):

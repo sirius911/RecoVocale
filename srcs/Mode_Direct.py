@@ -6,6 +6,7 @@ from menus import create_menus
 from info import DIRECT
 from utils_keyboard import Simulator
 from pynput.keyboard import Key
+from clipboard import set_clipboard
 # from Correcteur import intercept, corrige_ponctuation
 # from mydict_corrector import correct_with_dict
 
@@ -137,30 +138,6 @@ class Mode_Direct(Mode):
 
     def handle_final_text(self, text: str):
         txt = super().handle_final_text(text)
-        # --- NOUVEAU : correction via my.dic AVANT intercept() ---
-        # try:
-        #     if self.app.config.dictionnaire:
-        #         text = correct_with_dict(text=text, path_dico=self.app.dico)
-        # except Exception as e:
-        #     # on reste robuste : en cas d'erreur, on n'interrompt pas le flux
-        #     print(f"[mydict_corrector] erreur: {e}")
-
-        # if self.fenetre_gestion_ouverte:
-        #     # Si une fenetre de gestion est ouverte (insertions, dictionnaire)
-        #     def _copy_and_paste():
-        #         # 1) maj presse-papier (thread UI garanti)
-        #         self.root.clipboard_clear()
-        #         self.root.clipboard_append(text)
-        #         self.root.update_idletasks()
-        #         # 2) petit after pour laisser Windows “committer” le clipboard
-        #         self.root.after(0, lambda: Simulator([Key.ctrl, 'v']))
-
-        #     self.add_to_ui_queue(_copy_and_paste)
-        # else:
-
-        # executor = self.app.pp_executor if self.app.config.commandes else None
-        # txt, _ = intercept(text, dico_insertion=self.app.insertions.get(), executor=executor)
-        # txt = corrige_ponctuation(txt)
 
         if hasattr(self, "save_text_box"):
             self.save_text_box()
@@ -294,8 +271,9 @@ class Mode_Direct(Mode):
         """
         def copy():
             self.status_bar.config(text='- Copie -', bg='lightblue', fg='darkblue', anchor=tk.CENTER)
-            self.root.clipboard_clear()
-            self.root.clipboard_append(self.get_selected_text()[0])
+            set_clipboard(text=self.get_selected_text()[0])
+            # self.root.clipboard_clear()
+            # self.root.clipboard_append(self.get_selected_text()[0])
 
         self.add_to_ui_queue(copy)
 

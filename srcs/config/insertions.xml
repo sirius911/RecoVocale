@@ -123,32 +123,6 @@ QSP 10 réfections de pansements
   </SpeechAutoText>
   <SpeechAutoText>
     <Format>1</Format>
-    <Name>Matériel</Name>
-    <Description>
-    </Description>
-    <OwningObjectType>User</OwningObjectType>
-    <OwningObjectName>BAUFAB</OwningObjectName>
-    <ProductGuid>5766e812-0b77-4595-9a53-552142261862</ProductGuid>
-    <Locale>fr-FR</Locale>
-    <MetaDataDictionary>
-      <MetaData>
-        <Name>DNS_PlainText</Name>
-        <Value>1</Value>
-      </MetaData>
-    </MetaDataDictionary>
-    <SpokenPhrases>
-      <SpokenPhrase>
-        <Phrase>insérer Matériel</Phrase>
-      </SpokenPhrase>
-    </SpokenPhrases>
-    <Body>- Une boite de marche type XLR8 (THUASNE) ou NEXTEP (DONJOY) modèle HAUT 
-- Une paire de cannes anglaises à l'achat
-- Un déambulateur à l'achat
-- Location d'un fauteuil roulant avec appui jambier droit/gauche pour une durée de huit semaines
-- Deux paires de bas de contention classe II</Body>
-  </SpeechAutoText>
-  <SpeechAutoText>
-    <Format>1</Format>
     <Name>CROP Fracture bimalléolaire</Name>
     <Description>
     </Description>
@@ -557,5 +531,30 @@ Fermeture de la peau par des points séparés.</Body>
 Diabète : [Pas de diabète | DNID | diabète gesta]
 Tabac : [Pas de tabagisme | arrêt après    années | tabagisme en cours depuis X années]
 Alcool : [Moins d'un verre d'alcool par jour| zéro | entre 1 et 3 verres/jour | plus de 3 verres/jour]</Body>
+  </SpeechAutoText>
+  <SpeechAutoText>
+    <Format>1</Format>
+    <Name>Matériel</Name>
+    <Description/>
+    <OwningObjectType>User</OwningObjectType>
+    <OwningObjectName>BAUFAB</OwningObjectName>
+    <ProductGuid>5766e812-0b77-4595-9a53-552142261862</ProductGuid>
+    <Locale>fr-FR</Locale>
+    <MetaDataDictionary>
+      <MetaData>
+        <Name>DNS_PlainText</Name>
+        <Value>1</Value>
+      </MetaData>
+    </MetaDataDictionary>
+    <SpokenPhrases>
+      <SpokenPhrase>
+        <Phrase>matériel</Phrase>
+      </SpokenPhrase>
+    </SpokenPhrases>
+    <Body>- Une boite de marche type XLR8 (THUASNE) ou NEXTEP (DONJOY) modèle HAUT 
+- Une paire de cannes anglaises à l'achat
+- Un déambulateur à l'achat
+- Location d'un fauteuil roulant avec appui jambier droit/gauche pour une durée de huit semaines
+- Deux paires de bas de contention classe II</Body>
   </SpeechAutoText>
 </SpeechAutoTexts>

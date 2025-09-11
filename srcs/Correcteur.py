@@ -93,7 +93,7 @@ def remplacement_special(text: str):
     # repère "date" en tout début, puis stocke le reste
     m = re.match(r"(?i)^date\b(.*)", clean)
     if m:
-        reste = m.group(1)          # ce qu’il y a après "date"
+        reste = m.group(1).lstrip(" :")          # ce qu’il y a après "date" et enlève les espaces/deux-points parasites
         date_aujourdhui = datetime.now().strftime("%d/%m/%Y")
         retour = date_aujourdhui + reste   # on recolle le reste inchangé
         return retour, True
@@ -119,7 +119,7 @@ def remplacer_avec_dictionnaire(
         if retour is not None and a_fait:
             insertion = True
             print(f" -> spécial [{retour}]")
-            return retour
+            return " " + retour if not retour.startswith(" ") else retour
 
         # Puis dictionnaire (regex -> remplacement)
         for regex, subst in dico_insertion.items():
