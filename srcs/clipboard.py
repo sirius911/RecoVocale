@@ -30,24 +30,26 @@ def _make_html_clip(text: str) -> bytes:
     return (final_header + full_html).encode(enc)
 
 
-def set_clipboard(text: str):
+def set_clipboard(text: str, html: bool = True):
     # Normalise CRLF pour CF_UNICODETEXT
     text_win = text.replace('\r\n', '\n').replace('\r', '\n').replace('\n', '\r\n')
-    html_bytes = _make_html_clip(text)
 
     cb.OpenClipboard()
     try:
         cb.EmptyClipboard()
         # 1) Texte Unicode standard
         cb.SetClipboardData(win32con.CF_UNICODETEXT, text_win)
-        # 2) HTML Format
-        fmt = cb.RegisterClipboardFormat("HTML Format")
-        cb.SetClipboardData(fmt, html_bytes)
+
+        # 2) HTML Format (optionnel)
+        if html:
+            html_bytes = _make_html_clip(text)  # bytes
+            fmt = cb.RegisterClipboardFormat("HTML Format")
+            cb.SetClipboardData(fmt, html_bytes)
     finally:
         cb.CloseClipboard()
 
 
 if __name__ == "__main__":
     text = "Test depuis pywin32\n — accents éèà ✓"
-    set_clipboard(text)
+    set_clipboard(text, True)
     print(f"'{text}' -> clipboard windows OK")
