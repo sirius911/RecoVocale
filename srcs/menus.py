@@ -122,12 +122,17 @@ def create_menus(self) -> None:
     if self.mode == REDUIT:
         self.edit_menu.add_separator()
         self.word_space_var = BooleanVar(value=self.app.config.word_space)
-        self.edit_menu.add_checkbutton(label="Espace avant ", variable=self.word_space_var,
+        self.edit_menu.add_checkbutton(label="Espace avant", variable=self.word_space_var,
                                        command=self.toggle_word_space)
+
     self.edit_menu.add_separator()
     self.majuscule_var = BooleanVar(value=self.app.config.majuscule)
     self.edit_menu.add_checkbutton(label="Majuscule première lettre", variable=self.majuscule_var,
                                    command=self.toggle_majuscule)
+
+    self.firefox_var = BooleanVar(value=self.app.config.firefox)
+    self.edit_menu.add_checkbutton(label="Copie html", variable=self.firefox_var,
+                                   command=self.toggle_firefox)
 
     # =========================
     # 3. Mode  (NOUVEAU menu racine)

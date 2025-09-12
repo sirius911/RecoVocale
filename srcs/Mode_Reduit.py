@@ -2,49 +2,11 @@
 import tkinter as tk
 from pynput.keyboard import Key
 from Mode import Mode
-# import threading
 from utils_window import create_buttons, update_status_bar
 from menus import create_menus
 from info import REDUIT, VERSION
 from utils_keyboard import Simulator
-# from utils import set_clipboard_plain
-# from keyboard_helper import paste_then_nudge_plaintext, sendinput_sequence, build_combo, VK_RETURN
 from clipboard import set_clipboard
-
-
-# _typing_lock = threading.Lock()
-
-
-# def paste_multiline_with_enters(text: str, soft_break: bool = False, delay: float = 0.01):
-#     """
-#     Firefox (éditeur Word-like) :
-#       - split exact en conservant les vides
-#       - lignes non vides: clipboard + Ctrl+Shift+V + nudge
-#       - lignes vides: juste le saut
-#     """
-#     from keyboard_helper import (
-#         paste_then_nudge_plaintext, sendinput_sequence, build_combo, VK_RETURN
-#     )
-
-#     # 1) ne PAS strip — on veut préserver les lignes vides en tête/fin
-#     # 2) normaliser pour splitter et conserver vides
-#     parts = text.replace('\r\n', '\n').replace('\r', '\n').split('\n')
-
-#     for i, line in enumerate(parts):
-#         is_last = (i == len(parts) - 1)
-
-#         if line:  # ligne non vide -> coller + nudge
-#             set_clipboard_plain(line)
-#             paste_then_nudge_plaintext(delay=delay)
-
-#         # Si ce n'est pas la dernière "part", on ajoute un saut (même si la ligne était vide)
-#         if not is_last:
-#             if soft_break:
-#                 # Shift+Enter (retour doux)
-#                 sendinput_sequence(build_combo(VK_RETURN, shift=True), delay=delay)
-#             else:
-#                 # Enter (paragraphe)
-#                 sendinput_sequence([(VK_RETURN, "tap")], delay=delay)
 
 
 class Mode_Reduit(Mode):
@@ -131,7 +93,7 @@ class Mode_Reduit(Mode):
         to_copy = f" {txt}" if self.app.config.word_space else f"{txt} "
 
         if not self.is_ouverte():
-            set_clipboard(text=to_copy)
+            set_clipboard(text=to_copy, html=self.app.config.firefox)
             self.root.after(150, lambda: Simulator([Key.ctrl, 'v']))
 
     def copy_to_clipboard(self) -> None:

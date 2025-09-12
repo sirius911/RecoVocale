@@ -271,9 +271,7 @@ class Mode_Direct(Mode):
         """
         def copy():
             self.status_bar.config(text='- Copie -', bg='lightblue', fg='darkblue', anchor=tk.CENTER)
-            set_clipboard(text=self.get_selected_text()[0])
-            # self.root.clipboard_clear()
-            # self.root.clipboard_append(self.get_selected_text()[0])
+            set_clipboard(text=self.get_selected_text()[0], html=self.app.config.firefox)
 
         self.add_to_ui_queue(copy)
 

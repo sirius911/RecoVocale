@@ -95,6 +95,7 @@ class UserConfig:
         }
         self._word_space = False
         self._majuscule = True
+        self._firefox = False
 
         # Lire la configuration si le fichier existe, sinon la créer
         if os.path.exists(self.config_file):
@@ -132,6 +133,7 @@ class UserConfig:
         self._play_audio = (config.get('SETTINGS', 'PLAY_AUDIO', fallback=self._play_audio) == 'True')
         self._word_space = (config.get('SETTINGS', 'WORD_SPACE', fallback=self._word_space) == 'True')
         self._majuscule = (config.get('SETTINGS', 'MAJUSCULE', fallback=self._majuscule) == 'True')
+        self._firefox = (config.get('SETTINGS', 'FIREFOX', fallback=self._firefox) == 'True')
 
     def save_config(self, root) -> None:
         """
@@ -163,6 +165,7 @@ class UserConfig:
             'PLAY_AUDIO': self._play_audio,
             'WORD_SPACE': self._word_space,
             'MAJUSCULE': self._majuscule,
+            'FIREFOX': self._firefox
         }
         print(f"Sauvegarde {self.config_file} ...", end=' ')
         with open(self.config_file, 'w') as configfile:
@@ -261,3 +264,12 @@ class UserConfig:
     @majuscule.setter
     def majuscule(self, value: bool) -> None:
         self._majuscule = value
+
+    @property
+    def firefox(self) -> bool:
+        """Retourn l'état de l'option 'firefox'."""
+        return self._firefox
+
+    @firefox.setter
+    def firefox(self, value: bool) -> None:
+        self._firefox = value

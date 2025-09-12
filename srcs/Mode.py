@@ -102,7 +102,7 @@ class Mode:
         """
 
         def copy():
-            set_clipboard(text=self.transcription.get())
+            set_clipboard(text=self.transcription.get(), html=self.app.config.firefox)
             self.root.after(150, lambda: Simulator([Key.ctrl, 'v']))
             # self.root.clipboard_clear()
             # self.root.clipboard_append(self.transcription.get())
@@ -159,7 +159,7 @@ class Mode:
             txt = txt[0].upper() + txt[1:]
 
         if self.fenetre_gestion_ouverte:
-            set_clipboard(text=txt)
+            set_clipboard(text=txt, html=self.app.config.firefox)
             self.root.after(150, lambda: Simulator([Key.ctrl, 'v']))
 
         return txt
@@ -488,9 +488,9 @@ class Mode:
         """Mettre à jour l'option Majuscule"""
         self.app.config.majuscule = self.majuscule_var.get()
 
-    # def toggle_firefox(self) -> None:
-    #     """Mettre à jour l'option Firefox"""
-    #     self.app.config.firefox = self.firefox_var.get()
+    def toggle_firefox(self) -> None:
+        """Mettre à jour l'option Firefox"""
+        self.app.config.firefox = self.firefox_var.get()
 
     def handle_dropped_file(self, file_path: str) -> None:
         """
