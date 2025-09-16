@@ -80,7 +80,7 @@
  
 - Le menu **Mode** permet de changer de *mode*.
 
-## Fonctionnalit�s
+## Fonctionnalités
 
 - Reconnaissance vocale en temps réel
 - Simulation de la saisie au clavier

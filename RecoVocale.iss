@@ -6,13 +6,13 @@ ArchitecturesInstallIn64BitMode=x64
 
 ; Nom du fichier installateur
 OutputDir=install
-OutputBaseFilename=install_2.08
+OutputBaseFilename=install_2.09
 SetupIconFile=reco.ico
 
 ; Nom de l'application
 AppName=RecoVocale
 ; Version de l'application
-AppVersion=2.08
+AppVersion=2.09
 ; Répertoire par défaut d'installation
 AppVerName={#SetupSetting("AppName")} {#SetupSetting("AppVersion")}
 DefaultDirName={pf64}\RecoVocale

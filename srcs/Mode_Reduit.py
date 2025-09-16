@@ -95,6 +95,7 @@ class Mode_Reduit(Mode):
         if not self.is_ouverte():
             set_clipboard(text=to_copy, html=self.app.config.firefox)
             self.root.after(150, lambda: Simulator([Key.ctrl, 'v']))
+            self.log(text=text)
 
     def copy_to_clipboard(self) -> None:
         def _copy():
