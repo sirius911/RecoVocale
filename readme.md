@@ -92,6 +92,84 @@
 - Dictionnaire personnalisé avec phonème.
 - Gestion de commande pas à pas 
 
+
+
 ## Contact
 
 Pour le support, contactez [cyrille.lorin@ch-perigueux.fr].
+
+---
+
+# Mémo Git – Multi-remotes (CH + GitHub perso)
+
+Ce projet est configuré pour utiliser **deux dépôts distants** :  
+- `origin` → Git du CH  
+- `github` → GitHub personnel  
+
+## 📌 Vérifier les remotes
+```bash
+git remote -v
+```
+
+---
+
+## 📌 Travailler avec une branche existante
+
+* Récupérer les mises à jour du CH :
+
+  ```bash
+  git pull
+  ```
+* Pousser vers CH :
+
+  ```bash
+  git po <branche>
+  ```
+* Pousser vers GitHub :
+
+  ```bash
+  git pg <branche>
+  ```
+* Pousser vers les deux en une seule commande :
+
+  ```bash
+  git pushall
+  ```
+
+---
+
+## 📌 Créer une nouvelle branche
+
+1. Créer la branche localement :
+
+   ```bash
+   git checkout -b <nouvelle_branche>
+   ```
+2. Premier push vers les deux dépôts :
+
+   ```bash
+   git pushall -u
+   ```
+
+---
+
+## 📌 Aliases utiles (config locale)
+
+Ces alias sont définis dans `~/.gitconfig` :
+
+```bash
+[alias]
+    po = push origin
+    pg = push github
+    pushall = !git push origin HEAD && git push github HEAD
+```
+
+⚠️ Les alias sont **locaux à la machine**.
+
+---
+
+## 📌 Bonnes pratiques
+
+* Toujours faire un `git pull` depuis `origin` avant de travailler.
+* Utiliser `git pushall` pour garder les deux dépôts synchronisés.
+* Ajouter les fichiers volumineux (comme `ffmpeg.exe`) dans `.gitignore` pour éviter les blocages sur GitHub.
