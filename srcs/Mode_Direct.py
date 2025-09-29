@@ -65,10 +65,6 @@ class Mode_Direct(Mode):
         # Attacher l'événement à la Text box
         self.text_box.bind("<Key>", self.on_text_change)
 
-        # self.text_box.bind("<Button-3>", self.show_context_menu)
-        # # Création du menu contextuel
-        # self.context_menu = tk.Menu(self.root, tearoff=0)
-
         # Create the status bar at the bottom of the window
         self.status_bar = tk.Label(self.root, text="Bienvenue dans l'application", bd=1, relief=tk.SUNKEN, anchor=tk.W)
         self.status_bar.grid(row=2, column=0, sticky="ew")

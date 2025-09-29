@@ -2,7 +2,7 @@ import ftplib
 
 SERVER = '10.1.147.12'
 USERNAME = 'ftpuser'
-PASSWORD = 'DoW8EssZuCa2'
+PASSWORD = 'password'
 AUDIO_DIRECTORY = '/var/ftp/utilisateurs/audios'
 TEXT_DIRECTORY = '/var/ftp/utilisateurs/rapports'
 

@@ -7,9 +7,6 @@ import unicodedata
 from typing import Any, Dict, List
 from utils_window import get_config_path
 
-# --- Chemin config ---
-# DICT_FILENAME = get_config_path("my.dic")
-
 # Seuil global pour déclencher une correction (0..1)
 THRESHOLD = 0.82
 # Pondérations

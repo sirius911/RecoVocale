@@ -447,9 +447,6 @@ if __name__ == "__main__":
                 return method(*a, **kw)
             return wrapper
 
-        # tkinter.Misc.clipboard_append = guard(tkinter.Misc.clipboard_append)
-        # tkinter.Misc.clipboard_clear = guard(tkinter.Misc.clipboard_clear)
-
         # Chemin vers l'icône (dans le répertoire de l'application installée)
         if getattr(sys, 'frozen', False):  # Mode exécutable compilé
             base_path = sys._MEIPASS

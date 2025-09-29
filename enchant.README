@@ -14,3 +14,4 @@ print(enchant.get_user_config_dir())
 d = enchant.Dict("fr_FR")
 print(d.check("bonjour"))
 
+N'est plus d'actualité depuis le my.dic !

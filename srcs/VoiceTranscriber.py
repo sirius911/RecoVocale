@@ -15,7 +15,7 @@ class VoiceTranscriber:
     def __init__(
         self,
         server_url: str,                   # ex: "http://10.1.147.252:8000/v1/audio/transcriptions"
-        api_key: str | None = None,        # si votre serveur n'en veut pas, laissez None
+        api_key: str | None = None,        # si votre serveur n'en veut pas, laisser None
         language: str = "fr",
         samplerate: int = 16000,
         channels: int = 1,
@@ -36,7 +36,7 @@ class VoiceTranscriber:
             "temperature": 0,
             "no_speech_threshold": 0.9,
             "vad_filter": True,
-            "response_format": "verbose_json",          # décommente si supporté
+            "response_format": "verbose_json",          # décommenter si supporté
             "condition_on_previous_text": False,
             "beam_size": 1,
             "word_timestamps": False,
@@ -200,7 +200,7 @@ class VoiceTranscriber:
             "temperature": 0,
             "no_speech_threshold": 0.9,
             "vad_filter": True,
-            "response_format": "verbose_json",        # ← décommente si supporté par ton serveur
+            "response_format": "verbose_json",        # ← décommente si supporté par le serveur
             "condition_on_previous_text": False,
             "beam_size": 1,
             "word_timestamps": False,
@@ -275,7 +275,7 @@ class VoiceTranscriber:
             data = {"language": language}
             r = requests.post(url, files=files, data=data, timeout=120)
             r.raise_for_status()
-            # Adapte si ta réponse JSON est différente
+            # Adapte si le JSON est différent
             js = r.json()
             return js.get("text", "").strip()
 
@@ -289,10 +289,10 @@ if __name__ == "__main__":
         server_url="http://10.1.147.252:8000/v1",
         api_key=None,          # ou "dummy" si votre serveur l'exige
         language="fr",
-        device=None            # mets un index si tu veux un micro précis
+        device=None            # mets un index si on veut un micro précis
     )
 
-    # vt.list_devices()  # décommente pour voir la liste des micros
+    # vt.list_devices()  # pour voir la liste des micros
 
     while True:
         cmd = input("Tape 'start' pour enregistrer, 'stop' pour transcrire, 'quit' pour sortir > ").strip().lower()

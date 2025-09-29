@@ -13,7 +13,7 @@ class FenetreInsertions(tk.Toplevel):
 
     Principes :
       - Trois modes clairs : 'view' (lecture), 'edit' (édition d'une sélection), 'new' (création).
-      - Détection fiable des modifications (StringVar + <<Modified>> sur Text).
+      - Détection des modifications (StringVar + <<Modified>> sur Text).
       - Fermeture : propose d'enregistrer les changements (y compris création en cours).
       - Pas de parcours récursif de widgets ; on garde des références directes aux champs.
     """

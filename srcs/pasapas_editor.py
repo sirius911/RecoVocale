@@ -63,15 +63,6 @@ def add_tip(widget, text: str):
     _BubbleTip(widget, text)
 
 
-# ---- intégrations RecoVocale (utilitaires facultatifs) ----
-# try:
-#     from utils_window import get_config_path, update_status_bar
-# except Exception:
-#     def get_config_path(p: str) -> str:
-#         return p
-#     def update_status_bar(*_args, **_kwargs):
-#         pass
-
 # Types d'étapes pris en charge (alignés avec pas_a_pas.StepType)
 STEP_TYPES = [
     "open_app",         # target, args, window

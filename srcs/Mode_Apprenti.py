@@ -122,19 +122,6 @@ class Mode_Apprenti(Mode_Direct):
 
     def pause(self) -> None:
         super().pause()
-        # if not self.app.recording and not self.vt.is_recording:
-        #     return
-        # try:
-        #     texte = self.vt.stop()
-        # except Exception as e:
-        #     self.status_bar.config(text=f"Erreur stop/transcription: {e}",
-        #                            bg="lightblue", fg="darkblue", anchor=tk.W)
-        #     texte = ""
-        # finally:
-        #     self.app.recording = False
-
-        # if texte.strip():
-        #     self.handle_final_text(texte)
 
         self.ready_to_learn = True
 

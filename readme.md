@@ -31,6 +31,7 @@
 |   2.05  |    ???     | – Re factorisation fenêtre Dico et gestion des dico perso <br> – Gestoin des commandes pas a pas                                      |
 |   2.07  | 2025-09-04 | – CORRECTIF Pour la version v2.05 avec installation des configs de base installé dans program file/default et copie s'ils ne sont pas dans le %appData% de l’utilisateur. |
 |   2.08  | 2025-09-11 | – Correctif reload insertion.xml apres modif<br> – passage du clipboard windows avec win32clipboard pour Fixer le bug dans FireFox (Xplore) |
+|   2.09  | 2025-09-16 | - Version Dist avec envoi des logs corrigé |
 
 
 
@@ -130,7 +131,7 @@ git remote -v
   ```bash
   git pg <branche>
   ```
-* Pousser vers les deux en une seule commande :
+* Pousser vers les deux en une seule commande (la branche courante) :
 
   ```bash
   git pushall
