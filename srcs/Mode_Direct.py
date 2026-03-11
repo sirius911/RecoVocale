@@ -66,11 +66,9 @@ class Mode_Direct(Mode):
             fenetre_gestion_insertions = self.is_ouverte,
             mode=self.mode,
             nb_repeat=self.app.config.nb_repeat,
-            ip_client=self.app.ip_client,
         )
         super().enter()
         self.pile = ['']
-        self.transcription_interrompue = False
     def ui(self):
         create_menus(self)
         create_buttons(self)
@@ -117,7 +115,6 @@ class Mode_Direct(Mode):
 
     def unpause(self):
         print(f"UnPausing client in Mode Direct")
-        # self.transcription_interrompue = False
         super().unpause()
 
     def stop_client(self):
@@ -126,21 +123,22 @@ class Mode_Direct(Mode):
 
     def stop(self):
         self.stop_client()
-        #essais------------------------
-        # si le bouton stop est demandé
-        self.text_box.config(state=tk.NORMAL)
-        self.trash_button.config(state=tk.NORMAL)
-        self.rec_button.config(state=tk.NORMAL)
-        self.transcription_en_cours = False
-        self.transcription.validation()
-        self.set_pos_curseur(self.transcription.fin_insertion)
-        self.status_bar.config(text="Transcription ...interrompue", bg='lightblue', fg='darkblue', anchor=tk.W)
-        self.transcription_interrompue = True
-        self.verification_dico(True)
-        #essais------------------------
 
     def valid_transcriptions(self):
         self.stop_client()
+
+    # def undo(self, event=None):
+    #     if event and event.keysym in ("Shift_L", "Shift_R", "Control_L", "Control_R", "Alt_L", "Alt_R") :
+    #         return
+    #     if self.pile:
+    #         dernier_etat = self.pile.pop()
+    #         self.text_box.delete('1.0', tk.END)
+    #         self.text_box.insert('1.0', dernier_etat)
+    #         self.transcription.set(dernier_etat)
+    #     if not self.pile:
+    #         self.pile = ['']
+    #         self.edit_menu.entryconfig(0, state='disabled')
+        # print(f"Pile après undo: {self.pile}")
 
     def get_selected_text(self):
         """
@@ -215,8 +213,98 @@ class Mode_Direct(Mode):
         # S'assurer que le curseur est visible
         self.text_box.see("insert")
     
+    # def save_text_box(self):
+    #     # Sauvegarder uniquement si le texte a changé
+    #     text_box = self.text_box.get("1.0", tk.END)
+    #     if not self.pile or text_box != self.pile[-1]:
+    #         self.pile.append(text_box)
+    #         self.edit_menu.entryconfig(0, state='normal')
+    #         # print("État sauvegardé:", self.pile)
+
+    # def on_text_change(self, event):
+    #     if event and (event.keysym in ("Shift_L", "Shift_R", "Control_L", "Control_R", "Alt_L", "Alt_R") or
+    #                   (event.state & 0x4 and event.keysym == "z")):
+    #         return
+    #     self.root.after_idle(self.text_change) # pour attendre que tkinter est bien écrit les modifications
+        
+
+    # def text_change(self): 
+    #     self.trash_button.config(state=tk.NORMAL)   
+    #     nouveau_text = self.text_box.get("1.0", tk.END)
+    #     self.save_text_box()
+    #     self.transcription.set(nouveau_text)
+    #     self.transcription.text_box_en_cours = nouveau_text
+    #     self.transcription.pos_cur = self.get_pos_curseur()
+    #     self.verification_dico()
+        
+
+    # def verification_dico(self):
+    #     #on verifie l'orthographe
+    #     #efface les marquages précédents
+    #     self.text_box.tag_remove("incorrect", "1.0", tk.END)
+
+    #     # Séparer le contenu en mots
+    #     contenu = self.text_box.get("1.0", tk.END)
+    #     mots = contenu.split()
+    #     for mot in mots:
+    #         # Vérifier chaque mot
+    #         if not self.dico.check(mot):
+    #             # Trouver les positions du mot
+    #             start_idx = contenu.find(mot)
+    #             end_idx = start_idx + len(mot)
+    #             # Convertir les positions en indices tkinter
+    #             start = f"1.0 + {start_idx} chars"
+    #             end = f"1.0 + {end_idx} chars"
+    #             # Ajouter une balise pour souligner les mots incorrects
+    #             self.text_box.tag_add("incorrect", start, end)
+    #             # Afficher les suggestions (affichage simplifié)
+    #             # print(f"{mot} est incorrect. Suggestions : {self.dico.suggest(mot)}")
+
+    # def show_context_menu(self, event):
+    #     # Obtenir l'index du clic droit
+    #     index = self.text_box.index(f"@{event.x},{event.y}")
+        
+    #     # Récupérer le mot sous le curseur
+    #     word_start = self.text_box.index(f"{index} wordstart")
+    #     word_end = self.text_box.index(f"{index} wordend")
+    #     incorrect_word = self.text_box.get(word_start, word_end)
+
+    #     # Vérifier si le mot est incorrect et obtenir des suggestions
+    #     if not self.dico.check(incorrect_word):
+    #         suggestions = self.dico.suggest(incorrect_word)
+
+    #         personnalise_suggestions = [
+    #             s for s in suggestions if s in self.mots_personnels
+    #         ]
+    #         autres_suggestions = [
+    #             s for s in suggestions if s not in self.mots_personnels
+    #         ]
+    #         suggestions = personnalise_suggestions + autres_suggestions
+
+    #         # Effacer le menu précédent et ajouter les nouvelles suggestions
+    #         self.context_menu.delete(0, tk.END)
+    #         for suggestion in suggestions:
+    #             self.context_menu.add_command(
+    #                 label=suggestion,
+    #                 command=lambda s=suggestion, ws=word_start, we=word_end: self.replace_word(s, ws, we)
+    #             )
+    #         self.context_menu.add_separator()
+    #         self.context_menu.add_command(
+    #             label="Ajouter au dictionnaire",
+    #             command=lambda: self.ajouter_mot_personnalise(incorrect_word)
+    #         )
+    #         self.context_menu.post(event.x_root, event.y_root)
+
+    # def replace_word(self, suggestion, word_start, word_end):
+    #     self.save_text_box()
+    #     # Remplacer le mot dans la text box
+    #     self.text_box.delete(word_start, word_end)
+    #     self.text_box.insert(word_start, suggestion)
+    #     # Retirer le marquage incorrect
+    #     self.text_box.tag_remove("incorrect", word_start, word_end)
+
     def update_transcriptions(self, message, ending):
-        if message is not None and not self.transcription_interrompue:
+        if message is not None:
             if not self.transcription_en_cours:
                 self.trash_button.config(state=tk.DISABLED)
                 self.rec_button.config(state=tk.DISABLED)
@@ -237,8 +325,7 @@ class Mode_Direct(Mode):
             self.transcription.validation()
             self.set_pos_curseur(self.transcription.fin_insertion)
             self.status_bar.config(text="Transcription ...Terminée", bg='lightblue', fg='darkblue', anchor=tk.W)
-            self.verification_dico(True)
-            self.pause()
+            self.verification_dico()
         else:
             self.text_box.config(state=tk.DISABLED)
             self.set_pos_curseur(self.transcription.pos_cur)

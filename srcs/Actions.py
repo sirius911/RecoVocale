@@ -32,10 +32,6 @@ class ValidTranscriptions(Action):
     def execute(self):
         self.app.valid_transcriptions()
 
-class StopAction(Action):
-    def execute(self):
-        self.app.stop()
-
 class Clear(Action):
     def execute(self):
         self.app.clear_text_box()
@@ -66,7 +62,11 @@ class CopierColler(Action):
 
 class Selection(Action):
     def execute(self, dir):
+        # print(f"je dois selectionner")
         self.app.select_text_box(dir)
+        
+        # selected_text = box.get(tk.SEL_FIRST, tk.SEL_LAST)
+        # print(selected_text)
 
 class Attendre(Action):
     def __init__(self, app, duree):

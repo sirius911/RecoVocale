@@ -1,17 +1,16 @@
-import os
-import socket
 import time
 import tkinter as tk
+from tkinter import messagebox
 import asyncio
 import threading
 import keyboard
-from shortcut_manager import ShortcutManager
+
 from UserConfig import UserConfig
 from Mode_Direct import Mode_Direct
 from Mode_Apprenti import Mode_Apprenti
 from Mode_Record import Mode_Record
 from Mode_Reduit import Mode_Reduit
-from utils_socket import check_server_status, get_windows_session
+from utils_socket import check_server_status
 from utils_keyboard import Simulator
 from Micro import Micro
 from info import *
@@ -36,20 +35,17 @@ class App:
             self.console_debug.debug_window.withdraw()
        
         self.root = root
-        # Récupérer l'adresse IP locale du client
-        try:
-            self.ip_client = socket.gethostbyname(socket.gethostname())
-        except Exception:
-            self.ip_client = "0.0.0.0"  # Fallback si l'IP n'est pas détectée
-        self.ip_client = f"{get_windows_session()}@{self.ip_client}"
+        
         # Use the provided asyncio event loop
         self.loop = loop
         self.recording = False
         self.root.attributes("-topmost", True)  # Keep the window on top of others
  
         #-------------------check serveur-----------------------
-        self.status_server = check_server_status(self.config.server_ip, self.config.port, self.ip_client, timeout=5)
+        self.status_server = check_server_status(self.config.server_ip, self.config.port)
 
+        #-----------------Shortcut------------------------------
+        self.keyboard_shortcut = self.config.shortcut
         #----------------------MODE----------------------------
         mode = self.config.mode
         if mode == "RECORD":
@@ -60,10 +56,9 @@ class App:
             self.current_mode = Mode_Reduit(self)
         else:
             self.current_mode = Mode_Direct(self)
-
-        self.shortcut_manager = ShortcutManager(root, self.current_mode, self.config.shortcut)
+       
         try: #Verifier le raccourcis qui peut planter
-            keyboard.add_hotkey(self.shortcut_manager.keyboard_shortcut, self.current_mode.toggle_start_stop)
+            keyboard.add_hotkey(self.keyboard_shortcut, self.current_mode.toggle_start_stop)
         except Exception:
             keyboard.add_hotkey("F3", self.current_mode.toggle_start_stop)
 
@@ -71,8 +66,26 @@ class App:
 
         # #---------------------------MICRO----------------------------
         # Initialize the microphone 
+        # self.mic = Micro(loop, app=self.current_mode)
         self.mic = Micro(loop=self.loop, app=self.current_mode, call_back=self.update)
+        # self.mic = None
+        # self.root.after(100, self.start_micro_monitoring)  # Démarrer l'intégration asyncio/tkinter
         self.info()
+
+    # def start_micro_monitoring(self):
+    #     """Démarre la surveillance du micro via la méthode monitor() de Micro."""
+    #     print("start_micro_monitor()")
+    #     if self.mic is None:
+    #         try:
+    #             print("ici")
+    #             self.mic = Micro(loop=self.loop, app=self.current_mode, call_back=self.info)
+    #             self.current_mode.status_bar.config(text=f'[{self.mic.micro_name}] connecté', bg='lightblue', fg='darkblue', anchor=tk.CENTER)
+    #         except Exception as e:
+    #             print("là")
+    #             self.current_mode.status_bar.config(text='Micro déconnecté', bg='lightblue', fg='darkblue', anchor=tk.CENTER)
+    #     if self.mic:
+    #         print("encore ici")
+    #         asyncio.run_coroutine_threadsafe(self.mic.monitor(), self.loop)
 
     def paste_from_clipboard(self):
         self.current_mode.status_bar.config(text='- Coller -', bg='lightblue', fg='darkblue', anchor=tk.CENTER)
@@ -90,10 +103,11 @@ class App:
 
     def on_closing(self):
         self.current_mode.stop()
+        # self.stop_client()
         if self.mic:
             self.mic.disconnect()
         # sauvegarde userConfig
-        self.config.shortcut = self.shortcut_manager.keyboard_shortcut
+        self.config.shortcut = self.keyboard_shortcut
         self.config.mode = self.current_mode.name()
         self.config.x_window = self.root.winfo_rootx()
         self.config.y_window = self.root.winfo_rooty()
@@ -129,7 +143,7 @@ class App:
                 if self.mic:
                     self.mic.change_mode(self.current_mode)
                 keyboard.clear_all_hotkeys()
-                keyboard.add_hotkey(self.shortcut_manager.keyboard_shortcut, self.current_mode.toggle_start_stop)
+                keyboard.add_hotkey(self.keyboard_shortcut, self.current_mode.toggle_start_stop)
 
                 # recréation de la fenetre debug
                 self.console_debug = DebugWindow(root)
@@ -151,12 +165,10 @@ class App:
             else:
                 self.console_debug.append_status_with_format("None\n", color="blue")
             self.console_debug.append_status_with_format("Serveur : ", font_style="italic")
-            if check_server_status(self.config.server_ip, self.config.port, self.ip_client):
-                self.console_debug.append_status_with_format(f"Connected @{self.config.server_ip}:{self.config._port} \n", color="green")
+            if check_server_status(self.config.server_ip, self.config.port):
+                self.console_debug.append_status_with_format(f"Connected @{self.config.server_ip}:{self.config.port} \n", color="green")
             else:
                 self.console_debug.append_status_with_format(f"NOT Connected @{self.config.server_ip}:{self.config.port} \n", color="red")
-            self.console_debug.append_status_with_format("IP client : ", font_style="italic")
-            self.console_debug.append_status_with_format(f"{self.ip_client}\n", color="green")
             self.console_debug.append_status_with_format("Micro : ", font_style="italic")
             if self.mic and self.mic.is_connected():
                 self.console_debug.append_status_with_format(f"{self.mic.micro_name}\n", color="green")
@@ -169,7 +181,7 @@ class App:
             self.console_debug.append_status_with_format(f" {'Oui' if self.current_mode.simulator_keyboard else 'Non'}\n", color="green")
             
             self.console_debug.append_status_with_format("Raccourci : ", font_style="italic")
-            self.console_debug.append_status_with_format(f"{self.shortcut_manager.keyboard_shortcut}\n", color="green")
+            self.console_debug.append_status_with_format(f"{self.keyboard_shortcut}\n", color="green")
 
             self.console_debug.append_status_with_format("Debug : ", font_style="italic")
             self.console_debug.append_status_with_format(f"{self.config.debug}\n", color="green")
@@ -185,8 +197,92 @@ class App:
             self.console_debug.append_status_with_format("Nb répétitions : ", font_style="italic")
             self.console_debug.append_status_with_format(f"{self.config.nb_repeat}", color="green")
 
+
+    #---------------------------------------------------------------------------------------------------------------------
+#               Fenetre shorcut a détacher dans une autre class 
     def change_shortcut(self):
-        self.shortcut_manager.change_shortcut()
+        self.root.attributes("-topmost", False)  # Désactiver l'attribut "toujours au-dessus"
+        self.shortcut_window = tk.Toplevel(self.root)
+        self.shortcut_window.title("Changer le raccourci clavier")
+        self.shortcut_window.attributes("-topmost", True)  # S'assurer que la fenêtre est au-dessus
+
+        tk.Label(self.shortcut_window, text="Appuyez sur une nouvelle combinaison de touches :").pack(pady=10)
+        self.shortcut_entry = tk.Entry(self.shortcut_window)
+        self.shortcut_entry.pack(pady=10)
+        self.shortcut_entry.bind('<KeyPress>', self.get_shortcut)
+        self.shortcut_entry.focus_set()
+
+        # Réinitialiser self.keyboard_shortcut
+        self.keyboard_shortcut = ''
+        self.shortcut_entry.delete(0, tk.END)
+
+        # Assurez-vous de réactiver "toujours au-dessus" lorsque la fenêtre est fermée
+        self.shortcut_window.protocol("WM_DELETE_WINDOW", self.on_close_shortcut_window)
+
+
+    def on_close_shortcut_window(self):
+        self.root.attributes("-topmost", self.current_mode.mode.topmost)  # Réactiver l'attribut "toujours au-dessus"
+        self.shortcut_window.destroy()
+
+    def get_shortcut(self, event):
+        key = self.map_key_name(event.keysym)
+
+        if key == 'Return':  # Ignore the Enter key itself
+            if self.is_valid_shortcut(self.keyboard_shortcut.split('+')):
+                keyboard.clear_all_hotkeys()
+                keyboard.add_hotkey(self.keyboard_shortcut, self.current_mode.toggle_start_stop)
+                self.on_close_shortcut_window()  # Fermer la fenêtre et réactiver "toujours au-dessus"
+            else:
+                messagebox.showerror("Raccourci invalide", "La combinaison de touches n'est pas valide.")
+                self.keyboard_shortcut = ''  # Reset the pressed keys
+                self.shortcut_entry.delete(0, tk.END)
+            return
+
+        current_keys = self.keyboard_shortcut.split('+') if self.keyboard_shortcut else []
+
+        if key not in current_keys:
+            current_keys.append(key)
+
+        self.keyboard_shortcut = '+'.join(current_keys)
+        self.shortcut_entry.delete(0, tk.END)
+        self.shortcut_entry.insert(0, self.keyboard_shortcut)
+
+        
+        
+    def is_valid_shortcut(self, keys):
+        if len(keys) == 1 and (keys[0].startswith('F') or keys[0] == 'fn'):
+            return True  # Touche de fonction seule ou Fn seule
+        if len(keys) == 2 and ('ctrl' in keys or 'fn' in keys):
+            return True  # Ctrl+quelque chose ou Fn+quelque chose
+        if len(keys) == 3 and 'ctrl' in keys and 'shift' in keys:
+            return True  # Ctrl+Shift+quelque chose
+        if len(keys) == 3 and 'ctrl' in keys and 'alt' in keys:
+            return True  # Alt+Ctrl+quelque chose
+        if len(keys) == 3 and 'fn' in keys and 'ctrl' in keys:
+            return True  # Fn+Ctrl+quelque chose
+        if len(keys) == 4 and 'ctrl' in keys and 'alt' in keys and 'shift' in keys:
+            return True  # Alt+Ctrl+Shift+quelque chose
+        if len(keys) == 4 and 'fn' in keys and 'ctrl' in keys and 'shift' in keys:
+            return True  # Fn+Ctrl+Shift+quelque chose
+        if len(keys) == 5 and 'fn' in keys and 'ctrl' in keys and 'alt' in keys and 'shift' in keys:
+            return True  # Fn+Alt+Ctrl+Shift+quelque chose
+        return False
+
+
+    def map_key_name(self, key):
+        key_mapping = {
+            'Control_L': 'ctrl',
+            'Control_R': 'ctrl',
+            'Shift_L': 'shift',
+            'Shift_R': 'shift',
+            'Alt_L': 'alt',
+            'Alt_R': 'alt',
+            'Fn_L': 'fn',
+            'Fn_R': 'fn',
+            # Ajoutez d'autres mappages si nécessaire
+        }
+        return key_mapping.get(key, key)
+#---------------------------------------------------------------------------------------------------------------------
 
 
 def start_loop(loop):
@@ -200,6 +296,17 @@ def on_resize(event):
 
 
 if __name__ == "__main__":
+
+     # Récupérer l'ID du processus du splash screen passé en argument
+    # if len(sys.argv) > 1:
+    #     splash_pid = sys.argv[1]
+    #     try:
+    #         os.kill(int(splash_pid), signal.SIGTERM)
+    #         print(f"Splash screen (PID {splash_pid}) fermé avec succès.")
+    #     except Exception as e:
+    #         print(f"Erreur lors de la fermeture du splash screen : {e}")
+    #         
+    
     #mutex unique pour l'application
     mutex_name = "recovocale_mutex"
     mutex = win32event.CreateMutex(None, False, mutex_name)
@@ -211,17 +318,6 @@ if __name__ == "__main__":
 
     try:
         root = tk.Tk()
-        # Chemin vers l'icône (dans le répertoire de l'application installée)
-        if getattr(sys, 'frozen', False):  # Mode exécutable compilé
-            base_path = sys._MEIPASS
-        else:
-            base_path = os.path.dirname(os.path.abspath(__file__))
-        icon_path = os.path.join(base_path, "Icons/reco.ico")
-        # Définir l'icône de la fenêtre principale
-        if os.path.exists(icon_path):
-            root.iconbitmap(icon_path)
-        else:
-            print("Icône non trouvée :", icon_path)
         # Create a new event loop
         new_loop = asyncio.new_event_loop()
         threading.Thread(target=start_loop, args=(new_loop,), daemon=True).start()

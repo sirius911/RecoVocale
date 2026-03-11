@@ -8,15 +8,15 @@ class UserConfig:
         self.config_file = os.path.join(self.config_dir, "user_config.ini")
         print(f"init avec {self.config_file}")
         # Valeurs par défaut
-        self.server_ip = "10.1.147.251"
+        self.server_ip = "10.1.147.12"
         self._port = "30000"
         self._shortcut = "F3"
         self.mode = "DIRECT"
         self.x_window = "10"
         self.y_window = "10"
         self.debug = False
-        self.insertions = "insertions.xml"
-        self.nb_repeat = 3
+        self.insertions = "config/insertions.xml"
+        self.nb_repeat = 2
         self.dictionnaire = False
         # Lire la configuration si le fichier existe, sinon la créer
         if os.path.exists(self.config_file):
@@ -32,8 +32,6 @@ class UserConfig:
         self.server_ip = config.get('SETTINGS', 'SERVEUR_IP', fallback=self.server_ip)
         self._port = config.get('SETTINGS', 'PORT', fallback=self._port)
         self._shortcut = config.get('SETTINGS', 'SHORTCUT', fallback=self._shortcut)
-        if self._shortcut is None or self._shortcut == "":
-            self._shortcut = "F3"
         self.mode = config.get('SETTINGS', 'MODE', fallback=self.mode)
         self.x_window = config.get('SETTINGS', 'X_WINDOW', fallback=self.x_window)
         self.y_window = config.get('SETTINGS', 'Y_WINDOW', fallback=self.y_window)

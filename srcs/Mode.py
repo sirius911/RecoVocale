@@ -1,4 +1,4 @@
-import re
+# from utils_socket import check_server_status
 import string
 import time
 from info import *
@@ -6,7 +6,6 @@ from Transcription import Transcription
 import tkinter as tk
 from insertions import FenetreGestion
 import enchant
-from utils_socket import check_server_status
 
 class Mode:
     def __init__(self, app):
@@ -19,9 +18,13 @@ class Mode:
         self.transcription_en_cours = False
 
         # # Définir le chemin du répertoire de configuration dans %APPDATA%\RecoVocale
+        # config_dir = os.path.join(os.getenv('APPDATA'), 'RecoVocale')
+        # path_to_dic = os.path.join(config_dir, "fr.dic")
+        # path_to_aff = os.path.join(config_dir, "fr.aff")
         self.dico = enchant.Dict("fr_FR")
         self.mots_personnels = set()
-
+        # self.dico = SpellChecker(language="fr")
+        # self.dico.word_frequency.add("cardiopathie")
         self.enter()
 
     def enter(self):
@@ -56,12 +59,9 @@ class Mode:
     def pause(self):
         self.client_manager.pause()
         self.app.recording = False
-        self.app.status_server = check_server_status(self.app.config.server_ip, self.app.config.port, self.app.ip_client)
         self.update()
 
     def unpause(self):
-        if self.mode == DIRECT:
-            self.transcription_interrompue = False
         if self.app.status_server == True:
             if not self.app.recording:
                 if self.client_manager.client:
@@ -69,8 +69,6 @@ class Mode:
                 else:
                     self.client_manager.start_client(self.app.loop)
                 self.app.recording = True
-        else:
-            self.app.status_server = check_server_status(self.app.config.server_ip, self.app.config.port, self.app.ip_client)
         self.update()
 
     def exit_app(self):
@@ -78,7 +76,7 @@ class Mode:
         self.app.on_closing()
 
     def _update_rec_circle(self):
-        fill = 'red' if self.app.recording and self.app.status_server == True else 'grey'
+        fill = 'red' if self.app.recording else 'grey'
         self.rec_canvas.itemconfig(self.rec_circle, fill=fill)
 
     def _update_image_button(self):
@@ -86,9 +84,6 @@ class Mode:
             self.rec_button.config(image=self.pause_image)
         else:
             self.rec_button.config(image=self.record_image)
-        if self.app.status_server == False:
-            self.rec_button.config(state=tk.DISABLED)
-            self.app.status_server = check_server_status(self.app.config.server_ip, self.app.config.port, self.app.ip_client)
 
     def _update_barre_status(self):
         if self.mode == REDUIT:
@@ -97,7 +92,7 @@ class Mode:
             message = f"RecoVocale [{self.app.config.server_ip}:{self.app.config.port}] (v{VERSION}) {"" if self.app.status_server else "not"} connected"
 
         if self.app.status_server == False:
-            self.status_bar.config(text=message, fg='red', bg='lightblue', anchor=tk.W)
+            self.status_bar.config(text=message, fg='red', anchor=tk.W)
         elif self.app.recording:
             self.status_bar.config(text="RECORDING ...", fg='black', bg='red', anchor=tk.CENTER)
         elif self.transcription_en_cours:
@@ -105,19 +100,11 @@ class Mode:
         else:
             self.status_bar.config(text=message, bg='lightblue', fg='darkblue', anchor=tk.W)
 
-    def _update_title_window(self):
-        if self.mode == REDUIT:
-            self.root.title(f"RV v{VERSION}")
-        else:
-            self.root.title(f"RecoVocale [{self.app.config.server_ip}:{self.app.config.port}] (v{VERSION}) {"" if self.app.status_server else "not"} connected")
-
     def update(self):
         self._update_rec_circle()
         self._update_image_button()
         self._update_barre_status()
-        self._update_title_window()
-        if self.app.config.debug:
-            self.app.info()
+        # self.app.info()
 
     def name(self):
         return self.mode.name
@@ -203,69 +190,42 @@ class Mode:
         self.transcription.pos_cur = self.get_pos_curseur()
         self.verification_dico()
 
-    def verification_dico(self, auto=False):
+    def verification_dico(self):
         #efface les marquages précédents
         self.text_box.tag_remove("incorrect", "1.0", tk.END)
         if not self.app.config.dictionnaire:
             return
 
-        contenu = self.text_box.get("1.0", tk.END)
         # Séparer le contenu en mots
-        # mots = contenu.split()
-        mots = re.findall(r'\b[\w-]+\b', contenu) # permet de ne pas couper si mot composé (-)
-
+        contenu = self.text_box.get("1.0", tk.END)
+        mots = contenu.split()
+        
         for mot in mots:
             # Nettoyer le mot de la ponctuation en début et fin, sans modifier l'original
             mot_nettoye = mot.strip(string.punctuation)
+
             # Vérifier chaque mot
             if mot_nettoye and not self.dico.check(mot_nettoye):
-                # Obtenir les suggestions
-                suggestions = self.dico.suggest(mot_nettoye)
-
-                 # Si une seule suggestion est disponible, remplacer automatiquement le mot
-                if len(suggestions) == 1 and auto:
-                    correct_mot = suggestions[0]
-                    self.save_text_box()
-                    # Trouver la position exacte du mot dans le Text widget
-                    start_idx = self.text_box.search(mot, "1.0", tk.END)
-                    if not start_idx:
-                        continue
-                    end_idx = f"{start_idx} + {len(mot)}c"
-                    # Remplacer le mot incorrect par le mot correct
-                    self.text_box.delete(start_idx, end_idx)
-                    self.text_box.insert(start_idx, correct_mot)
-                else:
-                     # Marquer le mot comme incorrect s'il n'y a pas une seule suggestion
-                    start_idx = self.text_box.search(mot, "1.0", tk.END)
-                    if not start_idx:
-                        continue
-                    end_idx = f"{start_idx} + {len(mot)}c"
-                    # print(start_idx, end_idx)
-                    self.text_box.tag_add("incorrect", start_idx, end_idx)
+                # Trouver les positions du mot
+                start_idx = contenu.find(mot)
+                end_idx = start_idx + len(mot)
+                # Convertir les positions en indices tkinter
+                start = f"1.0 + {start_idx} chars"
+                end = f"1.0 + {end_idx} chars"
+                # Ajouter une balise pour souligner les mots incorrects
+                self.text_box.tag_add("incorrect", start, end)
+                # Afficher les suggestions (affichage simplifié)
+                # print(f"{mot} est incorrect. Suggestions : {self.dico.suggest(mot)}")
 
     def show_context_menu(self, event):
-       # Obtenir la position du clic droit dans le widget Text
+        print(self.mots_personnels)
+        # Obtenir l'index du clic droit
         index = self.text_box.index(f"@{event.x},{event.y}")
         
-        # Obtenir la ligne complète où le clic droit a eu lieu
-        line_start = f"{index.split('.')[0]}.0"
-        line_end = f"{index.split('.')[0]}.end"
-        line_text = self.text_box.get(line_start, line_end)
-        
-        # Obtenir la position relative du curseur dans la ligne
-        cursor_pos_in_line = int(index.split('.')[1])
-        
-        # Utiliser une regex pour trouver le mot avec un trait d'union sous le curseur
-        # Recherche de mots contenant des lettres, chiffres et traits d'union
-        for match in re.finditer(r'\b[\w-]+\b', line_text):
-            start, end = match.span()
-            if start <= cursor_pos_in_line <= end:
-                incorrect_word = match.group(0)
-                word_start = f"{line_start} + {start}c"
-                word_end = f"{line_start} + {end}c"
-                break
-        else:
-            return  # Aucun mot trouvé sous le curseur
+        # Récupérer le mot sous le curseur
+        word_start = self.text_box.index(f"{index} wordstart")
+        word_end = self.text_box.index(f"{index} wordend")
+        incorrect_word = self.text_box.get(word_start, word_end)
 
         # Vérifier si le mot est incorrect et obtenir des suggestions
         if not self.dico.check(incorrect_word):
@@ -304,7 +264,8 @@ class Mode:
     def ajouter_mot_personnalise(self, mot):
         self.mots_personnels.add(mot)
         self.dico.add(mot)
-        self.verification_dico()
+        # with open("chemin/vers/mots_personnels.txt", "a") as f:
+            # f.write(mot + "\n")
 
     def is_ouverte(self):
         return self.fenetre_gestion_ouverte

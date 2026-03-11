@@ -5,7 +5,6 @@ from tkinter import BooleanVar
 from PIL import Image, ImageTk
 from info import DIRECT, RECORD, REDUIT, APPRENTI
 from ToolTip import ToolTip
-from screeninfo import get_monitors
 
 def get_config_path(file:str):
     """Retourne le chemin du fichier de configuration du micro dans %APPDATA%"""
@@ -52,7 +51,9 @@ def create_buttons(self):
     self.rec_button.grid(row=0, column=0, padx=padx)
     if self.app.status_server == True:
         self.rec_button.config(state=tk.NORMAL)
-    change_toolTip(self.rec_button, self.app.config.shortcut)
+
+    ToolTip(self.rec_button, f"({self.app.keyboard_shortcut})")
+
     self.rec_canvas = tk.Canvas(self.button_frame, width=button_width, height=button_width)
     self.rec_circle = self.rec_canvas.create_oval(2, 2, button_width, button_width, fill="grey")
     self.rec_canvas.grid(row=0, column=1, padx=padx)
@@ -74,8 +75,6 @@ def create_buttons(self):
     # Optional: If you want the frame to be centered horizontally in the window
     # self.button_frame.grid(row=0, column=0, sticky="n")  # This will keep it centered
 
-def change_toolTip(button, texte):
-    ToolTip(button, f"{texte}")
 
 def create_menus(self):
     self.menu_bar = tk.Menu(self.root)
@@ -146,62 +145,59 @@ bubble = None
 label_in_bubble = None
 
 def show_bubble_message(parent, message):
-    """Affiche ou met à jour la bulle de message avec une taille dynamique, sur le même écran que la fenêtre principale."""
+    """Affiche ou met à jour la bulle de message avec une taille dynamique."""
     global bubble, label_in_bubble
 
-    # Obtenir les informations des écrans
-    monitors = get_monitors()
-
-    # Récupérer les coordonnées de la fenêtre principale
-    parent_x = parent.winfo_rootx()
-    parent_y = parent.winfo_rooty()
-
-    # Identifier l'écran où se trouve la fenêtre principale
-    for monitor in monitors:
-        if (monitor.x <= parent_x < monitor.x + monitor.width and
-                monitor.y <= parent_y < monitor.y + monitor.height):
-            target_monitor = monitor
-            break
-    else:
-        # Si aucun écran correspondant n'est trouvé, utiliser le premier écran
-        target_monitor = monitors[0]
-
-    screen_x = target_monitor.x
-    screen_y = target_monitor.y
-    screen_width = target_monitor.width
-    screen_height = target_monitor.height
-
-    # Si la bulle existe déjà, mettre à jour le message et repositionner
+    # Si la bulle existe déjà, on met à jour le message et redimensionne
     if bubble is not None:
         label_in_bubble.config(text=message)
+        
+        # Mise à jour pour recalculer la taille réelle du label après la modification du texte
         bubble.update_idletasks()
 
+        # Récupérer la taille calculée de la fenêtre
         bubble_width = bubble.winfo_width()
         bubble_height = bubble.winfo_height()
 
-        x = screen_x + (screen_width // 2) - (bubble_width // 2)
-        y = screen_y + (screen_height // 2) - (bubble_height // 2)
+        # Recalculer la position pour recentrer la bulle après le changement de taille
+        screen_width = bubble.winfo_screenwidth()
+        screen_height = bubble.winfo_screenheight()
+        x = (screen_width // 2) - (bubble_width // 2)
+        y = (screen_height // 2) - (bubble_height // 2)
 
+        # Repositionner la bulle avec la nouvelle taille
         bubble.geometry(f"+{x}+{y}")
-
+        
     else:
-        # Créer la bulle
+        # Sinon, on crée la bulle
         bubble = tk.Toplevel(parent)
-        bubble.wm_overrideredirect(True)
+        bubble.wm_overrideredirect(True)  # Fenêtre sans bordure
+
+        # Assurez-vous que la bulle soit toujours au-dessus des autres fenêtres
         bubble.attributes("-topmost", True)
 
+        # Créer un label avec le message (sans fixer de dimensions)
         label_in_bubble = tk.Label(bubble, text=message, font=("Arial", 10), background="yellow", fg="black", borderwidth=0)
         label_in_bubble.pack(padx=10, pady=5)
 
+        # Mise à jour pour calculer la taille réelle du label une fois créé
         bubble.update_idletasks()
 
+        # Récupérer la taille calculée de la fenêtre
         bubble_width = bubble.winfo_width()
         bubble_height = bubble.winfo_height()
 
-        x = screen_x + (screen_width // 2) - (bubble_width // 2)
-        y = screen_y + (screen_height // 2) - (bubble_height // 2)
+        # Calculer les coordonnées pour centrer la bulle au milieu de l'écran
+        screen_width = bubble.winfo_screenwidth()
+        screen_height = bubble.winfo_screenheight()
+        x = (screen_width // 2) - (bubble_width // 2)
+        y = (screen_height // 2) - (bubble_height // 2)
 
+        # Positionner la bulle précisément au centre de l'écran avec la taille adaptée
         bubble.geometry(f"+{x}+{y}")
+
+
+        
 
 def remove_bubble():
     """Ferme la bulle de message si elle est active."""

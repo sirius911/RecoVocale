@@ -1,4 +1,5 @@
 import os
+import shutil
 import time
 from Mode import Mode
 import tkinter as tk
@@ -8,7 +9,7 @@ from ClientManager import ClientManager
 import pygame
 from datetime import datetime
 import tempfile
-from sftp_upload import upload_files_to_sftp
+from ftp_upload import upload_files_to_ftp
 
 
 class Mode_Apprenti(Mode):
@@ -35,7 +36,6 @@ class Mode_Apprenti(Mode):
             fenetre_gestion_insertions = self.is_ouverte,
             mode=self.mode,
             nb_repeat=self.app.config.nb_repeat,
-            ip_client=self.app.ip_client,
         )
         super().enter()
         self.pile = ['']
@@ -59,7 +59,7 @@ class Mode_Apprenti(Mode):
         self.text_box_scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
 
         # Add the text box
-        self.text_box = tk.Text(self.text_box_frame, yscrollcommand=self.text_box_scrollbar.set, wrap="word")
+        self.text_box = tk.Text(self.text_box_frame, yscrollcommand=self.text_box_scrollbar.set)
         self.text_box.pack(fill=tk.BOTH, expand=True)
         #balise pour les mots incorrects
         self.text_box.tag_config("incorrect", foreground="red", underline=True)
@@ -133,16 +133,6 @@ class Mode_Apprenti(Mode):
 
     def stop(self):
         self.stop_client()
-        #essais------------------------
-        self.text_box.config(state=tk.NORMAL)
-        self.trash_button.config(state=tk.NORMAL)
-        self.rec_button.config(state=tk.NORMAL)
-        self.transcription_en_cours = False
-        self.transcription.validation()
-        self.set_pos_curseur(self.transcription.fin_insertion)
-        self.status_bar.config(text="Transcription ...interrompue", bg='lightblue', fg='darkblue', anchor=tk.W)
-        self.verification_dico(True)
-        #essais------------------------
 
     def valid_transcriptions(self):
         self.stop_client()
@@ -241,6 +231,14 @@ class Mode_Apprenti(Mode):
         # S'assurer que le curseur est visible
         self.text_box.see("insert")
 
+    # def on_text_change(self, event):
+    #     if event and (event.keysym in ("Shift_L", "Shift_R", "Control_L", "Control_R", "Alt_L", "Alt_R") or
+    #             (event.state & 0x4 and event.keysym == "z")):
+    #         return
+    #     self.save_text_box()
+    #     self.transcription.set(self.text_box.get("1.0", tk.END).strip())
+    #     self.transcription.pos_cur = self.get_pos_curseur()
+
     def update_transcriptions(self, message, ending):
         if message is not None:
             if not self.transcription_en_cours:
@@ -265,7 +263,7 @@ class Mode_Apprenti(Mode):
             self.play_button.config(state=tk.NORMAL)
             self.trash_button.config(state=tk.NORMAL)
             self.status_bar.config(text="Transcription ...Terminée", bg='lightblue', fg='darkblue', anchor=tk.W)
-            self.verification_dico(True)
+            self.verification_dico()
         else:
             self.text_box.config(state=tk.DISABLED)
             self.set_pos_curseur(self.transcription.pos_cur)
@@ -281,7 +279,7 @@ class Mode_Apprenti(Mode):
 
         print(f"On a deux fichiers : \n\t-wav->{self.temp_wav_file} et \n\t-text->{self.temp_txt_file}")
         self.status_bar.config(text="Transfert des fichiers...")
-        upload_files_to_sftp(audio_file=self.temp_wav_file, text_file=self.temp_txt_file,filenames=filename)
+        upload_files_to_ftp(audio_file=self.temp_wav_file, text_file=self.temp_txt_file,filenames=filename)
         
         self.status_bar.config(text="Merci.")
         time.sleep(1)
@@ -356,3 +354,23 @@ class Mode_Apprenti(Mode):
         super().exit()
         return retour
     
+    # def undo(self, event=None):
+    #     if event and event.keysym in ("Shift_L", "Shift_R", "Control_L", "Control_R", "Alt_L", "Alt_R") :
+    #         return
+    #     if self.pile:
+    #         dernier_etat = self.pile.pop()
+    #         self.text_box.delete('1.0', tk.END)
+    #         self.text_box.insert('1.0', dernier_etat)
+    #         self.transcription.set(dernier_etat)
+    #     if not self.pile:
+    #         self.pile = ['']
+    #         self.edit_menu.entryconfig(0, state='disabled')
+        # print(f"Pile après undo: {self.pile}")
+
+    # def save_text_box(self):
+    #     # Sauvegarder uniquement si le texte a changé
+    #     text_box = self.text_box.get("1.0", tk.END).strip()
+    #     if not self.pile or text_box != self.pile[-1]:
+    #         self.pile.append(text_box)
+    #         self.edit_menu.entryconfig(0, state='normal')
+    #         # print("État sauvegardé:", self.pile)

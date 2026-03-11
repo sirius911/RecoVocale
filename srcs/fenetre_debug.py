@@ -25,7 +25,7 @@ class DebugWindow:
         # Création de la fenêtre fille
         self.debug_window = tk.Toplevel(root)
         self.debug_window.title("Fenêtre de débogage")
-        self.debug_window.geometry("415x390")  # Dimensions de la fenêtre fille
+        self.debug_window.geometry("400x310")  # Dimensions de la fenêtre fille
         self.debug_window.protocol("WM_DELETE_WINDOW", self.on_debug_close)
         self.taille_font_status = 8
         self.taille_font_log = 8
@@ -96,7 +96,7 @@ class DebugWindow:
 if __name__ == "__main__":
     root = tk.Tk()
     root.title("Fenêtre principale")
-    root.geometry("200x150")
+    root.geometry("200x100")
 
     debug_win = DebugWindow(root)
 
