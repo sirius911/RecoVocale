@@ -2,6 +2,7 @@ import sys
 import tkinter as tk
 from tkinter import scrolledtext
 
+
 class RedirectOutput:
     def __init__(self, text_widget):
         """Initialise la redirection des sorties vers un widget Tkinter."""
@@ -20,12 +21,13 @@ class RedirectOutput:
         """Flush requis pour la compatibilité avec certains systèmes."""
         pass
 
+
 class DebugWindow:
     def __init__(self, root):
         # Création de la fenêtre fille
         self.debug_window = tk.Toplevel(root)
         self.debug_window.title("Fenêtre de débogage")
-        self.debug_window.geometry("400x310")  # Dimensions de la fenêtre fille
+        self.debug_window.geometry("415x390")  # Dimensions de la fenêtre fille
         self.debug_window.protocol("WM_DELETE_WINDOW", self.on_debug_close)
         self.taille_font_status = 8
         self.taille_font_log = 8
@@ -48,7 +50,6 @@ class DebugWindow:
         if getattr(sys, 'frozen', False):
             sys.stdout = RedirectOutput(self.log_area)
             sys.stderr = RedirectOutput(self.log_area)  # Redirige aussi les erreurs
-        
 
     def log_message(self, message):
         """Ajoute un message personnalisé à la zone de logs."""
@@ -56,12 +57,18 @@ class DebugWindow:
         self.log_area.see(tk.END)  # Faire défiler automatiquement vers le bas
 
     def get_log_message(self):
-        return self.log_area.get('1.0', tk.END)
+        try:
+            if self.log_area:
+                return self.log_area.get('1.0', tk.END)
+            return ""
+        except tk.TclError:
+            return "[log perdu : log_area détruit]"
 
     def update_status(self, status):
         """Met à jour les statuts dans la zone de statut."""
-        self.status_area.delete('1.0', tk.END)  # Effacer le statut précédent
-        self.status_area.insert(tk.END, status)
+        if self.status_area.winfo_exists():
+            self.status_area.delete('1.0', tk.END)  # Effacer le statut précédent
+            self.status_area.insert(tk.END, status)
 
     def on_debug_close(self):
         """Gestion de la fermeture de la fenêtre fille."""
@@ -70,33 +77,43 @@ class DebugWindow:
         sys.stdout = self.original_stdout
         sys.stderr = self.original_stderr
 
-
     def append_status_with_format(self, message, color="black", font_style="normal"):
         """Ajoute du texte à la zone de statut avec une couleur et un style de police."""
+        if self.status_area.winfo_exists():
+            # Configurer le style du texte
+            if font_style == "italic":
+                self.status_area.tag_configure(f"formatted_{font_style}",
+                                               font=("Helvetica",
+                                                     self.taille_font_status,
+                                                     "italic"))
+            elif font_style == "bold":
+                self.status_area.tag_configure(f"formatted_{font_style}",
+                                               font=("Helvetica",
+                                                     self.taille_font_status,
+                                                     "bold"))
+            else:
+                self.status_area.tag_configure(f"formatted_{font_style}",
+                                               font=("Helvetica",
+                                                     self.taille_font_status,
+                                                     "normal"))
 
-        # Configurer le style du texte
-        if font_style == "italic":
-            self.status_area.tag_configure(f"formatted_{font_style}", font=("Helvetica",  self.taille_font_status, "italic"))
-        elif font_style == "bold":
-            self.status_area.tag_configure(f"formatted_{font_style}", font=("Helvetica",  self.taille_font_status, "bold"))
-        else:
-            self.status_area.tag_configure(f"formatted_{font_style}", font=("Helvetica", self.taille_font_status, "normal"))
+            # Configurer la couleur du texte
+            self.status_area.tag_configure(f"colored_{color}", foreground=color)
 
-        # Configurer la couleur du texte
-        self.status_area.tag_configure(f"colored_{color}", foreground=color)
-
-        # Insérer le nouveau texte sans effacer ce qui est déjà là
-        self.status_area.insert(tk.END, message, (f"formatted_{font_style}", f"colored_{color}"))
-        self.status_area.see(tk.END)  # Faire défiler vers le bas automatiquement
+            # Insérer le nouveau texte sans effacer ce qui est déjà là
+            self.status_area.insert(tk.END, message, (f"formatted_{font_style}", f"colored_{color}"))
+            self.status_area.see(tk.END)  # Faire défiler vers le bas automatiquement
 
     def delete_status(self):
-        self.status_area.delete('1.0', tk.END)
+        if self.status_area.winfo_exists():
+            self.status_area.delete('1.0', tk.END)
+
 
 # Test rapide pour voir la fenêtre en fonctionnement
 if __name__ == "__main__":
     root = tk.Tk()
     root.title("Fenêtre principale")
-    root.geometry("200x100")
+    root.geometry("200x150")
 
     debug_win = DebugWindow(root)
 

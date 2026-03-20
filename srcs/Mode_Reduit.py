@@ -1,36 +1,36 @@
-from Mode import Mode
+
 import tkinter as tk
-from utils_window import create_menus, create_buttons, show_bubble_message, remove_bubble
-from info import REDUIT, VERSION
-from ClientManager import ClientManager
-from utils_keyboard import Simulator
 from pynput.keyboard import Key
+from Mode import Mode
+from utils_window import create_buttons, update_status_bar
+from menus import create_menus
+from info import REDUIT, VERSION
+from utils_keyboard import Simulator
+from clipboard import set_clipboard
+
+VERSION += 'col'  # Mode Colpo
+
 
 class Mode_Reduit(Mode):
-    def enter(self):
-        self.mode = REDUIT
-        self.mod_var.set(REDUIT)
-        self.ui()
-        #----------------- Lien Client Whisper -----------------------
-        self.client_manager = ClientManager(
-            host = self.app.config.server_ip,
-            port = self.app.config.port,
-            lang = "fr",
-            model = "small",
-            translate = False,
-            use_vad = True,
-            save_output_recording = False,
-            output_recording_filename = "",
-            update_callback = self.update_transcriptions,  # Pass the callback to ClientManager
-            insertions = self.app.insertions,
-            fenetre_gestion_insertions = self.is_ouverte,
-            mode=self.mode,
-            nb_repeat=self.app.config.nb_repeat,
-        )
-        super().enter()
-        self.simulator_keyboard = Simulator(None, True)
+    """
+    Mode de transcription simplifié sans interface utilisateur complète.
 
-    def ui(self): 
+    Dans ce mode, l'utilisateur parle et la transcription est automatiquement envoyée
+    au presse-papier et collée dans l'application cible, sans intervention manuelle. (Peut être forcé)
+
+    Hérite de la classe `Mode`.
+    """
+    def __init__(self, app, mode=REDUIT):
+        super().__init__(app, mode)
+        self.enter()
+        self.a_ecrit = False
+        self.shown_segments = set()
+
+    def ui(self) -> None:
+        """
+        Crée l'interface minimale du mode Réduit : menus, boutons, et barre de statut.
+        """
+
         create_menus(self)
         create_buttons(self)
 
@@ -39,48 +39,95 @@ class Mode_Reduit(Mode):
         self.root.grid_columnconfigure(0, weight=1)
 
         # Create the status bar at the bottom of the window
-        self.status_bar = tk.Label(self.root, text=f"RecoVocale {VERSION}", bd=1, relief=tk.SUNKEN, anchor=tk.W)
+        self.status_bar = tk.Label(self.root, text=f"RecoVocale {VERSION}Col", bd=1, relief=tk.SUNKEN, anchor=tk.W)
         self.status_bar.grid(row=2, column=0, sticky="ew")
 
+    def unpause(self, audio_file=None):
+        if self.app.recording or self.vt.is_recording or not self.app.status_server:
+            return
+        try:
+            self.vt.start()
+            self.app.recording = True
+            self.on_record_start()
+        except Exception as e:
+            update_status_bar(status_bar=self.status_bar,
+                              text=f"Erreur start micro: {e}", bg="lightblue", fg="darkblue", anchor=tk.W)
+
     def pause(self):
-        print("Pausing client in Mode Réduit")
-        super().pause()
+        if not self.app.recording and not self.vt.is_recording:
+            return
 
-    def unpause(self):
-        print("UnPausing client in Mode Réduit")
-        super().unpause()
+        try:
+            texte = self.vt.stop()  # transcription finale
+        except Exception as e:
+            update_status_bar(status_bar=self.status_bar,
+                              text=f"Erreur stop/transcription: {e}", bg="lightblue", fg="darkblue", anchor=tk.W)
+            texte = ""
+        finally:
+            self.app.recording = False
 
-    def stop_client(self):
-        print("Stop client in Mode Réduit")
-        super().stop_client()
+        if texte and texte.strip():
+            self.handle_final_text(texte)
+        self._update_rec_circle()
+        self._update_image_button()
+        update_status_bar(status_bar=self.status_bar,
+                          text="Transcription terminée",
+                          bg='lightblue', fg='darkblue', anchor=tk.W)
 
     def stop(self):
-        self.stop_client()
-        remove_bubble()
+        if self.vt.is_recording or self.app.recording:
+            self.pause()
+            return
+        # sinon: rien de spécial
 
-    def valid_transcriptions(self):
-        self.stop_client()
+    def on_record_start(self):
+        # UI rouge pendant l'enregistrement
+        self._update_rec_circle()
+        self._update_image_button()
+        update_status_bar(status_bar=self.status_bar,
+                          text="* Enregistrement… *",
+                          bg="red", fg="darkblue", anchor=tk.CENTER)
 
-    def update_transcriptions(self, message, ending):
-        if message is not None:
-            self.transcription.update(message, -1)
-        if ending:
-            remove_bubble()
-            # copie dans clipboard
-            self.root.clipboard_clear()
-            self.root.clipboard_append(self.transcription.text_en_cours)
-            # coller
-            Simulator([Key.ctrl, 'v'])
-            self.transcription.validation()
-            self.status_bar.config( text=f'RecoVocale {VERSION}', bg='lightblue', fg='darkblue', anchor=tk.W)
-        else:
-            show_bubble_message(self.root, message)
-            self.status_bar.config(text='* Transcription *', bg='lightblue', fg='darkblue', anchor=tk.CENTER)
+    def handle_final_text(self, text: str):
 
-    def clear_text_box(self):
+        txt = super().handle_final_text(text)
+
+        to_copy = f" {txt}" if self.app.config.word_space else f"{txt} "
+
+        if not self.is_ouverte():
+            set_clipboard(text=to_copy, html=self.app.config.firefox)
+            self.root.after(150, lambda: Simulator([Key.ctrl, 'v']))
+            self.log(text=text)
+
+    def copy_to_clipboard(self) -> None:
+        def _copy():
+            update_status_bar(status_bar=self.status_bar,
+                              text="- Ctrl+C -",
+                              bg='lightblue', fg='darkblue', anchor=tk.CENTER)
+            self.root.after(0, lambda: Simulator([Key.ctrl, 'c']))
+        self.add_to_ui_queue(_copy)
+
+    def clear_text_box(self) -> None:
+        """
+        Supprime le texte actif en simulant une pression sur la touche Suppr.
+        """
+
         Simulator([Key.delete])
 
-    def exit(self):
-        remove_bubble()
+    def undo(self, event=None) -> None:
+        """
+        Simule Ctrl+Z pour annuler la dernière action dans l'application cible.
+        """
+        Simulator([Key.ctrl, "z"])
+
+    def exit(self) -> str:
         super().exit()
-        return self.transcription.get() # on retourne la transcription en cours
+        return ""
+
+    def toggle_word_space(self) -> None:
+        """
+        Ajoute un espace avant le segment envoyé au curseur
+        """
+
+        # maj de la variable config
+        self.app.config.word_space = self.word_space_var.get()

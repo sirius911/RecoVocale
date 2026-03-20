@@ -1,12 +1,13 @@
 from types import SimpleNamespace
 
-VERSION = '0.90'
+VERSION = '2.09'
+VERSION_DLL = '0.1.6'
 
-#------------------------ M O D E S ----------------------
+# ------------------------ M O D E S ----------------------
 DIRECT = SimpleNamespace()
 DIRECT.name = "DIRECT"
 DIRECT.resizable = True
-DIRECT.topmost = True
+DIRECT.topmost = False
 DIRECT.window_width = 940
 DIRECT.window_height = 709
 DIRECT.button_width = 30
@@ -21,10 +22,10 @@ RECORD.button_width = 30
 
 REDUIT = SimpleNamespace()
 REDUIT.name = "REDUIT"
-REDUIT.resizable = True
+REDUIT.resizable = False
 REDUIT.topmost = True
 REDUIT.window_width = 226
-REDUIT.window_height = 60
+REDUIT.window_height = 85
 REDUIT.button_width = 15
 
 APPRENTI = SimpleNamespace()
@@ -34,3 +35,11 @@ APPRENTI.topmost = True
 APPRENTI.window_width = 940
 APPRENTI.window_height = 709
 APPRENTI.button_width = 30
+
+FICHIER = SimpleNamespace()
+FICHIER.name = "FICHIER"
+FICHIER.resizable = True
+FICHIER.topmost = False
+FICHIER.window_width = 940
+FICHIER.window_height = 709
+FICHIER.button_width = 30

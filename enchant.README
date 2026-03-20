@@ -1,0 +1,16 @@
+Pour l'installation des dictionnaires il faut :
+les fichier fr_FR.aff et fr_FR.dic que l'on peut trouver dans C:\Program Files\LibreOffice\share\extensions\dict-fr\
+et les copiers dans :
+_env\Lib\site-packages\enchant\data\mingw64\share\enchant\hunspell\
+
+ou _env est l'environnement virtuel Python
+
+on peut tester ensuite par : 
+import enchant
+print(enchant.list_languages())
+print(enchant.get_enchant_version())
+print(enchant.get_user_config_dir())
+
+d = enchant.Dict("fr_FR")
+print(d.check("bonjour"))
+

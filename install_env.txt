@@ -7,8 +7,11 @@ pyenv install 3.12.6
 
 Placez-vous dans le répertoire de votre projet et exécutez la commande suivante pour créer un environnement virtuel nommé `_env` :
 
-python -m venv _env
-
+sous linux :
+    python -m venv _env
+sous windows :
+    pyenv exec python -m venv _env
+    
 2. Définir Python 3.12.6 comme version locale dans votre répertoire :
 
 pyenv local 3.12.6

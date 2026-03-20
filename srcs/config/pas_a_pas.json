@@ -1,0 +1,49 @@
+[
+  {
+    "name": "Ouvrir les mail",
+    "spoken": "ouvrir mail",
+    "description": "Ouvre mes mail",
+    "steps": [
+      {
+        "type": "open_app",
+        "params": {
+          "target": "C:/Program Files (x86)/Internet Explorer/iexplore.exe",
+          "args": "https://zimbra.chprod.fr/?RelayState=%2Fmodern%2F",
+          "window": "maximized"
+        }
+      },
+      {
+        "type": "wait_window",
+        "params": {
+          "title_contains": "zimbra",
+          "timeout_ms": 15000,
+          "require_visible": true,
+          "activate": true,
+          "maximize": true
+        }
+      },
+      {
+        "type": "send_keys",
+        "params": {
+          "keys": [
+            "{TAB}"
+          ]
+        }
+      },
+      {
+        "type": "wait",
+        "params": {
+          "ms": 1000
+        }
+      },
+      {
+        "type": "send_keys",
+        "params": {
+          "keys": [
+            "{ENTER}"
+          ]
+        }
+      }
+    ]
+  }
+]

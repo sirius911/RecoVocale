@@ -1,79 +1,39 @@
-import time
-from Mode import Mode
 import tkinter as tk
-from utils_window import create_menus, create_buttons
+import tkinter.font as tkFont
+from Mode import Mode
+from utils_window import create_buttons, update_status_bar
+from menus import create_menus
 from info import DIRECT
-from ClientManager import ClientManager
 from utils_keyboard import Simulator
 from pynput.keyboard import Key
-
-
-def trouver_bornes_mot_tk(phrase, curseur, direction='left'):
-    # Si le curseur est à la fin, on le place au dernier caractère
-    if curseur == -1:
-        curseur = len(phrase) - 1
-
-    # Assurer que le curseur est dans les bornes de la phrase
-    curseur = max(0, min(len(phrase) - 1, curseur))
-    
-    if direction == 'left':
-        # Trouver le début du mot à left
-        debut = curseur
-        while debut > 0 and phrase[debut].isspace():
-            debut -= 1
-        while debut > 0 and not phrase[debut - 1].isspace():
-            debut -= 1
-        
-        # Trouver la fin du mot
-        fin = curseur
-        while fin < len(phrase) and not phrase[fin].isspace():
-            fin += 1
-        return debut, fin - 1
-    
-    elif direction == 'right':
-        # Trouver le début du mot à right
-        debut = curseur
-        while debut < len(phrase) and phrase[debut].isspace():
-            debut += 1
-        
-        fin = debut
-        while fin < len(phrase) and not phrase[fin].isspace():
-            fin += 1
-        
-        return debut, fin - 1
-    
-    else:
-        raise ValueError("La direction doit être 'left' ou 'right'.")
+from clipboard import set_clipboard
 
 
 class Mode_Direct(Mode):
-    def enter(self):
-        self.mode = DIRECT
-        self.mod_var.set(DIRECT)
-        self.ui()
-        #----------------- Lien Client Whisper -----------------------
-        self.client_manager = ClientManager(
-            host = self.app.config.server_ip,
-            port = self.app.config.port,
-            lang = "fr",
-            model = "small",
-            translate = False,
-            use_vad = True,
-            save_output_recording = False,
-            output_recording_filename = "",
-            update_callback = self.update_transcriptions,  # Pass the callback to ClientManager
-            insertions = self.app.insertions,
-            fenetre_gestion_insertions = self.is_ouverte,
-            mode=self.mode,
-            nb_repeat=self.app.config.nb_repeat,
-        )
-        super().enter()
-        self.pile = ['']
-    def ui(self):
+    """
+    Mode d’utilisation direct pour l'application RecoVocale.
+
+    Permet une transcription immédiate à partir du micro ou d’un fichier audio,
+    avec affichage en temps réel dans une zone de texte. Ce mode gère aussi la
+    vérification orthographique, les insertions, les raccourcis clavier et les interactions utilisateur.
+
+    Hérite de la classe `Mode` pour les fonctionnalités communes.
+    """
+    def __init__(self, app, mode=DIRECT):
+        super().__init__(app, mode)
+        self.transcription_interrompue = False
+        self.enter()
+
+    def ui(self) -> None:
+        """
+        Construit l’interface utilisateur spécifique au mode direct :
+        menus, boutons, zone de texte, barre de statut, gestion des événements clavier et clic droit.
+        """
+
         create_menus(self)
         create_buttons(self)
 
-         # Configure the grid system of the root window
+        # Configure the grid system of the root window
         self.root.grid_rowconfigure(1, weight=1)
         self.root.grid_columnconfigure(0, weight=1)
 
@@ -88,7 +48,11 @@ class Mode_Direct(Mode):
         # Add the text box
         self.text_box = tk.Text(self.text_box_frame, yscrollcommand=self.text_box_scrollbar.set, wrap='word')
         self.text_box.pack(fill=tk.BOTH, expand=True)
-        #balise pour les mots incorrects
+        # Définir la police
+        font = tkFont.Font(family="Calibri", size=12)
+        self.text_box.configure(font=font)
+
+        # balise pour les mots incorrects
         self.text_box.tag_config("incorrect", foreground="red", underline=True)
         # self.text_box.config(state=tk.DISABLED)
 
@@ -101,51 +65,114 @@ class Mode_Direct(Mode):
         # Attacher l'événement à la Text box
         self.text_box.bind("<Key>", self.on_text_change)
 
-        self.text_box.bind("<Button-3>", self.show_context_menu)
-        # Création du menu contextuel
-        self.context_menu = tk.Menu(self.root, tearoff=0)
+        # self.text_box.bind("<Button-3>", self.show_context_menu)
+        # # Création du menu contextuel
+        # self.context_menu = tk.Menu(self.root, tearoff=0)
 
         # Create the status bar at the bottom of the window
         self.status_bar = tk.Label(self.root, text="Bienvenue dans l'application", bd=1, relief=tk.SUNKEN, anchor=tk.W)
         self.status_bar.grid(row=2, column=0, sticky="ew")
 
+    def unpause(self, audio_file: str | None = None):
+        if self.app.recording or self.vt.is_recording or not self.app.status_server:
+            return
+        try:
+            self.vt.start()
+            self.app.recording = True
+
+            def _ui_ok():
+                self.text_box.config(state=tk.NORMAL)
+                self.status_bar.config(text="* Enregistrement… *", bg="red", fg="darkblue", anchor=tk.CENTER)
+                self._update_rec_circle()
+                self._update_image_button()
+
+            self.add_to_ui_queue(_ui_ok)
+
+        except Exception as e:
+            def _ui_err(e):
+                self.status_bar.config(
+                    text=f"Erreur start micro: {e}",
+                    bg="lightblue", fg="darkblue", anchor=tk.W
+                )
+
+            self.add_to_ui_queue(_ui_err, e)
+
     def pause(self):
-        print("Pausing client in Mode Direct")
-        super().pause()
+        if not self.app.recording and not self.vt.is_recording:
+            return
+        try:
+            texte = self.vt.stop()  # transcription finale d’un seul tenant
+        except Exception as e:
+            update_status_bar(status_bar=self.status_bar, text=f"Erreur stop/transcription: {e}",
+                              bg="lightblue", fg="darkblue", anchor=tk.W)
+            texte = ""
+        finally:
+            self.app.recording = False
 
-    def unpause(self):
-        print(f"UnPausing client in Mode Direct")
-        super().unpause()
+        if texte and texte.strip():
+            self.handle_final_text(texte)
 
-    def stop_client(self):
-        print(f"Stop client in Mode Direct")
-        super().stop_client()
+        def _maj():
+            if texte and texte.strip():
+                self.trash_button.config(state=tk.NORMAL)
+            self._update_rec_circle()
+            self._update_image_button()
 
-    def stop(self):
-        self.stop_client()
+        self.add_to_ui_queue(_maj)
+        update_status_bar(status_bar=self.status_bar, text="Segment ajouté",
+                          bg='lightblue', fg='darkblue', anchor=tk.W)
 
-    def valid_transcriptions(self):
-        self.stop_client()
+    def stop(self) -> None:
+        # Si on utilise VT et qu’on enregistre, faire une pause (récupère et insère)
+        if hasattr(self, "vt") and (self.vt.is_recording or self.app.recording):
+            self.pause()
+            return
 
-    # def undo(self, event=None):
-    #     if event and event.keysym in ("Shift_L", "Shift_R", "Control_L", "Control_R", "Alt_L", "Alt_R") :
-    #         return
-    #     if self.pile:
-    #         dernier_etat = self.pile.pop()
-    #         self.text_box.delete('1.0', tk.END)
-    #         self.text_box.insert('1.0', dernier_etat)
-    #         self.transcription.set(dernier_etat)
-    #     if not self.pile:
-    #         self.pile = ['']
-    #         self.edit_menu.entryconfig(0, state='disabled')
-        # print(f"Pile après undo: {self.pile}")
+    def on_record_start(self):
+        # UI rouge pendant l’enregistrement
+        self.text_box.config(state=tk.NORMAL)
+        update_status_bar(status_bar=self.status_bar, text="* Enregistrement… *",
+                          bg='red', fg='darkblue', anchor=tk.CENTER)
 
-    def get_selected_text(self):
+    def handle_final_text(self, text: str):
+        txt = super().handle_final_text(text)
+
+        if hasattr(self, "save_text_box"):
+            self.save_text_box()
+
+        # Insérer au curseur (remplacer la sélection si présente)
+        def _insert_final(t=txt):
+            if self.text_box.tag_ranges("sel"):
+                self.text_box.delete(tk.SEL_FIRST, tk.SEL_LAST)
+            self.text_box.insert("insert", t + " ")
+            self.text_box.see("insert")
+            self.root.update_idletasks()
+            self.log(text)
+        if not self.is_ouverte():
+            self.add_to_ui_queue(_insert_final)
+
+    def save_text_box(self) -> None:
         """
-            renvoi le texte selectionné de la TextBox + Flag
-            Si aucune selection renvoi toute le text
-            le Flag est True si on envoi l'integralité et False si une partie
+        Sauvegarde le contenu actuel du champ texte dans la pile d'annulation.
         """
+
+        if self.text_box:
+            # Sauvegarder uniquement si le texte a changé
+            text_box = self.text_box.get("1.0", tk.END).rstrip('\n')
+            if not self.pile or text_box != self.pile[-1]:
+                self.pile.append(text_box)
+                self.edit_menu.entryconfig(0, state='normal')
+                # print("État sauvegardé:", self.pile)
+
+    def get_selected_text(self) -> tuple[str, bool]:
+        """
+        Récupère le texte sélectionné dans la zone de texte.
+
+        Returns:
+            tuple[str, bool]: Le texte sélectionné ou tout le texte si rien n'est sélectionné,
+                            et un booléen indiquant si tout le texte est retourné.
+        """
+
         try:
             # Vérifie s'il y a une sélection
             if self.text_box.tag_ranges("sel"):
@@ -154,230 +181,132 @@ class Mode_Direct(Mode):
                 return selected_text, False
             else:
                 # si aucune selection on envoi la transcription complète
-                return self.transcription.get(), True
+                selected_text = self.text_box.get("1.0", tk.END)
+                return selected_text, True
         except tk.TclError:
             # Gestion d'erreur si aucune sélection n'est faite
-            return self.transcription.get(), True
-        
-    def get_pos_select(self):
+            selected_text = self.text_box.get("1.0", tk.END)
+            return selected_text, True
+
+    def get_pos_select(self) -> tuple[int, int]:
         """
-            retourne un couple (start,end) si selection dans text_box ou None 
+        Récupère les indices globaux de début et fin de la sélection texte.
+
+        Returns:
+            tuple[int, int]: (start, end) ou (0, 0) si rien n'est sélectionné.
         """
+
         try:
             if self.text_box.tag_ranges("sel"):
                 # Obtenir les positions 'ligne.colonne' de la sélection
                 start = self.text_box.index(tk.SEL_FIRST)
                 end = self.text_box.index(tk.SEL_LAST)
-                
+
                 # Convertir ces positions en indices globaux
                 start_index = self.text_box.count("1.0", start)[0]  # Distance depuis le début du texte
                 end_index = self.text_box.count("1.0", end)[0]      # Distance jusqu'à la fin du texte sélectionné
-                
+
                 return (start_index, end_index)
             else:
                 return (0, 0)
         except tk.TclError:
             return (0, 0)
 
-    def clear_text_box(self):
+    def clear_text_box(self) -> None:
         """
-        Clear the content of the text box.
+        Efface le texte sélectionné ou tout le texte s’il n’y a pas de sélection.
         """
-        time.sleep(0.5)
+
         self.save_text_box()
         _, all = self.get_selected_text()
-        self.valid_transcriptions()
-       
-        if all:
-            self.transcription.clear()
-            self.text_box.delete('1.0', tk.END)
-        else:
-            Simulator([Key.delete])
 
-        self.root.update()
+        def clear():
+            self.text_box.config(state=tk.NORMAL)
+            if all:
+                self.text_box.delete('1.0', tk.END)
+            else:
+                Simulator([Key.delete])
 
-    def get_pos_curseur(self):
+        self.add_to_ui_queue(clear)
+        # self.root.update()
+
+    def get_pos_curseur(self) -> int:
+        """
+        Récupère la position du curseur dans la zone de texte.
+
+        Returns:
+            int: Position globale en nombre de caractères.
+        """
+
         # Utiliser "1.0" comme point de départ et obtenir le nombre total de caractères jusqu'au curseur
         position_globale = self.text_box.count("1.0", "insert", "chars")
         if position_globale:
             return position_globale[0]
         return 0
 
-    def set_pos_curseur(self, position_globale):
-        # Utiliser "1.0" comme point de départ et déplacer le curseur à la position globale
-        index_ligne_colonne = self.text_box.index(f"1.0 + {position_globale}c")
-        
-        # Repositionner le curseur à l'index ligne.colonne calculé
-        self.text_box.mark_set("insert", index_ligne_colonne)
-        
-        # S'assurer que le curseur est visible
-        self.text_box.see("insert")
-    
-    # def save_text_box(self):
-    #     # Sauvegarder uniquement si le texte a changé
-    #     text_box = self.text_box.get("1.0", tk.END)
-    #     if not self.pile or text_box != self.pile[-1]:
-    #         self.pile.append(text_box)
-    #         self.edit_menu.entryconfig(0, state='normal')
-    #         # print("État sauvegardé:", self.pile)
+    def set_pos_curseur(self, position_globale: int) -> None:
+        """
+        Déplace le curseur à une position donnée dans la zone de texte.
 
-    # def on_text_change(self, event):
-    #     if event and (event.keysym in ("Shift_L", "Shift_R", "Control_L", "Control_R", "Alt_L", "Alt_R") or
-    #                   (event.state & 0x4 and event.keysym == "z")):
-    #         return
-    #     self.root.after_idle(self.text_change) # pour attendre que tkinter est bien écrit les modifications
-        
+        Args:
+            position_globale (int): Position souhaitée en caractères depuis le début.
+        """
+        def set_cursor():
+            # Utiliser "1.0" comme point de départ et déplacer le curseur à la position globale
+            index_ligne_colonne = self.text_box.index(f"1.0 + {position_globale}c")
 
-    # def text_change(self): 
-    #     self.trash_button.config(state=tk.NORMAL)   
-    #     nouveau_text = self.text_box.get("1.0", tk.END)
-    #     self.save_text_box()
-    #     self.transcription.set(nouveau_text)
-    #     self.transcription.text_box_en_cours = nouveau_text
-    #     self.transcription.pos_cur = self.get_pos_curseur()
-    #     self.verification_dico()
-        
+            # Repositionner le curseur à l'index ligne.colonne calculé
+            self.text_box.mark_set("insert", index_ligne_colonne)
 
-    # def verification_dico(self):
-    #     #on verifie l'orthographe
-    #     #efface les marquages précédents
-    #     self.text_box.tag_remove("incorrect", "1.0", tk.END)
+            # S'assurer que le curseur est visible
+            self.text_box.see("insert")
 
-    #     # Séparer le contenu en mots
-    #     contenu = self.text_box.get("1.0", tk.END)
-    #     mots = contenu.split()
-    #     for mot in mots:
-    #         # Vérifier chaque mot
-    #         if not self.dico.check(mot):
-    #             # Trouver les positions du mot
-    #             start_idx = contenu.find(mot)
-    #             end_idx = start_idx + len(mot)
-    #             # Convertir les positions en indices tkinter
-    #             start = f"1.0 + {start_idx} chars"
-    #             end = f"1.0 + {end_idx} chars"
-    #             # Ajouter une balise pour souligner les mots incorrects
-    #             self.text_box.tag_add("incorrect", start, end)
-    #             # Afficher les suggestions (affichage simplifié)
-    #             # print(f"{mot} est incorrect. Suggestions : {self.dico.suggest(mot)}")
+        self.add_to_ui_queue(set_cursor)
 
-    # def show_context_menu(self, event):
-    #     # Obtenir l'index du clic droit
-    #     index = self.text_box.index(f"@{event.x},{event.y}")
-        
-    #     # Récupérer le mot sous le curseur
-    #     word_start = self.text_box.index(f"{index} wordstart")
-    #     word_end = self.text_box.index(f"{index} wordend")
-    #     incorrect_word = self.text_box.get(word_start, word_end)
+    def copy_to_clipboard(self) -> None:
+        """
+        Copie le texte sélectionné (ou tout le texte) dans le presse-papier.
+        """
+        def copy():
+            self.status_bar.config(text='- Copie -', bg='lightblue', fg='darkblue', anchor=tk.CENTER)
+            set_clipboard(text=self.get_selected_text()[0], html=self.app.config.firefox)
 
-    #     # Vérifier si le mot est incorrect et obtenir des suggestions
-    #     if not self.dico.check(incorrect_word):
-    #         suggestions = self.dico.suggest(incorrect_word)
+        self.add_to_ui_queue(copy)
 
-    #         personnalise_suggestions = [
-    #             s for s in suggestions if s in self.mots_personnels
-    #         ]
-    #         autres_suggestions = [
-    #             s for s in suggestions if s not in self.mots_personnels
-    #         ]
-    #         suggestions = personnalise_suggestions + autres_suggestions
+    def on_text_change(self, event) -> None:
+        """
+        Gère les changements dans le champ texte. Ignore certaines touches de contrôle.
 
-    #         # Effacer le menu précédent et ajouter les nouvelles suggestions
-    #         self.context_menu.delete(0, tk.END)
-    #         for suggestion in suggestions:
-    #             self.context_menu.add_command(
-    #                 label=suggestion,
-    #                 command=lambda s=suggestion, ws=word_start, we=word_end: self.replace_word(s, ws, we)
-    #             )
-    #         self.context_menu.add_separator()
-    #         self.context_menu.add_command(
-    #             label="Ajouter au dictionnaire",
-    #             command=lambda: self.ajouter_mot_personnalise(incorrect_word)
-    #         )
-    #         self.context_menu.post(event.x_root, event.y_root)
+        Args:
+            event: Événement clavier de Tkinter.
+        """
 
-    # def replace_word(self, suggestion, word_start, word_end):
-    #     self.save_text_box()
-    #     # Remplacer le mot dans la text box
-    #     self.text_box.delete(word_start, word_end)
-    #     self.text_box.insert(word_start, suggestion)
-    #     # Retirer le marquage incorrect
-    #     self.text_box.tag_remove("incorrect", word_start, word_end)
+        if event and (event.keysym in ("Shift_L", "Shift_R", "Control_L", "Control_R", "Alt_L", "Alt_R") or
+                      (event.state & 0x4 and event.keysym == "z")):
+            return
+        self.save_text_box()
+        self.root.after_idle(self.text_change)  # pour attendre que tkinter est bien écrit les modifications
 
-    def update_transcriptions(self, message, ending):
-        if message is not None:
-            if not self.transcription_en_cours:
-                self.trash_button.config(state=tk.DISABLED)
-                self.rec_button.config(state=tk.DISABLED)
-                self.transcription_en_cours = True
-                self.transcription.pos_cur = self.get_pos_curseur()
-                self.transcription.cur_selec = self.get_pos_select()
-                self.save_text_box()
-
-            self.transcription.update(message)
-            self.text_box.config(state=tk.NORMAL)
-            self.text_box.delete('1.0', tk.END)
-            self.text_box.insert(tk.END, self.transcription.text_box_en_cours)
-        if ending:
-            self.text_box.config(state=tk.NORMAL)
+    def text_change(self) -> None:
+        """
+        Applique les changements de texte et met à jour la transcription et le curseur.
+        """
+        def apply_changes():
             self.trash_button.config(state=tk.NORMAL)
-            self.rec_button.config(state=tk.NORMAL)
-            self.transcription_en_cours = False
-            self.transcription.validation()
-            self.set_pos_curseur(self.transcription.fin_insertion)
-            self.status_bar.config(text="Transcription ...Terminée", bg='lightblue', fg='darkblue', anchor=tk.W)
-            self.verification_dico()
-        else:
-            self.text_box.config(state=tk.DISABLED)
-            self.set_pos_curseur(self.transcription.pos_cur)
-            # self.status_bar.config(text="Transcription ... en cours", bg='lightblue', fg='darkblue', anchor=tk.W)
+            self.save_text_box()
 
-    def copy_to_clipboard(self):
-        self.status_bar.config(text='- Copie -', bg='lightblue', fg='darkblue', anchor=tk.CENTER)
-        self.root.clipboard_clear()
-        self.root.clipboard_append(self.get_selected_text()[0])
-        time.sleep(0.5)
-        self._update_barre_status()
+        self.add_to_ui_queue(apply_changes)
 
-    def select_text_box(self, dir = "left"):
-        self.text_box.focus_set()
-        # Effacer la sélection actuelle (retirer la surbrillance)
-        self.text_box.tag_remove("sel", "1.0", tk.END)
+    def exit(self) -> str:
+        """
+        Ferme proprement la fenêtre du mode et retourne le texte courant.
+        """
+        retour = ""
+        try:
+            if hasattr(self, "text_box") and self.text_box.winfo_exists():
+                retour = self.text_box.get("1.0", tk.END).rstrip("\n")
+        except tk.TclError:
+            retour = ""
 
-
-        # Récupérer la position du curseur dans la text_box
-        cursor_index = self.text_box.index(tk.INSERT)   
-
-        # Convertir cet index en offset numérique (compter les caractères depuis le début)
-        line, column = map(int, cursor_index.split('.'))
-        # print(f"cursor_index = ({line},{column})")
-        if dir == "left":
-            column -= 1
-        else:
-            column += 1
-        # print(f"next cursor index = ({line},{column})")    
-        current_position = int(self.text_box.index(f"{line}.0+{column}c").split('.')[1])
-
-        # Récupérer tout le texte du text_box
-        full_text =self.text_box.get("1.0", tk.END)
-        
-        # Trouver les bornes du mot à left ou à right
-        start_pos, end_pos = trouver_bornes_mot_tk(full_text, current_position, dir)
-        
-        # Convertir ces bornes en indices Tkinter
-        start_index = f"{line}.0+{start_pos}c"
-        end_index = f"{line}.0+{end_pos + 1}c"  # Incrémenter pour inclure la dernière lettre
-        # print(f"start_index = {start_index}, end_index = {end_index}")
-        # Sélectionner le mot dans la text_box
-        self.text_box.tag_add("sel", start_index, end_index)
-
-        # Mettre le curseur à la fin ou au début  de la sélection
-        if dir == "left":
-            self.text_box.mark_set(tk.INSERT, start_index)
-        else:
-            self.text_box.mark_set(tk.INSERT, end_index)
-        self.text_box.see(tk.INSERT)  # Faire défiler jusqu'au curseur
-
-    def exit(self):
-        retour = self.text_box.get("1.0", tk.END) # on retourne la transcription en cours
         super().exit()
         return retour
