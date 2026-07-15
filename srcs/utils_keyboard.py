@@ -150,13 +150,10 @@ class Simulator:
                 self.keyboard.tap(key)
             return
 
-        # ici 'char' est du texte ordinaire
-        if len(char) == 1:
-            self.keyboard.tap(char)
-        else:
-            for ch in char:
-                self.keyboard.tap(ch)
-                time.sleep(TIME_WRITE)
+        # Texte ordinaire : saisie caractère par caractère
+        for ch in char:
+            self.keyboard.tap(ch)
+            time.sleep(TIME_WRITE)
 
     @staticmethod
     def parse_keys(seq):

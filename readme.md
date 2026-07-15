@@ -32,6 +32,7 @@
 |   2.07  | 2025-09-04 | – CORRECTIF Pour la version v2.05 avec installation des configs de base installé dans program file/default et copie s'ils ne sont pas dans le %appData% de l’utilisateur. |
 |   2.08  | 2025-09-11 | – Correctif reload insertion.xml apres modif<br> – passage du clipboard windows avec win32clipboard pour Fixer le bug dans FireFox (Xplore) |
 |   2.09  | 2025-09-16 | - Version Dist avec envoi des logs corrigé |
+|   2.10  | 2026-07-15 | - Correctif pour que le clipboard passe dans le Thread principal et non dans celui du HID <br> - Correctif pour chiffre dans les Champs DXCare : Le chiffre sont maintenant tapés et non coller |
 
 
 
@@ -174,3 +175,16 @@ Ces alias sont définis dans `~/.gitconfig` :
 * Toujours faire un `git pull` depuis `origin` avant de travailler.
 * Utiliser `git pushall` pour garder les deux dépôts synchronisés.
 * Ajouter les fichiers volumineux (comme `ffmpeg.exe`) dans `.gitignore` pour éviter les blocages sur GitHub.
+
+---
+
+## 📌 Compilation windows
+
+* la nouvelle version doit etre dans une nouvelle branche
+* le fichier .\version.txt mis à jour avec le numéro de la nouvelle version
+* On lance:
+```bash
+$> .\build.ps1
+```
+* On rentre dans *Inno Setup Compiler* et on charge le fichier **RecoVocale.iss**
+* On compile

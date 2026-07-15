@@ -30,15 +30,21 @@ def _make_html_clip(text: str) -> bytes:
     return (final_header + full_html).encode(enc)
 
 
-def set_clipboard(text: str, html: bool = True):
+def set_clipboard(text: str, html: bool = True, hwnd=None):
+    # Sécurité : garantit toujours une chaîne
+    text = str(text)
+
     # Normalise CRLF pour CF_UNICODETEXT
     text_win = text.replace('\r\n', '\n').replace('\r', '\n').replace('\n', '\r\n')
 
-    cb.OpenClipboard()
+    cb.OpenClipboard(hwnd)
     try:
         cb.EmptyClipboard()
         # 1) Texte Unicode standard
-        cb.SetClipboardData(win32con.CF_UNICODETEXT, text_win)
+        cb.SetClipboardText(
+            text_win,
+            win32con.CF_UNICODETEXT
+        )
 
         # 2) HTML Format (optionnel)
         if html:

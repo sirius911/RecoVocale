@@ -90,12 +90,52 @@ class Mode_Reduit(Mode):
 
         txt = super().handle_final_text(text)
 
-        to_copy = f" {txt}" if self.app.config.word_space else f"{txt} "
+        # Sert uniquement à détecter une dictée entièrement numérique.
+        # Le texte original txt est conservé pour les collages habituels.
+        clean_txt = txt.strip()
+        is_numeric = clean_txt.isdigit()
+
+        if is_numeric:
+            # Aucun espace avant ou après.
+            # Le texte sera tapé au clavier et non collé.
+            to_copy = clean_txt
+        else:
+            # Comportement historique pour les champs texte.
+            to_copy = (
+                f" {txt}"
+                if self.app.config.word_space
+                else f"{txt} "
+            )
 
         if not self.is_ouverte():
-            set_clipboard(text=to_copy, html=self.app.config.firefox)
-            self.root.after(150, lambda: Simulator([Key.ctrl, 'v']))
-            self.log(text=text)
+
+            def _insert_text():
+
+                if is_numeric:
+                    # DXCare refuse le collage dans certains champs numériques.
+                    # On simule donc une saisie réelle au clavier.
+                    self.root.after(
+                        150,
+                        lambda value=clean_txt: Simulator(value)
+                    )
+
+                else:
+                    # Fonctionnement normal :
+                    # presse-papiers puis Ctrl+V.
+                    set_clipboard(
+                        text=to_copy,
+                        html=self.app.config.firefox,
+                        hwnd=self.root.winfo_id()
+                    )
+
+                    self.root.after(
+                        150,
+                        lambda: Simulator([Key.ctrl, 'v'])
+                    )
+
+                self.log(text=text)
+
+            self.add_to_ui_queue(_insert_text)
 
     def copy_to_clipboard(self) -> None:
         def _copy():
