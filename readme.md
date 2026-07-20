@@ -33,6 +33,7 @@
 |   2.08  | 2025-09-11 | – Correctif reload insertion.xml apres modif<br> – passage du clipboard windows avec win32clipboard pour Fixer le bug dans FireFox (Xplore) |
 |   2.09  | 2025-09-16 | - Version Dist avec envoi des logs corrigé |
 |   2.10  | 2026-07-15 | - Correctif pour que le clipboard passe dans le Thread principal et non dans celui du HID <br> - Correctif pour chiffre dans les Champs DXCare : Le chiffre sont maintenant tapés et non coller |
+|   2.11  | 2026-07-20 | - Suppression du dictionnaire enchant |
 
 
 

@@ -1,21 +1,21 @@
 ; Script de création d'installateur Reco Vocal
 
 [Setup]
-ArchitecturesAllowed=x64
-ArchitecturesInstallIn64BitMode=x64
+ArchitecturesAllowed=x64compatible
+ArchitecturesInstallIn64BitMode=x64compatible
 
 ; Nom du fichier installateur
 OutputDir=install
-OutputBaseFilename=install_2.10
+OutputBaseFilename=install_2.11
 SetupIconFile=reco.ico
 
 ; Nom de l'application
 AppName=RecoVocale
 ; Version de l'application
-AppVersion=2.10
+AppVersion=2.11
 ; Répertoire par défaut d'installation
 AppVerName={#SetupSetting("AppName")} {#SetupSetting("AppVersion")}
-DefaultDirName={pf64}\RecoVocale
+DefaultDirName={commonpf64}\RecoVocale
 ; Répertoire par défaut dans le menu démarrer
 DefaultGroupName=RecoVocale
 
@@ -99,4 +99,3 @@ Type: files; Name: "{group}\RecoVocale *.lnk"
 
 ; (Optionnel) supprime aussi les anciens raccourcis versionnés du Bureau
 Type: files; Name: "{commondesktop}\RecoVocale *.lnk"
-Type: files; Name: "{userdesktop}\RecoVocale *.lnk"

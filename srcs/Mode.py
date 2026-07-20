@@ -1,5 +1,5 @@
 import threading
-import enchant
+# import enchant
 import tkinter as tk
 import pygame
 from info import REDUIT, VERSION
@@ -54,7 +54,7 @@ class Mode:
         self.transcription_en_cours = False
         self.file_source = None  # peut etre un fichier audio
         # # Définir le chemin du répertoire de configuration dans %APPDATA%\RecoVocale
-        self.dico = enchant.Dict("fr_FR")
+        # self.dico = enchant.Dict("fr_FR")
         self.mots_personnels = set()
         self.model = ""
         # base_url = app.get_vt_server_url()
