@@ -49,7 +49,7 @@ class UserConfig:
 
     Elle prend en charge :
     - les ports et adresses du serveur,
-    - les raccourcis clavier,
+    - le raccourci clavier principal,
     - le mode de démarrage,
     - la position de la fenêtre,
     - les options de transcription.
@@ -74,7 +74,6 @@ class UserConfig:
         self._port = "30000"
         self._service = "Tous"
         self._shortcut = "F3"
-        self._shortcut_stop = "F4"
         self._play_audio = True
         self.mode = "DIRECT"
         self.x_window = "10"
@@ -118,9 +117,6 @@ class UserConfig:
         self._shortcut = config.get('SETTINGS', 'SHORTCUT', fallback=self._shortcut)
         if self._shortcut is None or self._shortcut == "":
             self._shortcut = "F3"
-        self._shortcut_stop = config.get('SETTINGS', 'SHORTCUT_STOP', fallback=self._shortcut_stop)
-        if self._shortcut_stop is None or self._shortcut_stop == "":
-            self._shortcut_stop = "F4"
         self.mode = config.get('SETTINGS', 'MODE', fallback=self.mode)
         self.x_window = config.get('SETTINGS', 'X_WINDOW', fallback=self.x_window)
         self.y_window = config.get('SETTINGS', 'Y_WINDOW', fallback=self.y_window)
@@ -152,7 +148,6 @@ class UserConfig:
             'PORT': self._port,
             'SERVICE': self._service,
             'SHORTCUT': self._shortcut,
-            'SHORTCUT_STOP': self._shortcut_stop,
             'MODE': self.mode,
             'X_WINDOW': str(int(self.x_window)),
             'Y_WINDOW': str(int(self.y_window)),
@@ -235,16 +230,6 @@ class UserConfig:
     def shortcut(self, value: str) -> None:
         """Définit le raccourci clavier principal."""
         self._shortcut = value
-
-    @property
-    def shortcut_stop(self) -> str:
-        """Retourne le raccourci pour arrêter la transcription."""
-        return self._shortcut_stop
-
-    @shortcut_stop.setter
-    def shortcut_stop(self, value: str) -> None:
-        """Définit le raccourci pour arrêter la transcription."""
-        self._shortcut_stop = value
 
     @property
     def word_space(self) -> bool:

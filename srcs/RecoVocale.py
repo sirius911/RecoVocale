@@ -101,23 +101,23 @@ class App:
         # ------------- COMMANDES Pas à Pas -------------------
         self.pp_executor = Executor(app=self.current_mode, path_json=self.config.pas_a_pas)
 
-        # ---- Touches de racourcis
+        # ---- Raccourci clavier démarrer / arrêter
+        self._keyboard_hotkey_id = None
         self.shortcut_manager = ShortcutManager(
             root,
-            self.current_mode,
-            self.config.shortcut,
-            self.config.shortcut_stop
+            self,
+            self.config.shortcut
         )
 
-        # Enregistrer les deux raccourcis s’ils sont valides
         try:
-            if self.shortcut_manager.keyboard_shortcut:
-                keyboard.add_hotkey(self.shortcut_manager.keyboard_shortcut, self.current_mode.toggle_start_stop)
-            if self.shortcut_manager.stop_keyboard_shortcut:
-                keyboard.add_hotkey(self.shortcut_manager.stop_keyboard_shortcut, self.current_mode.stop)
-        except Exception:
-            keyboard.add_hotkey("F3", self.current_mode.toggle_start_stop)
-            keyboard.add_hotkey("F4", self.current_mode.stop)
+            self.register_keyboard_shortcut(
+                self.shortcut_manager.keyboard_shortcut
+            )
+        except Exception as exc:
+            print(f"Raccourci configuré invalide : {exc}. Utilisation de F3.")
+            self.shortcut_manager.keyboard_shortcut = "F3"
+            self.config.shortcut = "F3"
+            self.register_keyboard_shortcut("F3")
 
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
 
@@ -152,6 +152,42 @@ class App:
         """
         base_url = f"http://{self.config.server_ip}:{self.config.port}/v1"
         return base_url
+
+    def _enqueue_toggle_start_stop(self) -> None:
+        """Place l'action du raccourci dans la file exécutée par le thread Tkinter."""
+        if not getattr(self, "shutting_down", False):
+            UI_QUEUE.put(self._toggle_start_stop_current_mode)
+
+    def _toggle_start_stop_current_mode(self) -> None:
+        """Exécute le raccourci sur le mode actuellement actif."""
+        if getattr(self, "shutting_down", False):
+            return
+        if self.current_mode:
+            self.current_mode.toggle_start_stop()
+
+    def unregister_keyboard_shortcut(self) -> None:
+        """Désenregistre uniquement le raccourci principal de RecoVocale."""
+        hotkey_id = getattr(self, "_keyboard_hotkey_id", None)
+        if hotkey_id is None:
+            return
+
+        try:
+            keyboard.remove_hotkey(hotkey_id)
+        finally:
+            self._keyboard_hotkey_id = None
+
+    def register_keyboard_shortcut(self, shortcut: str) -> None:
+        """Remplace immédiatement le raccourci principal actif."""
+        self.unregister_keyboard_shortcut()
+
+        shortcut = (shortcut or "").strip()
+        if not shortcut:
+            return
+
+        self._keyboard_hotkey_id = keyboard.add_hotkey(
+            shortcut,
+            self._enqueue_toggle_start_stop
+        )
 
     def _heartbeat_server_status(self):
         """
@@ -190,6 +226,12 @@ class App:
         self._closing = True
         self.shutting_down = True  # <— indique aux modes d'arrêter de poster des tâches
 
+        # Désactiver le raccourci global avant la destruction de l'interface
+        try:
+            self.unregister_keyboard_shortcut()
+        except Exception:
+            pass
+
         # 1) arrêter proprement le mode
         try:
             if self.current_mode:
@@ -207,7 +249,6 @@ class App:
 
         # 3) sauver la config
         self.config.shortcut = self.shortcut_manager.keyboard_shortcut
-        self.config.shortcut_stop = self.shortcut_manager.stop_keyboard_shortcut
         self.config.mode = self.current_mode.name()
         self.config.x_window = self.root.winfo_x()
         self.config.y_window = self.root.winfo_y()
@@ -265,12 +306,8 @@ class App:
                 if self.mic:
                     self.mic.change_mode(self.current_mode)
 
-                # touches de Raccourcis
-                keyboard.clear_all_hotkeys()
-                if self.shortcut_manager.keyboard_shortcut:
-                    keyboard.add_hotkey(self.shortcut_manager.keyboard_shortcut, self.current_mode.toggle_start_stop)
-                if self.shortcut_manager.stop_keyboard_shortcut:
-                    keyboard.add_hotkey(self.shortcut_manager.stop_keyboard_shortcut, self.current_mode.stop)
+                # Le raccourci reste enregistré sur App et cible automatiquement
+                # le nouveau mode via _toggle_start_stop_current_mode().
 
                 try:
                     if self.config.debug:
@@ -325,10 +362,6 @@ class App:
 
             self.console_debug.append_status_with_format("Raccourci rec/pause : ", font_style="italic")
             self.console_debug.append_status_with_format(f"{self.shortcut_manager.keyboard_shortcut}\n", color="green")
-
-            self.console_debug.append_status_with_format("Raccourci arrêt transcription : ", font_style="italic")
-            self.console_debug.append_status_with_format(f"{self.shortcut_manager.stop_keyboard_shortcut or '—'}\n",
-                                                         color="green")
 
             self.console_debug.append_status_with_format("Debug : ", font_style="italic")
             self.console_debug.append_status_with_format(f"{self.config.debug}\n", color="green")
