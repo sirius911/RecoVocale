@@ -199,13 +199,35 @@ class Executor:
             print(f"[PasÀPas] registre indisponible: {e}")
             self.registry = CommandRegistry()
 
+    def run_command(self, cmd: Command, on_finished=None) -> bool:
+        """Lance une commande en arrière-plan.
+
+        ``on_finished`` est appelé à la fin du test, même si une étape échoue.
+        Le callback est exécuté depuis le thread de travail : une interface Tkinter
+        doit donc repasser par ``after(...)`` avant de modifier ses widgets.
+        """
+        if not cmd:
+            return False
+
+        def worker():
+            try:
+                self._run(cmd)
+            finally:
+                if callable(on_finished):
+                    try:
+                        on_finished()
+                    except Exception:
+                        pass
+
+        threading.Thread(target=worker, daemon=True).start()
+        return True
+
     def run_by_spoken(self, spoken_text: str) -> bool:
         """Retourne True si une commande a été trouvée et lancée en thread."""
         cmd = self.registry.get_by_spoken(spoken_text)
         if not cmd:
             return False
-        threading.Thread(target=self._run, args=(cmd,), daemon=True).start()
-        return True
+        return self.run_command(cmd)
 
     # --- interne ---
     def _run(self, cmd: Command) -> None:

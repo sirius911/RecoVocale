@@ -36,6 +36,7 @@
 |   2.11  | 2026-07-28 | - Suppression du dictionnaire enchant 
 |         |            | - Suppression de la touche de raccourci pour arrêter la transcription (obsolette -> whisperLive) |
 |         |            | - FIX bug nouvelle touche de raccourci qui ne fonctionnait pas tout de suite |
+|   2.12  | 2026-07-29 | - Ajout du bouton tester commande dans 'pas à pas'                           |
 
 
 

@@ -4,7 +4,7 @@ import os
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 from typing import Any, Dict, List, Optional
-from pas_a_pas import Executor
+from pas_a_pas import Command, CommandRegistry, Executor, Step, StepType
 from utils_window import get_config_path, update_status_bar
 
 
@@ -387,6 +387,8 @@ class FenetrePasAPas(tk.Toplevel):
 
         self.commands: List[Dict[str, Any]] = _load_pp(self.path_json)
         self.modif = False
+        self._test_running = False
+        self._test_executor = None
         self._build_ui()
         self._load_commands()
 
@@ -425,8 +427,18 @@ class FenetrePasAPas(tk.Toplevel):
         self.btn_cmd_dup = ttk.Button(cmd_btns, text="Dupliquer", command=self._cmd_duplicate, state=tk.DISABLED)
         self.btn_cmd_del = ttk.Button(cmd_btns, text="Supprimer", command=self._cmd_delete, state=tk.DISABLED)
         self.btn_cmd_upd = ttk.Button(cmd_btns, text="Mettre à jour", command=self._cmd_update, state=tk.DISABLED)
-        for b in (self.btn_cmd_add, self.btn_cmd_dup, self.btn_cmd_del, self.btn_cmd_upd):
+        self.btn_cmd_test = ttk.Button(
+            cmd_btns,
+            text="Tester la commande",
+            command=self._cmd_test,
+            state=tk.DISABLED,
+        )
+        for b in (self.btn_cmd_add, self.btn_cmd_dup, self.btn_cmd_del,
+                  self.btn_cmd_upd, self.btn_cmd_test):
             b.pack(side="left", padx=(0, 6))
+
+        self.lbl_test_status = ttk.Label(cmd_btns, text="")
+        self.lbl_test_status.pack(side="left", padx=(8, 0))
 
         # --- formulaire commande ---
         form = ttk.LabelFrame(self, text="Commande")
@@ -534,6 +546,9 @@ class FenetrePasAPas(tk.Toplevel):
         self.btn_cmd_del.configure(state=tk.NORMAL if has_cmd else tk.DISABLED)
         # update actif si champ modifié et une commande est sélectionnée
         self.btn_cmd_upd.configure(state=tk.NORMAL if has_cmd else tk.DISABLED)
+        self.btn_cmd_test.configure(
+            state=tk.NORMAL if has_cmd and not self._test_running else tk.DISABLED
+        )
 
         self.btn_step_edit.configure(state=tk.NORMAL if has_step else tk.DISABLED)
         self.btn_step_del.configure(state=tk.NORMAL if has_step else tk.DISABLED)
@@ -612,6 +627,142 @@ class FenetrePasAPas(tk.Toplevel):
         self._load_commands()
         self.tree_cmd.selection_set(str(idx))
         self._mark_modified()
+
+    def _build_runtime_registry(self) -> CommandRegistry:
+        """Construit un registre à partir des commandes actuellement affichées.
+
+        Cela permet de tester les changements non encore enregistrés et conserve
+        le fonctionnement des étapes ``execute_command``.
+        """
+        registry = CommandRegistry()
+        for obj in self.commands:
+            name = str(obj.get("name", "")).strip()
+            if not name:
+                continue
+
+            steps = []
+            for raw_step in obj.get("steps", []):
+                step_type = StepType(raw_step["type"])
+                params = dict(raw_step.get("params", {}))
+                steps.append(Step(step_type, params))
+
+            registry.add(Command(
+                name=name,
+                spoken=str(obj.get("spoken", "")).strip(),
+                description=str(obj.get("description", "")),
+                steps=steps,
+            ))
+        return registry
+
+    def _get_executor_context(self):
+        """Retrouve le mode applicatif utilisé par les actions Pas à pas."""
+        if self.app is None:
+            return None
+        app_root = getattr(self.app, "app", None) or self.app
+        return getattr(app_root, "current_mode", self.app)
+
+    def _cmd_test(self):
+        idx = self._get_selected_cmd_idx()
+        if idx is None:
+            messagebox.showwarning(
+                "Tester la commande",
+                "Sélectionne d'abord une commande.",
+                parent=self,
+            )
+            return
+
+        if self._test_running:
+            return
+
+        # Prend en compte Nom/Forme prononcée/Description sans imposer
+        # un enregistrement préalable du fichier JSON.
+        self._sync_form_into_selected()
+        cmd_data = self.commands[idx]
+        cmd_name = str(cmd_data.get("name", "")).strip()
+
+        if not cmd_name:
+            messagebox.showerror(
+                "Tester la commande",
+                "Le nom de la commande est obligatoire.",
+                parent=self,
+            )
+            return
+
+        if not cmd_data.get("steps"):
+            messagebox.showwarning(
+                "Tester la commande",
+                "Cette commande ne contient aucune étape.",
+                parent=self,
+            )
+            return
+
+        context = self._get_executor_context()
+        if context is None:
+            messagebox.showerror(
+                "Tester la commande",
+                "Le test n'est disponible que lorsque l'éditeur est ouvert "
+                "depuis RecoVocale.",
+                parent=self,
+            )
+            return
+
+        has_send_keys = any(
+            st.get("type") == "send_keys" for st in cmd_data.get("steps", [])
+        )
+        warning = (
+            f"Exécuter réellement la commande « {cmd_name} » ?\n\n"
+            "Les applications seront ouvertes et les attentes seront exécutées."
+        )
+        if has_send_keys:
+            warning += (
+                "\n\nAttention : cette commande enverra aussi des touches "
+                "à la fenêtre active."
+            )
+
+        if not messagebox.askyesno(
+            "Tester la commande", warning, parent=self
+        ):
+            return
+
+        try:
+            executor = Executor(context, self.path_json)
+            executor.registry = self._build_runtime_registry()
+            command = executor.registry.by_name.get(cmd_name)
+            if command is None:
+                raise ValueError(f"Commande introuvable : {cmd_name}")
+
+            self._test_executor = executor
+            self._test_running = True
+            self.btn_cmd_test.configure(text="Test en cours…")
+            self.lbl_test_status.configure(text=f"Exécution de « {cmd_name} »")
+            self._refresh_buttons()
+
+            def finished():
+                try:
+                    self.after(0, lambda: self._on_test_finished(cmd_name))
+                except Exception:
+                    pass
+
+            executor.run_command(command, on_finished=finished)
+
+        except Exception as exc:
+            self._test_running = False
+            self._test_executor = None
+            self.btn_cmd_test.configure(text="Tester la commande")
+            self.lbl_test_status.configure(text="")
+            self._refresh_buttons()
+            messagebox.showerror(
+                "Tester la commande",
+                f"Impossible de lancer le test : {exc}",
+                parent=self,
+            )
+
+    def _on_test_finished(self, cmd_name: str):
+        self._test_running = False
+        self._test_executor = None
+        self.btn_cmd_test.configure(text="Tester la commande")
+        self.lbl_test_status.configure(text=f"Test terminé : {cmd_name}")
+        self._refresh_buttons()
 
     # ---- Handlers steps ----
     def _step_add(self):
