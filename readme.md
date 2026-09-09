@@ -145,18 +145,37 @@ git remote -v
 
 ---
 
+## 📌 Mettre à jour la branch *master*
+
+* Forcer *master* sur  vX.XX :
+
+```bash
+  git branch -f master vX.XX
+```
+
+Cette commande remplace instantanément l'historique de *master* par celui de vX.XX.
+
+* Pousser la nouvelle *master* sur origin et github :
+
+```bash
+git push origin master --force-with-lease
+git push github master --force-with-lease
+```
+
+---
+
 ## 📌 Créer une nouvelle branche
 
 1. Créer la branche localement :
 
-   ```bash
+```bash
    git checkout -b <nouvelle_branche>
-   ```
+```
 2. Premier push vers les deux dépôts :
 
-   ```bash
+```bash
    git pushall -u
-   ```
+```
 
 ---
 
