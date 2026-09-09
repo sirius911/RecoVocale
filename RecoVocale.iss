@@ -3,16 +3,17 @@
 [Setup]
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
+PrivilegesRequired=admin
 
 ; Nom du fichier installateur
 OutputDir=install
-OutputBaseFilename=install_2.11
+OutputBaseFilename=install_2.12
 SetupIconFile=reco.ico
 
 ; Nom de l'application
 AppName=RecoVocale
 ; Version de l'application
-AppVersion=2.11
+AppVersion=2.12
 ; Répertoire par défaut d'installation
 AppVerName={#SetupSetting("AppName")} {#SetupSetting("AppVersion")}
 DefaultDirName={commonpf64}\RecoVocale
@@ -37,12 +38,18 @@ Source: "srcs\config\my.dic";                   DestDir: "{app}\defaults"; Flags
 Source: "srcs\config\user_config.ini";          DestDir: "{app}\defaults"; Flags: ignoreversion
 Source: "srcs\config\micro_actions_config.json";DestDir: "{app}\defaults"; Flags: ignoreversion
 
+; politique machine d'envoi des logs : créée une seule fois et conservée lors des mises à jour
+Source: "srcs\config\serv_log.inf"; DestDir: "{commonappdata}\RecoVocale"; Flags: onlyifdoesntexist uninsneveruninstall
+
 ; --- espeak-ng embarqué (ultra-min) ---
 Source: "dist\espeak-ng-ultra\espeak-ng.exe"; DestDir: "{app}\espeak-ng"; Flags: ignoreversion
 Source: "dist\espeak-ng-ultra\libespeak-ng.dll"; DestDir: "{app}\espeak-ng"; Flags: ignoreversion
 Source: "dist\espeak-ng-ultra\espeak-ng-data\*"; DestDir: "{app}\espeak-ng\espeak-ng-data"; Flags: recursesubdirs createallsubdirs ignoreversion
 
 Source: "dist\espeak-ng-ultra\*.dll"; Excludes: "libespeak-ng.dll"; DestDir: "{app}\espeak-ng"; Flags: ignoreversion skipifsourcedoesntexist
+
+[Dirs]
+Name: "{commonappdata}\RecoVocale"; Flags: uninsneveruninstall
 
 [Code]
 const
@@ -87,6 +94,11 @@ Name: "{group}\RecoVocale"; Filename: "{app}\RecoVocale.exe"
 Name: "{commondesktop}\RecoVocale"; Filename: "{app}\RecoVocale.exe"
 
 [Run]
+; Durcit les ACL de la configuration machine :
+; SYSTEM + Administrateurs = contrôle total, Utilisateurs = lecture/exécution uniquement.
+Filename: "{sys}\icacls.exe"; Parameters: """{commonappdata}\RecoVocale"" /inheritance:r /grant:r ""*S-1-5-18:(OI)(CI)F"" ""*S-1-5-32-544:(OI)(CI)F"" ""*S-1-5-32-545:(OI)(CI)RX"""; Flags: runhidden waituntilterminated runascurrentuser
+Filename: "{sys}\icacls.exe"; Parameters: """{commonappdata}\RecoVocale\serv_log.inf"" /reset"; Flags: runhidden waituntilterminated runascurrentuser
+
 ; Supprimer l'ancien raccourci épinglé (32 bits) s'il existe (nom exact ou variantes)
 Filename: "{cmd}"; Parameters: "/C if exist ""%AppData%\Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar\RecoVocale*.lnk"" del /Q ""%AppData%\Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar\RecoVocale*.lnk"""; Flags: runhidden
 

@@ -25,14 +25,19 @@ from Micro import Micro
 from info import VERSION, DIRECT, REDUIT, APPRENTI, FICHIER
 from fenetre_debug import DebugWindow
 from insertions import GestionnaireInsertion
-from loger import envoyer_log
+from loger import (
+    envoyer_log,
+    initialiser_log,
+    get_log_info,
+    LOG_OK,
+    LOG_DISABLED,
+    LOG_CONFIG_ERROR,
+    LOG_SEND_ERROR,
+)
 from queue_manager import UI_QUEUE
 import queue
 from VoiceTranscriber import VoiceTranscriber
 from pas_a_pas import Executor
-
-# Envoi d'un log "stop" à la fermeture du programme
-atexit.register(lambda: envoyer_log("stop"))
 
 
 class App:
@@ -146,6 +151,9 @@ class App:
         asyncio.run_coroutine_threadsafe(_mic_autodiscovery(), self.loop)
 
         self.info()
+        log_info = get_log_info()
+        self._last_log_signature = (log_info["status"], log_info["error"])
+        self.root.after(1000, self._watch_log_status)
 
     def get_vt_server_url(self) -> str:
         """URL de base pour VoiceTranscriber.
@@ -205,6 +213,23 @@ class App:
         delay_ms = 1000 if not self.status_server else 10000
         self.update()
         self.root.after(delay_ms, self._heartbeat_server_status)
+
+    def _watch_log_status(self) -> None:
+        """
+        Surveille uniquement l'état en mémoire du logger.
+        Aucun appel réseau n'est effectué ici.
+        """
+        if getattr(self, "shutting_down", False):
+            return
+
+        log_info = get_log_info()
+        signature = (log_info["status"], log_info["error"])
+
+        if signature != getattr(self, "_last_log_signature", None):
+            self._last_log_signature = signature
+            self.update()
+
+        self.root.after(1000, self._watch_log_status)
 
     def paste_from_clipboard(self) -> None:
         """Colle le contenu du presse-papier dans la fenêtre active via une simulation clavier."""
@@ -347,6 +372,48 @@ class App:
                 color=("green" if self.status_server else "red")
             )
 
+            # --- Etat du serveur de logs ---
+            log_info = get_log_info()
+            log_labels = {
+                LOG_OK: ("ACTIFS", "green"),
+                LOG_DISABLED: ("DÉSACTIVÉS", "blue"),
+                LOG_CONFIG_ERROR: ("ERREUR CONFIG", "red"),
+                LOG_SEND_ERROR: ("ERREUR ENVOI", "red"),
+            }
+            log_label, log_color = log_labels.get(
+                log_info["status"], ("INCONNU", "red")
+            )
+
+            self.console_debug.append_status_with_format(
+                "Logs : ", font_style="italic"
+            )
+            self.console_debug.append_status_with_format(
+                f"{log_label}\n", color=log_color
+            )
+
+            self.console_debug.append_status_with_format(
+                "Config logs : ", font_style="italic"
+            )
+            self.console_debug.append_status_with_format(
+                f"{log_info['config_path'] or '—'}\n", color="green"
+            )
+
+            if log_info["server"]:
+                self.console_debug.append_status_with_format(
+                    "Serveur logs : ", font_style="italic"
+                )
+                self.console_debug.append_status_with_format(
+                    f"{log_info['server']}\n", color="green"
+                )
+
+            if log_info["error"]:
+                self.console_debug.append_status_with_format(
+                    "Erreur logs : ", font_style="italic"
+                )
+                self.console_debug.append_status_with_format(
+                    f"{log_info['error']}\n", color="red"
+                )
+
             self.console_debug.append_status_with_format("Service : ", font_style="italic")
             self.console_debug.append_status_with_format(f"{self.config.service}\n", color="green")
             self.console_debug.append_status_with_format("IP client : ", font_style="italic")
@@ -464,8 +531,13 @@ if __name__ == "__main__":
     if win32api.GetLastError() == winerror.ERROR_ALREADY_EXISTS:
         print("Le programme est déjà en cours d'exécution.")
         sys.exit(0)
-    else:
-        envoyer_log("start")
+
+    # Configuration machine des logs, puis événements start/stop uniquement
+    # pour l'instance réellement lancée.
+    initialiser_log()
+    envoyer_log("start")
+    atexit.register(lambda: envoyer_log("stop"))
+
     try:
         root = TkinterDnD.Tk()
 

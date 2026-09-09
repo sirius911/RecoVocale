@@ -3,7 +3,13 @@ import threading
 import tkinter as tk
 import pygame
 from info import REDUIT, VERSION
-from loger import envoyer_log
+from loger import (
+    envoyer_log,
+    get_log_status,
+    LOG_DISABLED,
+    LOG_CONFIG_ERROR,
+    LOG_SEND_ERROR,
+)
 from queue_manager import UI_QUEUE
 from utils_window import update_status_bar, show_messagebox
 from Insertions_editor import FenetreInsertions
@@ -66,6 +72,15 @@ class Mode:
 
         self.pending_tasks = set()  # a supprimer apres les debug
 
+    def _log_title_suffix(self) -> str:
+        """Retourne l'indicateur discret de l'état des logs pour le titre."""
+        status = get_log_status()
+        if status == LOG_DISABLED:
+            return " • LOG OFF"
+        if status in (LOG_CONFIG_ERROR, LOG_SEND_ERROR):
+            return " ⚠ LOG"
+        return ""
+
     def enter(self) -> None:
         """
         Applique les propriétés visuelles du mode à la fenêtre principale (taille, titre, topmost).
@@ -85,11 +100,15 @@ class Mode:
                 f"{self.mode.window_width}x{self.mode.window_height}+{cx}+{cy}"
             ))
 
+        log_suffix = self._log_title_suffix()
         if self.mode == REDUIT:
-            self.root.title(f"RV v{VERSION}")
+            self.root.title(f"RV v{VERSION}{log_suffix}")
         else:
-            self.root.title(f"RecoVocale [{self.app.config.server_ip}:{self.app.config.port}] " +
-                            f"(v{VERSION}) {'connected' if self.app.status_server else 'not connected'}")
+            self.root.title(
+                f"RecoVocale [{self.app.config.server_ip}:{self.app.config.port}] "
+                f"(v{VERSION}) {'connected' if self.app.status_server else 'not connected'}"
+                f"{log_suffix}"
+            )
 
         self.ui()
 
@@ -234,13 +253,14 @@ class Mode:
         Met à jour le titre de la fenêtre principale avec les infos du mode, serveur et version.
         """
 
+        log_suffix = self._log_title_suffix()
         if self.mode == REDUIT:
-            self.root.title(f"RV v{VERSION}")
+            self.root.title(f"RV v{VERSION}{log_suffix}")
         else:
             self.root.title(
                 f"RecoVocale [{self.app.config.server_ip}:{self.app.config.port}] "
                 f"(v{VERSION}) {'connected' if self.app.status_server else 'not connected'} "
-                f"[{self.app.config.service}]"
+                f"[{self.app.config.service}]{log_suffix}"
             )
 
     def update(self) -> None:
