@@ -72,14 +72,15 @@ class VoiceTranscriber:
 
     def check_server_fast(self, timeout_connect=0.2, timeout_read=0.2):
         """
-        Test ultra-rapide pour vérifier que le serveur est dispo.
-        1) TCP connect court
-        2) GET /openapi.json (200 attendu)
+        Test rapide pour vérifier que le serveur VoiceTranscriber est disponible.
+
+        1) Connexion TCP courte
+        2) GET /health (200 attendu)
         """
         start = time.perf_counter()
         host, port = self._parse_host_port()
 
-        # 1) TCP connect rapide
+        # 1) Vérification TCP
         try:
             with socket.create_connection((host, port), timeout=timeout_connect):
                 pass
@@ -87,19 +88,27 @@ class VoiceTranscriber:
             dt = int((time.perf_counter() - start) * 1000)
             return False, f"TCP fail: {e} ({dt} ms)"
 
-        # 2) GET /openapi.json (léger)
+        # 2) Healthcheck applicatif
         headers = {}
         if self.api_key:
             headers["Authorization"] = f"Bearer {self.api_key}"
-        base = self.server_url.rstrip("/v1")
+
+        base = self.server_url.removesuffix("/v1")
+
         try:
-            r = requests.get(f"{base}/openapi.json",
-                             headers=headers,
-                             timeout=(timeout_connect, timeout_read))
+            r = requests.get(
+                f"{base}/health",
+                headers=headers,
+                timeout=(timeout_connect, timeout_read),
+            )
+
             dt = int((time.perf_counter() - start) * 1000)
+
             if 200 <= r.status_code < 300:
-                return True, f"/openapi.json: {r.status_code} ({dt} ms)"
-            return False, f"/openapi.json: HTTP {r.status_code} ({dt} ms)"
+                return True, f"/health: {r.status_code} ({dt} ms)"
+
+            return False, f"/health: HTTP {r.status_code} ({dt} ms)"
+
         except Exception as e:
             dt = int((time.perf_counter() - start) * 1000)
             return False, f"HTTP fail: {e} ({dt} ms)"
