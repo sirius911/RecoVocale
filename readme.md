@@ -35,6 +35,7 @@
 |   2.10  | 2026-07-15 | - Correctif pour que le clipboard passe dans le Thread principal et non dans celui du HID <br> - Correctif pour chiffre dans les Champs DXCare : Le chiffre sont maintenant tapés et non coller |
 |   2.11  | 2026-07-28 | - Suppression du dictionnaire enchant <br> - Suppression de la touche de raccourci pour arrêter la transcription (obsolette -> whisperLive) <br> - FIX bug nouvelle touche de raccourci qui ne fonctionnait pas tout de suite |
 |   2.12  | 2026-09-09 | - Ajout du bouton tester commande dans 'pas à pas' <br> - Gestion du serveur de log par C:\ProgramData\RecoVocale\serv_log.inf (http://<IP>:<PORT>/log) \| no_log <br> - Le contrôle de disponibilité du serveur de transcription utilise désormais /health à la place de /openapi.json, afin de ne plus dépendre de l’exposition de la documentation API.|
+|   2.13  |   ????     | - ajout du numéro de version dans les logs |
 
 
 

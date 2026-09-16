@@ -7,13 +7,13 @@ PrivilegesRequired=admin
 
 ; Nom du fichier installateur
 OutputDir=install
-OutputBaseFilename=install_2.12
+OutputBaseFilename=install_2.13
 SetupIconFile=reco.ico
 
 ; Nom de l'application
 AppName=RecoVocale
 ; Version de l'application
-AppVersion=2.12
+AppVersion=2.13
 ; Répertoire par défaut d'installation
 AppVerName={#SetupSetting("AppName")} {#SetupSetting("AppVersion")}
 DefaultDirName={commonpf64}\RecoVocale

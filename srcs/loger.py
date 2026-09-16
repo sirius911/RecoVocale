@@ -5,6 +5,7 @@ import getpass
 import threading
 from datetime import datetime, timezone
 from urllib.parse import urlparse
+from info import VERSION
 
 
 LOG_OK = "ok"
@@ -158,6 +159,7 @@ def envoyer_log(event="start", texte: str = "", nb_mots: int = 0,
             "mode": mode,
             "model": model,
             "nb_mots": nb_mots,
+            "app_version": str(VERSION),
         }
 
         response = requests.post(serv_log, json=log_data, timeout=2)
